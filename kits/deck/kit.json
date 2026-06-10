@@ -1,0 +1,14 @@
+{
+  "name": "Pitch Deck",
+  "description": "A bold, dark scroll-driven presentation system for pitch decks and keynotes: oversized type, one idea per full-viewport slide, and an electric cyan accent that pops against near-black. Scroll-triggered reveals and a scroll-scaled hero stat make the deck feel alive.",
+  "whenToUse": "Pick for presenting a narrative: pitch decks, keynotes, investor updates, company all-hands, vision documents — anything that would otherwise be slides. Each section is a full-viewport, slide-like beat — title slide, agenda, oversized animated stat, full-bleed image, quote, closing CTA — with scroll-triggered motion throughout. Dark near-black canvas, electric cyan accent, oversized type. Avoid for content-dense pages, light airy marketing sites, or longform reading.",
+  "tags": [
+    "Presentation",
+    "Pitch",
+    "Deck"
+  ],
+  "featured": false,
+  "order": 30,
+  "accent": "#22D3EE",
+  "thumbnail": "/kit-thumbnails/deck.svg"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "SaaS Landing",
+  "description": "A conversion-focused product-marketing system: crisp neutrals, one confident indigo accent, and a full landing-page chain from navbar to footer. Built for SaaS launches, feature pages, and pricing.",
+  "whenToUse": "Pick for marketing a digital product: SaaS landing pages, product launches, feature pages, pricing pages, developer tools, startup sites. The chain is a complete conversion narrative — sticky navbar, benefit-led hero, logo cloud for social proof, feature grid, customer testimonial, transparent pricing, closing CTA, footer. Crisp light neutrals with one confident indigo accent; reads as a product, not a brochure. Avoid for longform reading, portfolios, events, or dark dramatic presentations.",
+  "tags": [
+    "SaaS",
+    "Marketing",
+    "Product"
+  ],
+  "featured": true,
+  "order": 10,
+  "accent": "#5B5BD6",
+  "thumbnail": "/kit-thumbnails/saas.svg"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Event",
+  "description": "A high-energy template for conferences, launches, and meetups: bold oversized type, a vivid rose accent, and the full set — hero with date, speakers, schedule, and tickets.",
+  "whenToUse": "Pick for getting people to attend something: conferences, meetups, launch events, hackathons, workshops, webinars. The chain covers the attendee journey — hero with date and venue, speaker grid, schedule, ticket tiers, sponsor wall, footer. High-energy look: bold oversized type, vivid rose accent on light ground. Avoid for evergreen marketing sites, portfolios, or editorial content.",
+  "tags": [
+    "Event",
+    "Conference",
+    "Marketing"
+  ],
+  "featured": false,
+  "order": 50,
+  "accent": "#E11D6B",
+  "thumbnail": "/kit-thumbnails/event.svg"
+}

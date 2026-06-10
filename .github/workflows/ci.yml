@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Contract check: every kit must build the way consumers materialize
+  # it — { _base ∪ kit } → bun install → bun run build (gen:design,
+  # tsc, Bun.build, tailwind). Green here ≈ builds for every consumer.
+  kits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - run: node scripts/pack-kits.mjs
+      - run: node scripts/build-kit.mjs --all
+
+  # The demo must build — it's also what Vercel deploys for preview URLs.
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kopla/kits-demo build

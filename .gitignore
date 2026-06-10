@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.build/
+.next/
+.DS_Store
+.vercel
+demo/kits.gen/
+demo/next-env.d.ts
+*.tsbuildinfo
+*.tgz

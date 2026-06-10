@@ -1,0 +1,14 @@
+{
+  "name": "Portfolio",
+  "description": "An image-forward portfolio for designers, studios, and makers: warm paper, a single terracotta accent, big type, and a work grid that lets the projects lead.",
+  "whenToUse": "Pick for showing work: designer, photographer, or studio portfolios, agency sites, case-study showcases, personal sites for makers. The chain lets the projects lead — name-led intro, selected-work grid, large single-project features, about, contact, footer. Warm paper tones with a single terracotta accent; type stays quiet so imagery dominates. Avoid for product marketing, events, or text-heavy content.",
+  "tags": [
+    "Portfolio",
+    "Creative",
+    "Personal"
+  ],
+  "featured": false,
+  "order": 40,
+  "accent": "#C2612F",
+  "thumbnail": "/kit-thumbnails/portfolio.svg"
+}

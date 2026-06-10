@@ -1,0 +1,14 @@
+{
+  "name": "Editorial",
+  "description": "A type-led longform system in the magazine tradition: near-black ink on paper-white, a serif display face, generous margins, and a single restrained crimson used sparingly. Built for essays, features, and stories that want the words to carry the design.",
+  "whenToUse": "Pick when words carry the design: essays, feature articles, magazines, journals, longform content marketing, annual letters, manifestos. The chain reads as one continuous story — masthead, article hero with byline, serif body passages alternating with images, pull quotes, an image gallery, newsletter signup, footer. Paper-white ground, near-black serif ink, one restrained crimson accent. Avoid for product marketing, dashboards, or anything that sells rather than tells.",
+  "tags": [
+    "Editorial",
+    "Magazine",
+    "Longform"
+  ],
+  "featured": true,
+  "order": 20,
+  "accent": "#B91C1C",
+  "thumbnail": "/kit-thumbnails/editorial.svg"
+}

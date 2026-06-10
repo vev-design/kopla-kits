@@ -1,0 +1,164 @@
+/* Gallery chrome — plain CSS on purpose (the Tailwind pipeline belongs
+   to the kits; the gallery shouldn't compete for it). Kopla visual
+   rules: near-black on near-white, one accent, 1px borders, 12px radius. */
+
+:root {
+  --accent: #5b5bd6;
+  --fg: #17171c;
+  --fg-muted: #6b6b76;
+  --bg: #fcfcfd;
+  --card: #ffffff;
+  --border: #e7e7ec;
+  --radius-lg: 12px;
+  --t: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.gallery {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+}
+
+.gallery__header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.gallery__header p {
+  color: var(--fg-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 560px;
+  margin: 0 0 40px;
+}
+
+.gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 8px 24px rgb(23 23 28 / 0.08);
+  transform: translateY(-2px);
+}
+
+/* Live preview: the iframe is 4× the container in both axes, scaled by
+   ¼ — so the kit renders at a desktop-ish viewport width regardless of
+   card size, and the math holds at any container width. */
+.card__preview {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--kit-accent, var(--accent)) 6%, white);
+}
+
+.card__preview iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400%;
+  height: 400%;
+  transform: scale(0.25);
+  transform-origin: 0 0;
+  border: 0;
+  pointer-events: none;
+}
+
+.card__body {
+  padding: 16px 18px 18px;
+}
+
+.card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card__title-row h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.card__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.card__featured {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, white);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.card__body p {
+  color: var(--fg-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 8px 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.card__tags span {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.gallery__header code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+  background: #f1f1f5;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+}

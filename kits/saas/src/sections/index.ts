@@ -1,0 +1,14 @@
+// Public section catalog for the SaaS Landing system. The renderer imports
+// this barrel as a namespace and looks sections up by `type` string.
+//
+// The ORDER of `export * from` lines below is the canonical composition
+// chain — what a complete landing page looks like, top to bottom. Rearrange
+// the lines to reorder the chain.
+export * from './Navbar';
+export * from './Hero';
+export * from './LogoCloud';
+export * from './FeatureGrid';
+export * from './Testimonial';
+export * from './Pricing';
+export * from './CTA';
+export * from './Footer';

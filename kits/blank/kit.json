@@ -1,0 +1,13 @@
+{
+  "name": "Blank",
+  "description": "A neutral shadcn + Tailwind foundation with a single hero. Start here when you want the architect to define the whole look from your prompt, with nothing to unlearn.",
+  "whenToUse": "Pick when the user wants the look defined entirely from their prompt, when no other kit matches the domain, or when strong existing brand guidelines would fight a pre-styled starting point. Ships a single neutral hero on stock shadcn tokens — nothing to unlearn, but nothing polished out of the box either. Avoid when the user expects a designed result on first render; every other kit lands closer.",
+  "tags": [
+    "Minimal",
+    "Neutral"
+  ],
+  "featured": false,
+  "order": 0,
+  "accent": "#5B5BD6",
+  "thumbnail": "/kit-thumbnails/blank.svg"
+}
