@@ -6,6 +6,14 @@ on:
   pull_request:
 
 jobs:
+  # This repo is public — host-specific terms and secret-shaped strings
+  # are lint errors. See CLAUDE.md.
+  public-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-public-safety.mjs
+
   # Contract check: every kit must build the way consumers materialize
   # it — { _base ∪ kit } → bun install → bun run build (gen:design,
   # tsc, Bun.build, tailwind). Green here ≈ builds for every consumer.
