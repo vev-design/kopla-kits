@@ -38,6 +38,33 @@ version and upgrade deliberately.
 - Imports: `@/components/ui/*`, `@/motion`, `@/lib/utils`, `@/types`
   from `_base`; npm deps only via `_base/package.json`.
 
+## Variants & blocks
+
+Two graded ways a section offers controlled variation. Both live in the
+props type — so `design.json` carries them, and consumers (editor UI,
+page agents) can only pick what the kit author enumerated.
+
+- **Section variants** — an optional enum prop named `variant`
+  (e.g. `variant?: 'image-left' | 'image-right'`). The name is a
+  convention consumers key on: the Kopla editor renders a prop named
+  `variant` as a first-class switcher. Use it for layout/arrangement
+  flips; use other enum props for orthogonal knobs (density, tone).
+- **Block slots** — a prop typed as a discriminated union of block
+  props from `_base`'s `@/components/blocks` (discriminant: the literal
+  `kind` field). Blocks are _base-owned, token-themed content units
+  (`image`, `chart` today; video, form, … later). A section narrows the
+  union to exactly the kinds it can host —
+  `media: ImageBlockProps | ChartBlockProps` — and renders the slot with
+  `<MediaBlock media={…} />` (or the individual block components).
+  Adding a block to `_base` never widens an existing section's slot;
+  each section opts in explicitly.
+- Demo values for block slots must be **inline object literals** in the
+  `<Name>Demo` export — the demo extractor reads literals only, so
+  don't reference shared constants.
+- Blocks must stay static (no client JS) unless documented otherwise; a
+  section hosting a block that animates or hydrates must carry the
+  `@hydrate` tag itself.
+
 ## Toolchain contract
 
 For every kit, the assembled workspace must pass:
