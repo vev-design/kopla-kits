@@ -1,7 +1,7 @@
 {
   "name": "Blank",
-  "description": "A neutral shadcn + Tailwind foundation with a single hero. Start here when you want the architect to define the whole look from your prompt, with nothing to unlearn.",
-  "whenToUse": "Pick when the user wants the look defined entirely from their prompt, when no other kit matches the domain, or when strong existing brand guidelines would fight a pre-styled starting point. Ships a single neutral hero on stock shadcn tokens — nothing to unlearn, but nothing polished out of the box either. Avoid when the user expects a designed result on first render; every other kit lands closer.",
+  "description": "A bare canvas: shadcn + Tailwind structure and neutral tokens, with no sections. Start here when you want the architect to define the whole system from your prompt, with nothing pre-styled to unlearn.",
+  "whenToUse": "Pick when the user wants the look AND the sections defined entirely from their prompt, when no other kit matches the domain, or when strong existing brand guidelines would fight a pre-styled starting point. Ships zero sections on stock shadcn tokens — the architect authors everything from scratch. Avoid when the user expects a designed result on first render; every other kit ships real sections and lands closer.",
   "tags": [
     "Minimal",
     "Neutral"
