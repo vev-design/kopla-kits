@@ -223,15 +223,68 @@ function readPropsInterfaceJSDoc(propsType, checker) {
 
 // ── Type → PropType ───────────────────────────────────────────────────
 
+// Bounded type-walk guards. The walker below turns a section/component's props
+// interface into the design.json schema. It used to recurse with no limit,
+// which blew the call stack on real React prop types: a prop typed
+// `React.ComponentProps<'button'>` drags in ~250 DOM/aria props (refs,
+// handlers, `style: CSSProperties`), and `children: React.ReactNode` is a union
+// that contains `Iterable<ReactNode>` → ReactNode → … (self-referential). We
+// keep the authored, design-facing props and treat framework machinery as
+// terminal: skip props inherited from library types (node_modules), collapse
+// React content (ReactNode/ReactElement/JSX.Element) to `richtext`, skip
+// function-typed props, and never recurse into library object types or past
+// MAX_PROP_DEPTH.
+const MAX_PROP_DEPTH = 8;
+const REACT_CONTENT_NAMES = new Set([
+  'ReactNode',
+  'ReactElement',
+  'ReactPortal',
+  'ReactFragment',
+  'Element',
+]);
+
+/** True for a type declared in node_modules (React/DOM lib) — framework
+ *  machinery whose internals aren't authoring surface. Arrays/tuples are
+ *  handled before this is consulted, so element types still extract. */
+function isLibraryType(type) {
+  const sym = type.aliasSymbol ?? type.symbol;
+  for (const d of sym?.declarations ?? []) {
+    if ((d.getSourceFile?.().fileName ?? '').includes('/node_modules/')) return true;
+  }
+  return false;
+}
+
+/** React render content (`ReactNode`, `ReactElement`, `JSX.Element`, …) — a
+ *  rich-content slot, not structured data. Surface as richtext, stop recursing. */
+function isReactContentType(type) {
+  const a = type.aliasSymbol?.name;
+  const s = type.symbol?.name;
+  return Boolean((a && REACT_CONTENT_NAMES.has(a)) || (s && REACT_CONTENT_NAMES.has(s)));
+}
+
+/** A prop declared in node_modules is inherited framework surface (everything
+ *  `extends React.ComponentProps<…>` pulls in), not an authored field. */
+function isLibraryProp(prop) {
+  const decl = prop.valueDeclaration ?? prop.declarations?.[0];
+  return (decl?.getSourceFile?.().fileName ?? '').includes('/node_modules/');
+}
+
+/** Function-typed prop (event handler, render prop) — not an authoring field. */
+function isFunctionType(type, checker) {
+  return checker.getSignaturesOfType(type, ts.SignatureKind.Call).length > 0;
+}
+
 function propsTypeToSchema(type, checker) {
   const out = {};
   for (const prop of checker.getPropertiesOfType(type)) {
+    if (isLibraryProp(prop)) continue;
     const decl = prop.valueDeclaration ?? prop.declarations?.[0];
     if (!decl) continue;
     const propType = checker.getTypeOfSymbolAtLocation(prop, decl);
+    if (isFunctionType(propType, checker)) continue;
     const optional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
     const { description, kindOverride } = readJSDoc(prop, checker);
-    let entry = typeToPropType(propType, checker, kindOverride);
+    let entry = typeToPropType(propType, checker, kindOverride, 0);
     if (optional) entry = wrapNullable(entry);
     if (description) entry = { ...entry, description };
     out[prop.name] = entry;
@@ -239,7 +292,10 @@ function propsTypeToSchema(type, checker) {
   return out;
 }
 
-function typeToPropType(type, checker, kindOverride) {
+function typeToPropType(type, checker, kindOverride, depth = 0) {
+  // ReactNode is itself an aliased union, so check before isUnion().
+  if (isReactContentType(type)) return { kind: 'richtext' };
+  if (depth > MAX_PROP_DEPTH) return { kind: 'string' };
   if (type.isUnion()) {
     const nonNullish = type.types.filter(
       (t) => !(t.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)),
@@ -247,22 +303,25 @@ function typeToPropType(type, checker, kindOverride) {
     const hadNullish = nonNullish.length !== type.types.length;
     let inner;
     if (nonNullish.length === 0) inner = { kind: 'string' };
-    else if (nonNullish.length === 1) inner = typeToPropType(nonNullish[0], checker, kindOverride);
-    else inner = unionToPropType(nonNullish, checker, kindOverride);
+    else if (nonNullish.length === 1) inner = typeToPropType(nonNullish[0], checker, kindOverride, depth);
+    else inner = unionToPropType(nonNullish, checker, kindOverride, depth);
     return hadNullish ? wrapNullable(inner) : inner;
   }
-  return atomicTypeToPropType(type, checker, kindOverride);
+  return atomicTypeToPropType(type, checker, kindOverride, depth);
 }
 
-function unionToPropType(types, checker, kindOverride) {
+function unionToPropType(types, checker, kindOverride, depth = 0) {
+  // A union that includes React content (e.g. `ReactNode` flattened with
+  // `undefined`) is a render slot — surface it as richtext, not a grab-bag.
+  if (types.some((t) => isReactContentType(t))) return { kind: 'richtext' };
   const allStringLiterals = types.every((t) => t.isStringLiteral());
   if (allStringLiterals) {
     return { kind: 'enum', values: types.map((t) => t.value) };
   }
-  return { kind: 'union', options: types.map((t) => typeToPropType(t, checker, kindOverride)) };
+  return { kind: 'union', options: types.map((t) => typeToPropType(t, checker, kindOverride, depth + 1)) };
 }
 
-function atomicTypeToPropType(type, checker, kindOverride) {
+function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
   if (kindOverride && type.flags & ts.TypeFlags.StringLike) {
     if (SPECIALIZED_STRING_KINDS.has(kindOverride)) return { kind: kindOverride };
   }
@@ -277,19 +336,24 @@ function atomicTypeToPropType(type, checker, kindOverride) {
 
   if (checker.isArrayType?.(type) || checker.isTupleType?.(type)) {
     const typeArgs = checker.getTypeArguments(type);
-    const inner = typeArgs[0] ? typeToPropType(typeArgs[0], checker) : { kind: 'string' };
+    const inner = typeArgs[0] ? typeToPropType(typeArgs[0], checker, undefined, depth + 1) : { kind: 'string' };
     return { kind: 'array', of: inner };
   }
 
   if (type.flags & ts.TypeFlags.Object) {
+    // Don't walk framework objects (CSSProperties, DOM elements, ReactElement)
+    // or function types — terminal instead of exploding their internals.
+    if (isFunctionType(type, checker) || isLibraryType(type)) return { kind: 'string' };
     const fields = {};
     for (const prop of checker.getPropertiesOfType(type)) {
+      if (isLibraryProp(prop)) continue;
       const decl = prop.valueDeclaration ?? prop.declarations?.[0];
       if (!decl) continue;
       const fieldType = checker.getTypeOfSymbolAtLocation(prop, decl);
+      if (isFunctionType(fieldType, checker)) continue;
       const optional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
       const { description, kindOverride: childOverride } = readJSDoc(prop, checker);
-      let entry = typeToPropType(fieldType, checker, childOverride);
+      let entry = typeToPropType(fieldType, checker, childOverride, depth + 1);
       if (optional) entry = wrapNullable(entry);
       if (description) entry = { ...entry, description };
       fields[prop.name] = entry;
