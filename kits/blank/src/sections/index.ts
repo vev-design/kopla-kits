@@ -5,7 +5,9 @@
 //   const Component = Sections[section.type];
 //   <Component {...section.props} />
 //
-// The ORDER of `export * from` lines below is the recommended composition
-// chain for this system — what a canonical page looks like, top to
-// bottom. Rearrange the lines to reorder the chain.
-export * from './Hero';
+// The blank kit is a BARE CANVAS: it ships tokens + structure only, no
+// content. The catalog is intentionally empty — the architect authors every
+// section from scratch on the first run, with nothing pre-styled to unlearn.
+// Each one becomes a `./SectionName` file re-exported here; the order of those
+// `export * from` lines is the recommended composition chain, top to bottom.
+export {};

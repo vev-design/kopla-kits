@@ -60,7 +60,14 @@ function main() {
 
   const sections = collectSections(indexSource, checker, program);
   if (sections.length === 0) {
-    throw new Error('no section components exported from src/sections/index.ts');
+    // A kit MAY ship zero sections — the `blank` bare-canvas kit, whose
+    // sections the architect authors from scratch on the first run. Emit an
+    // empty catalog instead of failing. A content kit that empties its barrel
+    // by mistake still surfaces loudly as "0 sections" in the log below.
+    console.warn(
+      'extract-design: no sections exported from src/sections/index.ts — ' +
+        'emitting an empty catalog (bare-canvas kit).',
+    );
   }
 
   const readmeInfo = parseReadme();
