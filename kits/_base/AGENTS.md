@@ -2,6 +2,8 @@
 
 You are implementing a design system in this workspace. The starter ships React 19 + Tailwind v4 + shadcn/ui + Motion + a generic renderer. Your job is to skin the theme, build the section set the user's prompt describes, and document the result in `README.md` and the section files themselves.
 
+> This guide covers **page sections** — the presentation flow. Authoring a single reusable **catalog component** (e.g. a Figma-imported Button) is a separate job with its own contract: see `AGENTS.components.md`. This file never touches the component catalog.
+
 Runs are iterative. The workspace you receive may already have a `README.md` and section files from prior runs — that's the *previous* state of the system, not a finished spec. **Whatever you change in the code (add a section, rename one, shift the brand, reorder the composition), update `README.md` in the same run.** Stale READMEs are a regression.
 
 ## What this system produces: presentations
