@@ -86,9 +86,9 @@ Components are **design-system identity**, so a kit **owns its catalog**:
 
   ```ts
   // <kit> catalog: _base defaults this kit uses + its own primitives.
-  export * from './ui/button';   // _base default (present after the overlay merge)
-  export * from './Badge';       // kit-owned
-  export * from './Card';        // kit-owned
+  export * from '@/components/ui/button'; // a _base default (resolved via the overlay)
+  export * from './Badge';                // kit-owned
+  export * from './Card';                 // kit-owned
   ```
 
   Export order is catalog order. A kit may also **shadow** a `_base` primitive
