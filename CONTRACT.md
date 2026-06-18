@@ -115,6 +115,15 @@ Components are **design-system identity**, so a kit **owns its catalog**:
   the composition chain are unaffected. The field is omitted when a kit exports
   no components.
 
+**Authoring guide.** This section is the build-time contract — how
+`extract-design.mjs` turns a kit's `src/components/` into
+`design.json.components`. The agent-facing step-by-step for authoring one
+component (including importing from Figma) is `_base/AGENTS.components.md`, and
+it follows exactly this contract: components declared in `src/components/index.ts`,
+variant axes from explicit string-union props, preview states from
+`<Name>Showcase`. Provenance beyond `origin: generated` (e.g. a Figma
+`fileKey`/`nodeId`) is the host import pipeline's concern, not the kit build's.
+
 ## Toolchain contract
 
 For every kit, the assembled workspace must pass:

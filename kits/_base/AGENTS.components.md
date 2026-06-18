@@ -1,20 +1,24 @@
 # Building ONE component
 
-You are importing a **single component** into this design system's component
-catalog — not a page, not a section, not a theme. Build exactly the one
-component described below, then stop. The build **auto-surfaces** it (generates
-the catalog barrel, reads your variant axes, lists it in the component view), so
-you only write the component file + record its provenance. Another process
-assembles every component and publishes.
+> The authoritative contract for the component catalog — how `design.json.components`
+> is produced, the barrel the extractor reads, where variant axes come from, and the
+> showcase source — is in `CONTRACT.md` (the "Components" section). This guide is the
+> agent's step-by-step for authoring one component; it follows that contract.
+
+You are adding a **single component** to this design system's component catalog —
+not a page, not a section, not a theme. Build exactly the one component described
+below, then stop. You write the component file, a showcase, and one line in the
+catalog barrel; `bun run build` then surfaces it into `design.json.components` via
+the extractor (`gen:design`). Another process assembles every component and publishes.
 
 ## What you receive
 
 - **A variant inventory** — the component's axes (e.g. `variant`, `size`,
   `state`) with values + defaults, and each variant's **exact** styles (colors,
-  spacing, radii, type) from Figma. These exact values are the ground truth —
-  use them verbatim, not the screenshot.
+  spacing, radii, type), e.g. from a Figma import. These exact values are the
+  ground truth — use them verbatim, not the screenshot.
 - **A screenshot** — for layout / structure / which state is which.
-- **A color → token map** — for each Figma variable color, the CSS token to use
+- **A color → token map** — for each source color, the CSS token to use
   (e.g. `var(--primary)`). Use the mapped token; for a color NOT in the map, use
   its exact value as a component-scoped value (a local var / inline) — never
   invent a token.
@@ -24,29 +28,47 @@ assembles every component and publishes.
 
 ## Build it
 
-1. Create `src/components/<Name>.tsx`: a typed `*Props` interface with **one prop
-   per variant axis** (a string-union of every value, with the default), plus
-   content props. **Define the variants with `cva`** — the build reads your
-   `cva` config to populate the component's variant axes. Render **every** state
-   (incl. focus / disabled) using each variant's exact values; reference colors
-   via the mapped tokens, fall back to component-scoped values for unmapped ones.
-2. Record provenance in `components.manifest.json` — append ONE entry
-   `{ name, origin, showcase }` (`origin` = the Figma provenance you were given;
-   `showcase` = one entry per state worth previewing). Append only; leave other
-   entries alone.
-3. `bun run build` ONCE to confirm it type-checks + bundles. Fix errors, done.
+1. **Create `src/components/<Name>.tsx`.** A typed, exported `<Name>Props`
+   interface with **one prop per variant axis**, declared as an **explicit
+   string-union of every value** (e.g. `variant?: 'solid' | 'outline'`), plus
+   content props. The extractor reads these union props to populate the
+   component's variant axes — so declare them explicitly; do **not** hide them
+   behind a library generic (`VariantProps<…>`). Use `cva` for the *styling* of
+   those variants. Render **every** state (incl. focus / disabled) using each
+   variant's exact values; reference colors via the mapped tokens, falling back
+   to component-scoped values for unmapped ones. JSDoc the component and each
+   prop (the extractor uses it for descriptions).
+2. **Export `<Name>Showcase`.** A `{ props, label? }[]` of **static object
+   literals** (no JSX, identifiers, or calls — same rule as a section's
+   `<Name>Demo`) — one entry per state worth previewing. The extractor reads it
+   into the component's `showcase`. For a component whose content is a `children`
+   slot, omit `children` from the showcase props.
+3. **Register it in the catalog barrel.** Add `export * from './<Name>';` to
+   `src/components/index.ts` (the kit's component barrel — you edit it; export
+   order is catalog order). If the kit has no `src/components/index.ts` yet,
+   create it, re-exporting the `_base` defaults the kit uses
+   (`export * from '@/components/ui/button';`) plus your component.
+4. **`bun run build` ONCE.** `gen:design` (`extract-design.mjs`) reads the
+   barrel, your union props (→ variant axes), and `<Name>Showcase`, and emits the
+   component into `design.json.components` with `origin: { kind: 'generated' }`.
+   Confirm it type-checks + bundles. Fix errors, done.
 
 ## Never
 
 - **Never edit `src/globals.css`** — the theme/tokens are owned elsewhere and a
   crafted set must not be touched. Need a value that isn't a mapped token? Scope
   it to your component.
-- **Never edit `src/sections/`, the catalog barrel (`_components.ts`),
-  `design.json`, `README.md`, or the composition chain** — the build surfaces
-  your component automatically; you only write `src/components/<Name>.tsx` + the
-  manifest entry.
+- **Never edit `src/sections/`, `design.json`, `README.md`, or the composition
+  chain** — components live in their own barrel (`src/components/index.ts`), so
+  sections and the chain are unaffected, and `design.json` is generated by the
+  build, never hand-edited.
 - **Never re-create a base component** you were told exists — import it.
 - **Never build more than the one component** named in your task.
+
+> Provenance: this build records `origin: generated` for every catalog
+> component. If a source's provenance (e.g. a Figma `fileKey`/`nodeId`) must be
+> preserved on the `ComponentDefinition`, that is handled by the host's import
+> pipeline, not by this kit build.
 
 Everything else about the kit (stack, primitives, `cn()`, motion, shadcn) is in
 `AGENTS.md`.
