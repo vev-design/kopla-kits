@@ -2,6 +2,7 @@ import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import { MediaBlock } from '@/components/blocks';
 import type { ChartBlockProps, ImageBlockProps } from '@/components/blocks';
+import { Eyebrow, Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -45,22 +46,15 @@ export function ImageText({
   return (
     <section id={id ?? undefined} className="w-full bg-background py-14 md:py-20">
       <Reveal className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-16">
-        <figure className={cn('w-full', imageFirst ? 'md:order-1' : 'md:order-2')}>
-          <div className="aspect-[4/5] w-full overflow-hidden rounded-md bg-muted">
-            <MediaBlock media={media} />
-          </div>
-          {caption ? (
-            <figcaption className="mt-3 font-sans text-sm text-muted-foreground">
-              {caption}
-            </figcaption>
-          ) : null}
-        </figure>
+        <Figure
+          ratio="tall"
+          caption={caption}
+          className={imageFirst ? 'md:order-1' : 'md:order-2'}
+        >
+          <MediaBlock media={media} />
+        </Figure>
         <div className={cn(imageFirst ? 'md:order-2' : 'md:order-1')}>
-          {kicker ? (
-            <p className="font-sans text-xs font-semibold tracking-[0.24em] text-primary uppercase">
-              {kicker}
-            </p>
-          ) : null}
+          {kicker ? <Eyebrow>{kicker}</Eyebrow> : null}
           <h2 className="mt-4 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-4xl">
             {heading}
           </h2>

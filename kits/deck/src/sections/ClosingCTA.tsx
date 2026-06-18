@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -47,11 +48,7 @@ export function ClosingCTA({
       />
       <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center">
         <Reveal>
-          {eyebrow ? (
-            <p className="mb-8 text-xs font-semibold tracking-[0.28em] text-primary uppercase">
-              {eyebrow}
-            </p>
-          ) : null}
+          {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
         </Reveal>
         <Reveal transition={{ delay: 0.06 }}>
           <h2 className="font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance md:text-8xl">

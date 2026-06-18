@@ -1,7 +1,8 @@
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/Badge';
+import { Card } from '@/components/Card';
 import { Reveal, Stagger } from '@/motion';
-import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -64,14 +65,9 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
         </Reveal>
         <Stagger className="grid items-start gap-6 md:grid-cols-3">
           {tiers.map((tier) => (
-            <div
+            <Card
               key={tier.name}
-              className={cn(
-                'flex h-full flex-col gap-6 rounded-xl border bg-card p-8',
-                tier.highlighted
-                  ? 'border-primary shadow-xl shadow-primary/10 ring-1 ring-primary'
-                  : 'border-border',
-              )}
+              variant={tier.highlighted ? 'tier-highlighted' : 'tier'}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -79,9 +75,7 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
                     {tier.name}
                   </h3>
                   {tier.highlighted ? (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                      Popular
-                    </span>
+                    <Badge variant="solid">Popular</Badge>
                   ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">{tier.description}</p>
@@ -115,7 +109,7 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
               >
                 <a href={tier.cta.href}>{tier.cta.label}</a>
               </Button>
-            </div>
+            </Card>
           ))}
         </Stagger>
       </div>

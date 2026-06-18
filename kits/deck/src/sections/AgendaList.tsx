@@ -1,5 +1,6 @@
 import { Reveal, Stagger } from '@/motion';
 import { cn } from '@/lib/utils';
+import { Eyebrow } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -30,11 +31,7 @@ export function AgendaList({ id, eyebrow, heading, items }: AgendaListProps) {
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <div className="mb-12 md:mb-16">
-            {eyebrow ? (
-              <p className="mb-4 text-xs font-semibold tracking-[0.28em] text-primary uppercase">
-                {eyebrow}
-              </p>
-            ) : null}
+            {eyebrow ? <Eyebrow className="mb-4">{eyebrow}</Eyebrow> : null}
             <h2 className="font-display text-5xl font-bold tracking-tight text-balance md:text-7xl">
               {heading}
             </h2>

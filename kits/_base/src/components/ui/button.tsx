@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
@@ -35,16 +35,31 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * A button / call-to-action primitive. The visual axes (`variant`, `size`) are
+ * declared as explicit string unions — they are the source of truth the kit
+ * extractor turns into the component canvas's variant axes, with `buttonVariants`
+ * (cva) carrying only the styling. Spreads the rest onto the native `<button>`
+ * (or, with `asChild`, onto a Radix `Slot`).
+ */
+export interface ButtonProps extends Omit<React.ComponentProps<'button'>, 'children'> {
+  /** Visual style of the button. */
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  /** Control height/padding. `icon` is a square button for a lone glyph. */
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  /** Render as the passed child element (Radix `Slot`) instead of a `<button>`. */
+  asChild?: boolean;
+  /** Button label / content. */
+  children?: React.ReactNode;
+}
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
   ...props
-}: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-  }) {
+}: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
 
   return (
@@ -55,5 +70,16 @@ function Button({
     />
   );
 }
+
+/**
+ * Showcase instances for the component canvas — the analogue of a section's
+ * `<Name>Demo`. The kit extractor reads these literals into
+ * `design.json.components[].showcase`; the canvas lays out the variant axes
+ * (variant × size) and uses the first instance's props as shared content (the
+ * label text here). Keep these as static object literals.
+ */
+export const ButtonShowcase: { props: ButtonProps; label?: string }[] = [
+  { props: { children: 'Button' }, label: 'Default' },
+];
 
 export { Button, buttonVariants };

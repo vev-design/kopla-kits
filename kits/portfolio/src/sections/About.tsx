@@ -1,3 +1,4 @@
+import { Badge } from '@/components';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -24,12 +25,9 @@ export function About({ id, heading, bio, capabilities }: AboutProps) {
           {capabilities && capabilities.length > 0 ? (
             <ul className="flex flex-wrap gap-2">
               {capabilities.map((cap, i) => (
-                <li
-                  key={i}
-                  className="rounded-full border border-border px-3 py-1 text-sm text-muted-foreground"
-                >
-                  {cap}
-                </li>
+                <Badge key={i} asChild size="sm">
+                  <li>{cap}</li>
+                </Badge>
               ))}
             </ul>
           ) : null}

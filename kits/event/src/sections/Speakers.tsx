@@ -1,4 +1,5 @@
 import { Stagger } from '@/motion';
+import { Avatar } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -34,9 +35,9 @@ export function Speakers({ id, heading, intro, speakers }: SpeakersProps) {
       <Stagger className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
         {speakers.map((s, i) => (
           <div key={i} className="flex flex-col gap-3">
-            <div className="aspect-square w-full overflow-hidden rounded-xl bg-secondary">
+            <Avatar radius="rounded">
               <img src={s.image} alt={s.name} className="size-full object-cover" />
-            </div>
+            </Avatar>
             <div className="flex flex-col gap-0.5">
               <span className="font-semibold leading-tight">{s.name}</span>
               <span className="text-sm text-muted-foreground">{s.role}</span>

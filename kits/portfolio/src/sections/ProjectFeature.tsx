@@ -1,5 +1,5 @@
 import { Reveal } from '@/motion';
-import { Button } from '@/components/ui/button';
+import { Button, Stat } from '@/components';
 import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
 
@@ -59,18 +59,8 @@ export function ProjectFeature({
           <p className="text-base leading-relaxed text-muted-foreground text-pretty">{summary}</p>
           {(year || role) && (
             <dl className="flex gap-8 text-sm">
-              {year ? (
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-xs uppercase tracking-wider text-muted-foreground">Year</dt>
-                  <dd className="font-medium">{year}</dd>
-                </div>
-              ) : null}
-              {role ? (
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-xs uppercase tracking-wider text-muted-foreground">Role</dt>
-                  <dd className="font-medium">{role}</dd>
-                </div>
-              ) : null}
+              {year ? <Stat label="Year" value={year} /> : null}
+              {role ? <Stat label="Role" value={role} /> : null}
             </dl>
           )}
           {link ? (

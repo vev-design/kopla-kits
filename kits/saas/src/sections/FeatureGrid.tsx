@@ -12,6 +12,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
+import { Card } from '@/components/Card';
 import { Reveal, Stagger } from '@/motion';
 import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
@@ -103,10 +104,7 @@ export function FeatureGrid({
           {features.map((feature) => {
             const Icon = ICONS[feature.icon] ?? Sparkles;
             return (
-              <div
-                key={feature.title}
-                className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/40"
-              >
+              <Card key={feature.title} variant="feature">
                 <span className="inline-flex size-11 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                   <Icon className="size-5" strokeWidth={2.25} />
                 </span>
@@ -116,7 +114,7 @@ export function FeatureGrid({
                 <p className="text-sm text-muted-foreground text-pretty">
                   {feature.body}
                 </p>
-              </div>
+              </Card>
             );
           })}
         </Stagger>

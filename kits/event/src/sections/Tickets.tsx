@@ -1,7 +1,6 @@
 import { Reveal } from '@/motion';
-import { Button } from '@/components/ui/button';
+import { Badge, Button, TicketCard } from '@/components';
 import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -42,20 +41,14 @@ export function Tickets({ id, heading, tiers }: TicketsProps) {
       <h2 className="mb-10 text-center text-3xl font-bold tracking-tight md:text-4xl">{heading}</h2>
       <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {tiers.map((tier, i) => (
-          <div
-            key={i}
-            className={cn(
-              'flex flex-col gap-5 rounded-2xl border bg-card p-6',
-              tier.highlighted ? 'border-primary shadow-lg ring-1 ring-primary' : 'border-border',
-            )}
-          >
+          <TicketCard key={i} emphasis={tier.highlighted ? 'highlighted' : 'plain'}>
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold">{tier.name}</span>
                 {tier.highlighted ? (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-primary-foreground">
+                  <Badge tone="solid" size="flag">
                     Popular
-                  </span>
+                  </Badge>
                 ) : null}
               </div>
               <div className="flex items-baseline gap-1.5">
@@ -76,7 +69,7 @@ export function Tickets({ id, heading, tiers }: TicketsProps) {
             <Button asChild variant={tier.highlighted ? 'default' : 'outline'} className="w-full">
               <a href={tier.cta.href}>{tier.cta.label}</a>
             </Button>
-          </div>
+          </TicketCard>
         ))}
       </Reveal>
     </section>

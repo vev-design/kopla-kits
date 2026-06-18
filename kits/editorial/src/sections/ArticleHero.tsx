@@ -1,5 +1,6 @@
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
+import { Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -48,20 +49,13 @@ export function ArticleHero({
       </Reveal>
       {image ? (
         <Reveal className="mx-auto mt-14 w-full max-w-6xl px-6">
-          <figure className="w-full">
-            <div className="aspect-[16/9] w-full overflow-hidden rounded-md bg-muted">
-              <img
-                src={image}
-                alt={caption ?? ''}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            {caption ? (
-              <figcaption className="mt-3 font-sans text-sm text-muted-foreground">
-                {caption}
-              </figcaption>
-            ) : null}
-          </figure>
+          <Figure ratio="wide" caption={caption}>
+            <img
+              src={image}
+              alt={caption ?? ''}
+              className="h-full w-full object-cover"
+            />
+          </Figure>
         </Reveal>
       ) : null}
     </section>
