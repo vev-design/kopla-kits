@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button, Eyebrow } from '@/components';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -42,11 +42,7 @@ export function Newsletter({
       className="w-full border-y border-border bg-secondary px-6 py-20 md:py-28"
     >
       <Reveal className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-        {eyebrow ? (
-          <p className="font-sans text-xs font-semibold tracking-[0.24em] text-primary uppercase">
-            {eyebrow}
-          </p>
-        ) : null}
+        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
         <h2 className="mt-4 font-serif text-4xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
           {headline}
         </h2>

@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/Badge';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -59,11 +60,7 @@ export function Hero({
     >
       <div className="mx-auto w-full max-w-5xl px-6 pt-24 pb-16 text-center md:pt-32">
         <Reveal className="flex flex-col items-center gap-6">
-          {eyebrow ? (
-            <span className="inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-xs font-medium tracking-wide text-accent-foreground">
-              {eyebrow}
-            </span>
-          ) : null}
+          {eyebrow ? <Badge variant="outline">{eyebrow}</Badge> : null}
           <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-balance md:text-6xl">
             {headline}
           </h1>

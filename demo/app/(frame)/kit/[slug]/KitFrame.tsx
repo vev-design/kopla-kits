@@ -87,11 +87,21 @@ export function KitFrame({ slug }: { slug: string }) {
 
   return (
     <>
-      {sections.map(({ name, component, demo }) => (
-        <SectionBoundary key={name} name={name}>
-          {createElement(component, { id: name.toLowerCase(), ...(demo ?? {}) })}
-        </SectionBoundary>
-      ))}
+      {sections.flatMap(({ name, component, demo }) => {
+        // A `<Name>Demo` may be a single props object OR an array of instances
+        // (e.g. ImageText shown twice with the media on alternating sides) —
+        // mirror extract-design's collectDemo and render one section per entry.
+        const instances = Array.isArray(demo) ? demo : [demo ?? {}];
+        const base = name.toLowerCase();
+        return instances.map((props, i) => (
+          <SectionBoundary key={`${name}-${i}`} name={name}>
+            {createElement(component, {
+              id: instances.length > 1 ? `${base}-${i}` : base,
+              ...(props as Record<string, unknown>),
+            })}
+          </SectionBoundary>
+        ));
+      })}
     </>
   );
 }

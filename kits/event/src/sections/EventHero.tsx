@@ -1,5 +1,5 @@
 import { Reveal } from '@/motion';
-import { Button } from '@/components/ui/button';
+import { Badge, Button } from '@/components';
 import { Calendar, MapPin } from 'lucide-react';
 import type { SectionBaseProps } from '@/types';
 
@@ -61,9 +61,9 @@ export function EventHero({
       />
       <Reveal className="relative flex max-w-3xl flex-col items-center gap-6">
         {eyebrow ? (
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <Badge tone="soft" size="kicker">
             {eyebrow}
-          </span>
+          </Badge>
         ) : null}
         <h1 className="font-display text-6xl font-bold leading-[0.95] tracking-tight text-balance md:text-8xl">
           {title}

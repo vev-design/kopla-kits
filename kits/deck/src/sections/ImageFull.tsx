@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
+import { Eyebrow } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -70,11 +71,7 @@ export function ImageFull({
       >
         <div className="max-w-3xl">
           <Reveal>
-            {eyebrow ? (
-              <p className="mb-5 text-xs font-semibold tracking-[0.28em] text-primary uppercase">
-                {eyebrow}
-              </p>
-            ) : null}
+            {eyebrow ? <Eyebrow className="mb-5">{eyebrow}</Eyebrow> : null}
           </Reveal>
           <Reveal transition={{ delay: 0.06 }}>
             <h2 className="font-display text-4xl font-bold tracking-tight text-balance md:text-7xl">

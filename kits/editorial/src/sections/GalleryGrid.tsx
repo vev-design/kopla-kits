@@ -1,5 +1,6 @@
 import { Reveal, Stagger } from '@/motion';
 import { cn } from '@/lib/utils';
+import { Eyebrow, Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -39,11 +40,7 @@ export function GalleryGrid({
       <div className="mx-auto w-full max-w-6xl px-6">
         {kicker || heading ? (
           <Reveal className="mb-10 max-w-2xl">
-            {kicker ? (
-              <p className="font-sans text-xs font-semibold tracking-[0.24em] text-primary uppercase">
-                {kicker}
-              </p>
-            ) : null}
+            {kicker ? <Eyebrow>{kicker}</Eyebrow> : null}
             {heading ? (
               <h2 className="mt-3 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-foreground md:text-4xl">
                 {heading}
@@ -58,20 +55,13 @@ export function GalleryGrid({
           )}
         >
           {items.map((item, i) => (
-            <figure key={i} className="w-full">
-              <div className="aspect-[3/4] w-full overflow-hidden rounded-md bg-muted">
-                <img
-                  src={item.image}
-                  alt={item.caption ?? ''}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              {item.caption ? (
-                <figcaption className="mt-3 font-sans text-sm text-muted-foreground">
-                  {item.caption}
-                </figcaption>
-              ) : null}
-            </figure>
+            <Figure key={i} ratio="portrait" caption={item.caption}>
+              <img
+                src={item.image}
+                alt={item.caption ?? ''}
+                className="h-full w-full object-cover"
+              />
+            </Figure>
           ))}
         </Stagger>
       </div>

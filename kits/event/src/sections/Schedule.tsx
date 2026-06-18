@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -44,9 +45,9 @@ export function Schedule({ id, heading, sessions }: ScheduleProps) {
               ) : null}
             </div>
             {s.track ? (
-              <span className="w-fit rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              <Badge tone="soft" size="tag" className="w-fit">
                 {s.track}
-              </span>
+              </Badge>
             ) : null}
           </li>
         ))}

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
+import { Eyebrow } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -42,11 +43,7 @@ export function StatBig({ id, eyebrow, value, label, support }: StatBigProps) {
       />
       <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center">
         <Reveal>
-          {eyebrow ? (
-            <p className="mb-8 text-xs font-semibold tracking-[0.28em] text-primary uppercase">
-              {eyebrow}
-            </p>
-          ) : null}
+          {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
         </Reveal>
         <motion.span
           style={{ scale, opacity }}

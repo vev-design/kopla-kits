@@ -12,7 +12,9 @@ version and upgrade deliberately.
 - Kits should only **add** files (sections + `globals.css` + README).
   Shadowing a `_base` file is technically supported by the overlay
   merge but discouraged: the demo's import resolver and humans both
-  assume `_base` files mean what they say.
+  assume `_base` files mean what they say. The one deliberate exception
+  is `src/components/` (see **Components**) — a kit owns its component
+  catalog there, including its own `src/components/index.ts`.
 - `_base` intentionally ships `.gitignore` as part of the workspace
   (the workspace is itself a git repo). This is why the published
   artifact is a JSON bundle, not an npm-packed file tree — `npm pack`
@@ -64,6 +66,54 @@ page agents) can only pick what the kit author enumerated.
 - Blocks must stay static (no client JS) unless documented otherwise; a
   section hosting a block that animates or hydrates must carry the
   `@hydrate` tag itself.
+
+## Components
+
+Alongside sections, a kit declares a **component catalog** — the reusable
+primitives a system is built from (Button, Badge, Card, …), distinct from
+page sections. Consumers (the Kopla editor's component canvas) surface these
+in their own view; a kit with no catalog leaves that view empty.
+
+Components are **design-system identity**, so a kit **owns its catalog**:
+
+- `_base` ships a minimal, unopinionated, **token-themed default layer**
+  (`Button` today). These are defaults — the floor that guarantees every kit
+  renders and gives sections something to import — not a mandate to use them
+  as-is.
+- A kit owns **`src/components/index.ts`** (the sibling of the sections
+  barrel; it **shadows** `_base`'s). It re-exports the `_base` defaults the
+  kit adopts and adds the kit's own primitives:
+
+  ```ts
+  // <kit> catalog: _base defaults this kit uses + its own primitives.
+  export * from '@/components/ui/button'; // a _base default (resolved via the overlay)
+  export * from './Badge';                // kit-owned
+  export * from './Card';                 // kit-owned
+  ```
+
+  Export order is catalog order. A kit may also **shadow** a `_base` primitive
+  (e.g. its own `Button`) by adding the file — the catalog reflects whatever
+  the assembled `src/components/index.ts` re-exports.
+- Each component is a named React component with a typed `*Props` interface,
+  authored like a section (JSDoc → description, JSDoc per prop → prop docs,
+  `@kind` overrides, `@hydrate` opt-in). **Declare variant axes as explicit
+  string-union props** (e.g. `variant?: 'default' | 'outline'`) — the extractor
+  turns each enum prop into a variant axis for the canvas matrix, so don't hide
+  them behind a library generic (`VariantProps<…>`).
+- Components must stay **token-themed**: style them with the same token-backed
+  utilities sections use (`bg-primary`, `border`, `rounded-*`, `font-*`, …) so a
+  component renders in each system's own look with no per-system code. Extracting
+  an inline primitive into a component must not change its rendered classes —
+  the system looks exactly as it did before.
+- Provide a sibling **`<Name>Showcase`** export — an array of `{ props, label? }`
+  static object literals (the analogue of a section's `<Name>Demo`) naming the
+  states worth previewing. The extractor reads literals only.
+- `extract-design.mjs` reads the assembled `src/components/index.ts` and emits
+  `design.json.components[]` (`ComponentDefinition`: `name`/`description`/`props`/
+  `origin`/`axes?`/`showcase?`/`hydrate?`), with `origin` always
+  `{ kind: 'generated' }`. Components live in their own barrel, so `sections` and
+  the composition chain are unaffected. The field is omitted when a kit exports
+  no components.
 
 ## Toolchain contract
 

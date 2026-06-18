@@ -1,3 +1,4 @@
+import { Badge } from '@/components';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -24,10 +25,9 @@ export function Intro({ id, name, role, statement, availability }: IntroProps) {
     >
       <Reveal className="flex flex-col gap-6">
         {availability ? (
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-primary" />
+          <Badge size="xs" dot>
             {availability}
-          </span>
+          </Badge>
         ) : null}
         <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-7xl">
           {name}

@@ -30,6 +30,7 @@ import { collectTokensFromCss } from './lib/tokens.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SECTIONS_INDEX = resolve(ROOT, 'src/sections/index.ts');
+const COMPONENTS_INDEX = resolve(ROOT, 'src/components/index.ts');
 const README = resolve(ROOT, 'README.md');
 const GLOBALS_CSS = resolve(ROOT, 'src/globals.css');
 const DESIGN_JSON = resolve(ROOT, 'design.json');
@@ -38,7 +39,7 @@ const SPECIALIZED_STRING_KINDS = new Set(['url', 'image', 'richtext']);
 
 function main() {
   const program = ts.createProgram({
-    rootNames: [SECTIONS_INDEX],
+    rootNames: [SECTIONS_INDEX, COMPONENTS_INDEX],
     options: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.ESNext,
@@ -74,6 +75,7 @@ function main() {
   const demo = collectDemo(sections);
   const chain = sections.map((s) => s.name).join(' → ');
   const tokens = collectTokens();
+  const components = collectComponents(program, checker);
 
   const designJson = {
     name: readmeInfo.name,
@@ -90,6 +92,11 @@ function main() {
     })),
     recommendedOrder: { chain, rationale: readmeInfo.compositionRationale },
     demo,
+    // Optional: the reusable-component catalog (Button, …) from
+    // src/components/index.ts. Present only when the kit exports components, so
+    // section-only kits are unchanged. Mirrors the @kopla/types
+    // ComponentDefinition contract the editor's component canvas consumes.
+    ...(components.length > 0 ? { components } : {}),
     // Optional: present only when globals.css yields a `:root` token block.
     // Mirrors the kit's CSS custom properties so the host / future theming
     // can read tokens without re-parsing CSS.
@@ -102,9 +109,14 @@ function main() {
         Object.keys(tokens.base).length === 1 ? '' : 's'
       }${tokens.dark ? ' (+dark)' : ''}`
     : '';
+  const componentNote = components.length
+    ? `, ${components.length} component${components.length === 1 ? '' : 's'} (${components
+        .map((c) => c.name)
+        .join(', ')})`
+    : '';
   console.log(
     `extract-design: ${sections.length} section${sections.length === 1 ? '' : 's'} ` +
-      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${tokenNote}`,
+      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${componentNote}${tokenNote}`,
   );
 }
 
@@ -162,6 +174,115 @@ function collectSections(indexSource, checker, program) {
   // Preserve declaration order from src/sections/index.ts — that order
   // is the recommended composition chain.
   return sections;
+}
+
+// ── Components ────────────────────────────────────────────────────────
+// The reusable-primitive catalog (Button, Card, …), read from
+// `src/components/index.ts` — the sibling of the sections barrel. Mirrors
+// `collectSections` (typed `*Props` → schema, JSDoc → description) but emits
+// the @kopla/types ComponentDefinition shape: enum props become variant `axes`
+// for the editor's component canvas, a sibling `<Name>Showcase` literal seeds
+// `showcase`, and `origin` is always `generated` (kits author their own; Figma
+// provenance only exists in agent runs). Components live in their own barrel,
+// so the section list + composition chain are untouched.
+
+function collectComponents(program, checker) {
+  const indexSource = program.getSourceFile(COMPONENTS_INDEX);
+  if (!indexSource) return [];
+  const moduleSymbol = checker.getSymbolAtLocation(indexSource);
+  if (!moduleSymbol) return [];
+  const exports = checker.getExportsOfModule(moduleSymbol);
+
+  const components = [];
+  for (const exp of exports) {
+    if (!/^[A-Z]/.test(exp.name)) continue;
+    // *Showcase feeds `showcase`; *Demo/*Props aren't components themselves.
+    if (exp.name.endsWith('Showcase') || exp.name.endsWith('Demo') || exp.name.endsWith('Props')) {
+      continue;
+    }
+
+    let target = exp;
+    if (target.flags & ts.SymbolFlags.Alias) target = checker.getAliasedSymbol(target);
+    const decl = target.valueDeclaration ?? target.declarations?.[0];
+    if (!decl) continue;
+    const signatureNode = resolveSignatureNode(decl);
+    if (!signatureNode || signatureNode.parameters.length === 0) continue;
+    // The barrel can also re-export styling helpers (e.g. cva `buttonVariants`)
+    // — keep only functions that actually render React content.
+    if (!signatureReturnsReactContent(signatureNode, checker)) continue;
+
+    const propsType = resolvePropsTypeAtSignature(signatureNode, checker);
+    if (!propsType) continue;
+    const description = readPropsInterfaceJSDoc(propsType, checker) ?? '';
+    const props = propsTypeToSchema(propsType, checker);
+    const hydrate = sectionNeedsHydration(decl, propsType, checker);
+    const axes = deriveAxesFromProps(props);
+    const showcase = collectComponentShowcase(decl, exp.name);
+    components.push({
+      name: exp.name,
+      description,
+      props,
+      origin: { kind: 'generated' },
+      ...(axes.length > 0 ? { axes } : {}),
+      ...(showcase.length > 0 ? { showcase } : {}),
+      ...(hydrate ? { hydrate: true } : {}),
+    });
+  }
+  return components;
+}
+
+/** Does this function's return type render React content (JSX), as opposed to a
+ *  cva/util helper that returns a string/object? */
+function signatureReturnsReactContent(signatureNode, checker) {
+  const sig = checker.getSignatureFromDeclaration(signatureNode);
+  if (!sig) return false;
+  const ret = checker.getReturnTypeOfSignature(sig);
+  if (isReactContentType(ret)) return true;
+  // Inferred JSX / `Element | null` unions read cleanest off the string form.
+  return /\b(?:JSX\.Element|ReactElement|ReactNode|Element)\b/.test(checker.typeToString(ret));
+}
+
+/** Each enum prop (optionally wrapped nullable when the prop is `?:`) becomes a
+ *  variant axis the component canvas lays out. */
+function deriveAxesFromProps(props) {
+  const axes = [];
+  for (const [name, type] of Object.entries(props ?? {})) {
+    const t = type && type.kind === 'nullable' ? type.of : type;
+    if (t && t.kind === 'enum' && Array.isArray(t.values) && t.values.length > 0) {
+      axes.push({ name, values: t.values });
+    }
+  }
+  return axes;
+}
+
+/** Read a component's sibling `<Name>Showcase` export — an array of
+ *  `{ props, label? }` static literals — into ComponentInstance[]. The analogue
+ *  of `collectDemo` for sections; reads the same source file the component is
+ *  declared in. */
+function collectComponentShowcase(decl, name) {
+  const sourceFile = decl.getSourceFile?.();
+  if (!sourceFile) return [];
+  const initializer = findExportedConstInitializer(sourceFile, `${name}Showcase`);
+  if (!initializer || !ts.isArrayLiteralExpression(initializer)) return [];
+  const out = [];
+  for (const elem of initializer.elements) {
+    if (!ts.isObjectLiteralExpression(elem)) continue;
+    // Showcase entries are static data (like a section's *Demo). A non-literal
+    // value — e.g. a JSX node passed to a `children` slot — can't be serialized;
+    // skip it with a warning rather than failing the whole build.
+    let value;
+    try {
+      value = literalToValue(elem);
+    } catch {
+      console.warn(
+        `extract-design: ${name}Showcase entry is not a static literal — skipping it. ` +
+          `Showcase props must be plain data (no JSX/identifiers/calls).`,
+      );
+      continue;
+    }
+    if (value && typeof value === 'object' && 'props' in value) out.push(value);
+  }
+  return out;
 }
 
 function resolveSignatureNode(decl) {
