@@ -63,6 +63,15 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: REPO_ROOT,
   turbopack: { root: REPO_ROOT },
   experimental: { externalDir: true },
+  // The demo imports kit SOURCE through the per-kit overlay resolver below
+  // (mirrors { ..._base, ...<kit> }). TypeScript's static path mapping
+  // (`@/*` → one location) can't model that — multiple kits each own a
+  // `components/index.ts`, `Badge`, etc. — so `next build`'s type-check can't
+  // resolve kit-owned `@/components/*` imports even though webpack resolves
+  // them at runtime. Kits are type-checked authoritatively by the `kits` CI
+  // job (build-kit.mjs --all assembles each kit + runs `tsc --noEmit`); the
+  // demo only needs to bundle and render them, so skip type-checking here.
+  typescript: { ignoreBuildErrors: true },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack(config: any) {
     config.resolve ??= {};
