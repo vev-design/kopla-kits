@@ -4,4 +4,5 @@
 // narrows the union to the kinds it accepts. See CONTRACT.md.
 export * from './Image';
 export * from './Chart';
+export * from './Video';
 export * from './Media';

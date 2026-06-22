@@ -54,7 +54,7 @@ page agents) can only pick what the kit author enumerated.
 - **Block slots** — a prop typed as a discriminated union of block
   props from `_base`'s `@/components/blocks` (discriminant: the literal
   `kind` field). Blocks are _base-owned, token-themed content units
-  (`image`, `chart` today; video, form, … later). A section narrows the
+  (`image`, `video`, `chart` today; form, … later). A section narrows the
   union to exactly the kinds it can host —
   `media: ImageBlockProps | ChartBlockProps` — and renders the slot with
   `<MediaBlock media={…} />` (or the individual block components).

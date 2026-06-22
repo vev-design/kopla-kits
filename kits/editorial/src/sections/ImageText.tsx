@@ -1,7 +1,7 @@
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import { MediaBlock } from '@/components/blocks';
-import type { ChartBlockProps, ImageBlockProps } from '@/components/blocks';
+import type { ChartBlockProps, ImageBlockProps, VideoBlockProps } from '@/components/blocks';
 import { Eyebrow, Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
@@ -21,12 +21,12 @@ export interface ImageTextProps extends SectionBaseProps {
   /** Body copy for this beat. 2–4 sentences, 50–110 words. */
   body: string;
   /**
-   * What fills the media column: a photograph (`kind: 'image'`) or a
-   * small data chart (`kind: 'chart'`) when the beat makes a numeric
-   * point. Prefer photographs; reach for a chart only when the body
-   * copy cites figures the reader should see.
+   * What fills the media column: a photograph (`kind: 'image'`), a video
+   * clip (`kind: 'video'`), or a small data chart (`kind: 'chart'`) when
+   * the beat makes a numeric point. Prefer photographs; reach for a chart
+   * only when the body copy cites figures the reader should see.
    */
-  media: ImageBlockProps | ChartBlockProps;
+  media: ImageBlockProps | VideoBlockProps | ChartBlockProps;
   /** Caption under the media. 1 sentence, 5–16 words, no trailing period. */
   caption?: string | null;
   /** Which side the media sits on. `image-left` puts it first; `image-right` puts the text first. */
@@ -96,5 +96,19 @@ export const ImageTextDemo: ImageTextProps[] = [
     },
     caption: 'Subscriber renewal rate by year, percent',
     variant: 'image-right',
+  },
+  {
+    kicker: 'The Room',
+    heading: 'Read aloud before it ships',
+    body: 'Every feature is read to the room before it runs — a habit borrowed from radio more than print. Sentences that stumble out loud get cut, and the piece that reaches you has already survived an audience of its hardest readers. The recording below is one such session, lightly edited.',
+    media: {
+      kind: 'video',
+      src: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4',
+      poster:
+        'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=1200&q=80',
+      title: 'An editor reading a draft aloud to the newsroom',
+    },
+    caption: 'A read-aloud session in the main room',
+    variant: 'image-left',
   },
 ];
