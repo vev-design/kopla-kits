@@ -1,0 +1,14 @@
+{
+  "name": "Finance",
+  "description": "A data-forward fintech system: crisp light neutrals, a trustworthy emerald accent, and tabular mono figures. Charts are first-class, from the hero down to a dedicated performance band.",
+  "whenToUse": "Pick for a trustworthy money product: investing apps, digital banks, wealth and brokerage platforms, treasury and payments dashboards, fintech marketing sites. The chain is built to earn confidence with numbers — sticky navbar, value-led hero with a portfolio chart, a row of trust metrics, a capability grid, a charts-led performance band, a sober security-and-compliance section, transparent pricing, a closing account-opening CTA, and a footer with a legal disclaimer. The tone is precise, calm, and credible: light crisp surfaces, deep ink type, one confident emerald-teal accent, and a JetBrains Mono voice for all figures so data reads as data. Not for playful consumer brands, dark dramatic presentations, editorial longform, or portfolios.",
+  "tags": [
+    "Finance",
+    "Fintech",
+    "Banking"
+  ],
+  "featured": false,
+  "order": 90,
+  "accent": "#0E8C6A",
+  "thumbnail": "/kit-thumbnails/finance.svg"
+}

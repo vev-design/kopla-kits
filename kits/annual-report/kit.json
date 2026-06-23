@@ -1,0 +1,14 @@
+{
+  "name": "Annual Report",
+  "description": "A refined, authoritative system for a company's yearly report: serif display headlines, oversized figures, and financial charts on a crisp neutral-paper canvas with a sober deep-navy accent.",
+  "whenToUse": "Pick for reporting results to stakeholders: annual and yearly reports, investor updates, year-in-review documents, impact and sustainability reports, shareholder letters. The chain is a complete scroll-driven report narrative — a serif title page, a letter from leadership, oversized animated key figures, financial charts, segment performance, a year-in-review timeline, forward-looking outlook, and a closing sign-off. Light, serious, data-rich, and editorial-corporate: deep navy on neutral paper, serif gravitas for headlines and big numbers, clean sans for body. Avoid for dark dramatic pitch decks, longform magazine reading, playful consumer brands, or conversion-focused product marketing.",
+  "tags": [
+    "Report",
+    "Annual",
+    "Corporate"
+  ],
+  "featured": false,
+  "order": 100,
+  "accent": "#1E3A5F",
+  "thumbnail": "/kit-thumbnails/annual-report.svg"
+}

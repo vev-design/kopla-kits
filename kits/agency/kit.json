@@ -1,0 +1,14 @@
+{
+  "name": "Agency",
+  "description": "A brutalist-modern system for creative studios: bone canvas, near-black ink, one electric cobalt accent, oversized display type and hairline grid rules. Built for agency sites, studio portfolios, and case-study pages.",
+  "whenToUse": "Pick for a confident creative or digital agency, design studio, or production house: a type-led homepage, selected-work case studies, a capabilities list, and a bold project enquiry. The voice is editorial and brutalist-modern — oversized tight-tracked display type, monospace index labels, hairline grid borders, near-square corners, and a single electric cobalt accent on a bone off-white canvas. It reads loud and self-assured, the opposite of a soft corporate SaaS page or a quiet warm portfolio. Avoid for longform reading, dashboards, e-commerce catalogs, or any product that needs a calm, trustworthy, low-contrast tone.",
+  "tags": [
+    "Agency",
+    "Studio",
+    "Creative"
+  ],
+  "featured": false,
+  "order": 70,
+  "accent": "#2F4BFF",
+  "thumbnail": "/kit-thumbnails/agency.svg"
+}
