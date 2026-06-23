@@ -1,0 +1,15 @@
+{
+  "name": "AI Product",
+  "description": "The classic dark developer-platform look — near-black canvas, white primary action, and an electric iris accent for glows and gradients. Geist type, faint grid backgrounds, and a full landing chain for AI products, model labs, and dev tools.",
+  "whenToUse": "Pick for marketing an AI or developer product: model APIs, inference platforms, agent frameworks, dev tools, infrastructure, and technical SaaS that wants the Vercel / Linear / model-lab aesthetic. The chain is a complete conversion narrative — sticky navbar, glowing benefit hero with a product screenshot, logo cloud for social proof, capability grid, customer quote, usage-based pricing, closing CTA, footer. Dark by design: neutral near-black, Geist sans + mono, monospace eyebrows, faint grids, and one iris accent reserved for emphasis. Reads as a serious technical product. Avoid for light/airy brands, longform editorial, print-like reports, events, or anything that should not feel dark and engineered.",
+  "tags": [
+    "AI",
+    "Dark",
+    "Developer",
+    "Product"
+  ],
+  "featured": true,
+  "order": 15,
+  "accent": "#8B5CF6",
+  "thumbnail": "/kit-thumbnails/ai-product.svg"
+}

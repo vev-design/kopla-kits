@@ -97,7 +97,7 @@ export function Cover({
             <span />
           )}
           <Reveal transition={{ delay: 0.16 }}>
-            <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground/70">
+            <Badge variant="outline" className="border-primary-foreground/30 bg-transparent text-primary-foreground/70">
               {year}
             </Badge>
           </Reveal>
