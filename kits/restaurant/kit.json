@@ -1,0 +1,14 @@
+{
+  "name": "Restaurant",
+  "description": "A warm, moody fine-dining design system: deep espresso canvas, cream type, and a refined gold accent under a Playfair Display serif. A complete restaurant page from sticky navbar to footer.",
+  "whenToUse": "Pick for hospitality and fine dining: restaurant sites, tasting-menu pages, chef's-table or supper-club microsites, wine bars, and intimate eatery launches. The chain is a complete restaurant narrative — sticky navbar with a reserve action, a full-bleed atmospheric hero, the menu as the centerpiece, a chef/story image-text, a dish-and-interior gallery, opening hours with address, a closing reservation CTA, and a footer. The look is dark and warm — espresso background, cream foreground, gold accent, serif display — so it reads candle-lit and considered. Avoid for bright SaaS marketing, dashboards, technical docs, or anything that needs a light, neutral, product-led feel.",
+  "tags": [
+    "Restaurant",
+    "Hospitality",
+    "Menu"
+  ],
+  "featured": false,
+  "order": 60,
+  "accent": "#C8A24A",
+  "thumbnail": "/kit-thumbnails/restaurant.svg"
+}

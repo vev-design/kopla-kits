@@ -1,0 +1,14 @@
+{
+  "name": "Wellness",
+  "description": "A serene, soft wellness system for yoga, spa, and studio brands: warm cream canvas, a calm sage-green accent, generous whitespace, and large rounded forms. A full studio page chain from navbar to footer.",
+  "whenToUse": "Pick for calm, restorative brands: yoga and pilates studios, spas, meditation and breathwork practices, retreats, wellness coaches, and holistic clinics. The chain is a complete studio narrative — soft navbar, spacious hero, class offerings, a philosophy image-text, a weekly schedule, membership tiers, a warm member quote, a gentle closing CTA, and a footer with hours and location. The look is light and airy with a muted sage accent, large pill-soft radii, and an elegant serif paired with a humanist sans — it reads as tranquil and human, not corporate. Avoid for high-energy commerce, dense dashboards, dark dramatic decks, or hard-edged tech products.",
+  "tags": [
+    "Wellness",
+    "Yoga",
+    "Spa"
+  ],
+  "featured": false,
+  "order": 80,
+  "accent": "#6B8F71",
+  "thumbnail": "/kit-thumbnails/wellness.svg"
+}
