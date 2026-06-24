@@ -275,7 +275,6 @@ body {
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  margin: 8px 8px 0;
   border-radius: calc(var(--radius-lg) - 9px);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--kit-accent, var(--accent)) 8%, var(--bg));
