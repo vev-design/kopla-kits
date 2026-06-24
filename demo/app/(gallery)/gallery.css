@@ -1,20 +1,99 @@
 /* Gallery chrome — plain CSS on purpose (the Tailwind pipeline belongs
-   to the kits; the gallery shouldn't compete for it). Kopla visual
-   rules: near-black on near-white, one accent, 1px borders, 12px radius. */
+   to the kits; the gallery shouldn't compete for it). Styled to echo the
+   Kopla app: a soft pastel mesh gradient, glassy cards, generous radii,
+   one iris accent, black pill controls.
+
+   Theming: tokens live on :root (light). Dark is applied two ways that
+   resolve to the same variables —
+     1. the OS preference, when the user hasn't pinned a theme
+        (html has no data-theme), via prefers-color-scheme; and
+     2. an explicit choice, via html[data-theme="dark"].
+   The toggle in ThemeToggle.tsx sets/clears data-theme; the inline script
+   in layout.tsx replays it before paint to avoid a flash. */
 
 :root {
   --accent: #5b5bd6;
-  --fg: #17171c;
+  --accent-soft: #8b8bf0;
+  --fg: #15151b;
   --fg-muted: #6b6b76;
-  --bg: #fcfcfd;
-  --card: #ffffff;
-  --border: #e7e7ec;
-  --radius-lg: 12px;
-  --t: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --bg: #fbfbfd;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-hover: rgba(255, 255, 255, 0.9);
+  --border: rgba(20, 20, 35, 0.09);
+  --border-strong: rgba(20, 20, 35, 0.14);
+  --chip: rgba(20, 20, 35, 0.04);
+  --shadow: 0 1px 2px rgb(20 20 35 / 0.04), 0 12px 32px rgb(20 20 35 / 0.07);
+  --shadow-hover: 0 2px 6px rgb(20 20 35 / 0.06), 0 24px 56px rgb(20 20 35 / 0.13);
+  --btn-fg: #ffffff;
+  --btn-bg: #15151b;
+
+  /* Mesh blobs — pastel lavender / pink / sky, the Kopla login palette. */
+  --mesh-1: rgba(139, 139, 240, 0.5);
+  --mesh-2: rgba(244, 173, 224, 0.45);
+  --mesh-3: rgba(150, 197, 255, 0.5);
+  --mesh-4: rgba(196, 181, 253, 0.4);
+  --mesh-base: #f4f3fb;
+
+  --radius-sm: 9px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --t: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --accent: #8b8bf0;
+    --accent-soft: #a9a9f7;
+    --fg: #f3f3f7;
+    --fg-muted: #9a9aa8;
+    --bg: #0a0a0e;
+    --card: rgba(255, 255, 255, 0.045);
+    --card-hover: rgba(255, 255, 255, 0.075);
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --chip: rgba(255, 255, 255, 0.06);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
+    --shadow-hover: 0 2px 6px rgb(0 0 0 / 0.5), 0 28px 64px rgb(0 0 0 / 0.6);
+    --btn-fg: #15151b;
+    --btn-bg: #f3f3f7;
+
+    --mesh-1: rgba(91, 91, 214, 0.42);
+    --mesh-2: rgba(180, 90, 200, 0.32);
+    --mesh-3: rgba(60, 110, 220, 0.4);
+    --mesh-4: rgba(120, 90, 230, 0.34);
+    --mesh-base: #0a0a0e;
+  }
+}
+
+[data-theme='dark'] {
+  --accent: #8b8bf0;
+  --accent-soft: #a9a9f7;
+  --fg: #f3f3f7;
+  --fg-muted: #9a9aa8;
+  --bg: #0a0a0e;
+  --card: rgba(255, 255, 255, 0.045);
+  --card-hover: rgba(255, 255, 255, 0.075);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --chip: rgba(255, 255, 255, 0.06);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.45);
+  --shadow-hover: 0 2px 6px rgb(0 0 0 / 0.5), 0 28px 64px rgb(0 0 0 / 0.6);
+  --btn-fg: #15151b;
+  --btn-bg: #f3f3f7;
+
+  --mesh-1: rgba(91, 91, 214, 0.42);
+  --mesh-2: rgba(180, 90, 200, 0.32);
+  --mesh-3: rgba(60, 110, 220, 0.4);
+  --mesh-4: rgba(120, 90, 230, 0.34);
+  --mesh-base: #0a0a0e;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
@@ -23,32 +102,149 @@ body {
   color: var(--fg);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Fixed pastel mesh behind everything — soft radial blobs over a flat
+   base, the Kopla app's signature backdrop. Sits below content via z-index. */
+.mesh {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(42% 50% at 18% 8%, var(--mesh-1), transparent 70%),
+    radial-gradient(38% 44% at 88% 14%, var(--mesh-2), transparent 70%),
+    radial-gradient(46% 52% at 78% 88%, var(--mesh-3), transparent 72%),
+    radial-gradient(40% 46% at 8% 82%, var(--mesh-4), transparent 70%),
+    var(--mesh-base);
+  background-attachment: fixed;
 }
 
 .gallery {
-  max-width: 1200px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 56px 24px 96px;
+  padding: 22px 24px 110px;
 }
 
-.gallery__header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 0 0 8px;
+/* Top bar — brand on the left; MCP endpoint, repo link, and theme
+   toggle on the right. The grid sits directly beneath it. */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 6px 0 40px;
 }
 
-.gallery__header p {
-  color: var(--fg-muted);
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   font-size: 15px;
-  line-height: 1.5;
-  max-width: 560px;
-  margin: 0 0 40px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pill controls — share the glassy treatment of the theme toggle. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  text-decoration: none;
+  background: var(--card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 13px;
+  transition: border-color var(--t), background var(--t), transform var(--t);
+}
+
+.pill:hover {
+  border-color: var(--border-strong);
+  background: var(--card-hover);
+}
+
+.pill:active {
+  transform: scale(0.97);
+}
+
+.pill code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  color: var(--fg);
+}
+
+.pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.pill--icon {
+  padding: 8px;
+  color: var(--fg-muted);
+}
+
+.pill--icon:hover {
+  color: var(--fg);
+}
+
+.topbar__mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft) 45%, #f4adE0 110%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25), 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 13px 7px 11px;
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t), transform var(--t);
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-strong);
+  background: var(--card-hover);
+}
+
+.theme-toggle:active {
+  transform: scale(0.97);
+}
+
+.theme-toggle__icon {
+  display: inline-flex;
+  color: var(--accent);
 }
 
 .gallery__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 24px;
 }
 
@@ -56,29 +252,36 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--card);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+  box-shadow: var(--shadow);
+  transition: border-color var(--t), box-shadow var(--t), transform var(--t), background var(--t);
 }
 
 .card:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  box-shadow: 0 8px 24px rgb(23 23 28 / 0.08);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--kit-accent, var(--accent)) 55%, var(--border-strong));
+  background: var(--card-hover);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
 }
 
 /* Live preview: the iframe is 4× the container in both axes, scaled by
    ¼ — so the kit renders at a desktop-ish viewport width regardless of
-   card size, and the math holds at any container width. */
+   card size, and the math holds at any container width. A subtle accent
+   wash tints the empty frame area while the kit loads. */
 .card__preview {
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--kit-accent, var(--accent)) 6%, white);
+  margin: 8px 8px 0;
+  border-radius: calc(var(--radius-lg) - 9px);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--kit-accent, var(--accent)) 8%, var(--bg));
 }
 
 .card__preview iframe {
@@ -100,39 +303,55 @@ body {
 .card__title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
 .card__title-row h2 {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .card__swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 4px;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
 }
 
 .card__featured {
-  margin-left: auto;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, white);
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, white);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 2px 9px;
+}
+
+/* Arrow nudges in on hover — the "click through" affordance. */
+.card__arrow {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--fg-muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity var(--t), transform var(--t), color var(--t);
+}
+
+.card:hover .card__arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--kit-accent, var(--accent));
 }
 
 .card__body p {
   color: var(--fg-muted);
   font-size: 13.5px;
   line-height: 1.5;
-  margin: 8px 0 12px;
+  margin: 9px 0 13px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -149,16 +368,14 @@ body {
   font-size: 11.5px;
   font-weight: 500;
   color: var(--fg-muted);
+  background: var(--chip);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 2px 9px;
+  padding: 3px 10px;
 }
 
-.gallery__header code {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 13px;
-  background: #f1f1f5;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 1px 5px;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

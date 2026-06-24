@@ -13,14 +13,21 @@ export const metadata: Metadata = {
     'Design-system starting points for Kopla — full UI libraries with a theme and a curated section chain.',
 };
 
+// Applied before first paint so the chosen theme (or the OS preference) is
+// resolved without a flash. `data-theme` is one of "light" | "dark"; absent
+// means "follow the OS", which the CSS handles via prefers-color-scheme.
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('kopla-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+
 export default function GalleryLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
