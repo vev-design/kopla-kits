@@ -251,15 +251,12 @@ body {
 .card {
   display: flex;
   flex-direction: column;
-  background: var(--card);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  box-shadow: var(--shadow);
   transition: border-color var(--t), box-shadow var(--t), transform var(--t), background var(--t);
 }
 
