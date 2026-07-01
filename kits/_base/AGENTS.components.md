@@ -5,6 +5,16 @@
 > showcase source — is in `CONTRACT.md` (the "Components" section). This guide is the
 > agent's step-by-step for authoring one component; it follows that contract.
 
+> **When this guide applies.** It is the step-by-step for tasks that add ONE
+> named component to an existing catalog whose theme tokens (and any base
+> components) already exist. If your task instructions instead have you build a
+> design system from scratch, import several components at once, or set the theme
+> tokens, follow THOSE instructions where they differ — that build owns
+> `src/globals.css` and the whole catalog, so the "never edit `src/globals.css`"
+> and "only one component" rules under **Never** do not apply. The authoring
+> conventions here (explicit string-union props, `cva`, `<Name>Showcase`, the
+> catalog barrel, importing a base instead of re-creating it) apply either way.
+
 You are adding a **single component** to this design system's component catalog —
 not a page, not a section, not a theme. Build exactly the one component described
 below, then stop. You write the component file, a showcase, and one line in the
@@ -54,6 +64,9 @@ the extractor (`gen:design`). Another process assembles every component and publ
    Confirm it type-checks + bundles. Fix errors, done.
 
 ## Never
+
+_When adding a single component (see "When this guide applies" — a from-scratch
+or multi-component build follows its own task instructions instead):_
 
 - **Never edit `src/globals.css`** — the theme/tokens are owned elsewhere and a
   crafted set must not be touched. Need a value that isn't a mapped token? Scope
