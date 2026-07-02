@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
@@ -27,6 +28,10 @@ export interface ClosingCTAProps extends SectionBaseProps {
   } | null;
   /** Contact line under the CTA (e.g. an email or website). Max 40 characters. */
   contact?: string | null;
+  /** This slide's position in the deck, rendered as slide chrome — a mono "06 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
 export function ClosingCTA({
@@ -36,12 +41,15 @@ export function ClosingCTA({
   body,
   cta,
   contact,
+  progress,
+  footer,
 }: ClosingCTAProps) {
   return (
     <section
       id={id ?? undefined}
       className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-6 py-24 text-center md:px-16"
     >
+      <SlideChrome progress={progress} footer={footer} />
       <div
         aria-hidden
         className="pointer-events-none absolute -top-40 right-0 h-[34rem] w-[34rem] rounded-full bg-primary/15 blur-3xl"
@@ -89,4 +97,6 @@ export const ClosingCTADemo: ClosingCTAProps = {
   body: 'We are raising a $12M Series A to expand from utilities into construction, logistics, and emergency response.',
   cta: { label: 'Talk to us', href: '#' },
   contact: 'ada@northwind.io',
+  progress: { current: 6, total: 6 },
+  footer: 'Northwind — Series A',
 };

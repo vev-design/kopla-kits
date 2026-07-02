@@ -7,7 +7,7 @@ import type { SectionBaseProps } from '@/types';
  * personal counterpoint to the work grid.
  */
 export interface AboutProps extends SectionBaseProps {
-  /** Section heading. 1–3 words, e.g. "About". */
+  /** Section heading, set as an italic serif accent word. 1–3 words, e.g. "About". */
   heading: string;
   /** Bio. 2–4 sentences, 35–80 words. */
   bio: string;
@@ -19,7 +19,9 @@ export function About({ id, heading, bio, capabilities }: AboutProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-16 md:py-24">
       <Reveal className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.4fr] md:gap-16">
-        <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">{heading}</h2>
+        <h2 className="font-serif text-3xl font-medium italic tracking-tight text-primary md:text-4xl">
+          {heading}
+        </h2>
         <div className="flex flex-col gap-8">
           <p className="text-lg leading-relaxed text-foreground/80 text-pretty">{bio}</p>
           {capabilities && capabilities.length > 0 ? (

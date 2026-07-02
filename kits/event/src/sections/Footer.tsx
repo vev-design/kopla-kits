@@ -29,7 +29,7 @@ export function Footer({ id, name, detail, links, note }: FooterProps) {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
-            <span className="text-xl font-bold tracking-tight">{name}</span>
+            <span className="font-display text-xl uppercase tracking-tight">{name}</span>
             {detail ? <span className="text-sm text-muted-foreground">{detail}</span> : null}
           </div>
           {links && links.length > 0 ? (

@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from '@/components';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -25,6 +26,10 @@ export interface ImageFullProps extends SectionBaseProps {
   caption?: string | null;
   /** Where the overlaid text block sits over the image. */
   variant?: 'bottom-left' | 'bottom-center' | 'center';
+  /** This slide's position in the deck, rendered as slide chrome — a mono "04 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
 export function ImageFull({
@@ -34,6 +39,8 @@ export function ImageFull({
   heading,
   caption,
   variant = 'bottom-left',
+  progress,
+  footer,
 }: ImageFullProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -60,6 +67,7 @@ export function ImageFull({
         aria-hidden
         className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/10"
       />
+      <SlideChrome progress={progress} footer={footer} />
       <div
         className={cn(
           'relative mx-auto flex w-full max-w-6xl flex-col px-6 py-24 md:px-16',
@@ -106,6 +114,8 @@ export const ImageFullDemo: ImageFullProps[] = [
     caption:
       'Every crew, every job, every vehicle on one live map — updated the moment something changes on the ground.',
     variant: 'bottom-left',
+    progress: { current: 4, total: 6 },
+    footer: 'Northwind — Series A',
   },
   {
     image:
@@ -113,5 +123,7 @@ export const ImageFullDemo: ImageFullProps[] = [
     eyebrow: 'The market',
     heading: 'A trillion-dollar category still running on paper',
     variant: 'center',
+    progress: { current: 4, total: 6 },
+    footer: 'Northwind — Series A',
   },
 ];

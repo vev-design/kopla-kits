@@ -1,3 +1,4 @@
+import { Divider } from '@/components/Divider';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -34,6 +35,7 @@ export function Footer({ id, logo, address, hours, social, legal }: FooterProps)
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="flex flex-col items-center gap-8 text-center">
           <span className="font-serif text-2xl font-medium tracking-wide">{logo}</span>
+          <Divider className="max-w-[6rem]" />
           <div className="flex flex-col gap-1 text-sm text-muted-foreground">
             <p className="whitespace-pre-line">{address}</p>
             {hours ? <p>{hours}</p> : null}
@@ -43,7 +45,7 @@ export function Footer({ id, logo, address, hours, social, legal }: FooterProps)
               <li key={item.href}>
                 <a
                   href={item.href}
-                  className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-primary"
+                  className="text-xs font-medium uppercase tracking-eyebrow text-muted-foreground transition-colors hover:text-primary"
                 >
                   {item.label}
                 </a>

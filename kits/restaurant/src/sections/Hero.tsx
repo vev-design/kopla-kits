@@ -43,7 +43,7 @@ export function Hero({ id, overline, name, tagline, cta, image }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background" />
       <Reveal className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-32 text-center">
         {overline ? (
-          <p className="text-xs font-medium uppercase tracking-[0.32em] text-primary">
+          <p className="text-xs font-medium uppercase tracking-eyebrow text-primary">
             {overline}
           </p>
         ) : null}
@@ -52,7 +52,7 @@ export function Hero({ id, overline, name, tagline, cta, image }: HeroProps) {
         </h1>
         <Divider />
         {tagline ? (
-          <p className="max-w-xl text-lg text-muted-foreground text-pretty md:text-xl">
+          <p className="max-w-xl font-serif text-xl italic text-muted-foreground text-pretty md:text-2xl">
             {tagline}
           </p>
         ) : null}

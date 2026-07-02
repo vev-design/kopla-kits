@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -5,7 +6,10 @@
 
 /* Agency — brutalist-modern, light high-contrast. Bone off-white canvas,
    near-black ink, one electric cobalt accent (#2F4BFF ≈ oklch(0.55 0.27 268)).
-   Small near-square radius, hairline borders, oversized display type. */
+   Small near-square radius, hairline borders, oversized display type set in
+   Space Grotesk with JetBrains Mono index markers (both imported above).
+   Signature motifs: monospace section index numbers with hairline rules, and
+   an oversized clipped footer wordmark. */
 :root {
   --radius: 0.25rem;
   --background: oklch(0.97 0.006 95);

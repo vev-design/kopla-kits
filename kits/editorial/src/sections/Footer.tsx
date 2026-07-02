@@ -3,9 +3,10 @@ import type { SectionBaseProps } from '@/types';
 
 /**
  * A minimal closing footer: the publication wordmark, one or more
- * columns of quiet links, and a colophon line. No color beyond the
+ * columns of quiet links separated by hairline vertical rules, and a
+ * centered colophon line over its own hairline. No color beyond the
  * crimson rule under the wordmark — it should read like the last page
- * of a magazine, not a marketing footer. This is the final section on
+ * of a newspaper, not a marketing footer. This is the final section on
  * the page.
  */
 export interface FooterProps extends SectionBaseProps {
@@ -37,15 +38,21 @@ export function Footer({ id, wordmark, columns, colophon }: FooterProps) {
       className="w-full bg-background px-6 pt-16 pb-12"
     >
       <div className="mx-auto w-full max-w-6xl">
-        <div className="grid grid-cols-1 gap-10 border-t border-border pt-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
-          <div>
+        {/* Link columns are separated by hairline vertical rules on md+ so
+            the closing page reads like a ruled newspaper back page. */}
+        <div className="grid grid-cols-1 gap-10 border-t border-border pt-12 md:grid-cols-[1.5fr_repeat(3,1fr)] md:gap-x-0">
+          <div className="md:pr-10">
             <p className="font-serif text-2xl font-bold tracking-[-0.01em] text-foreground">
               {wordmark}
             </p>
             <span className="mt-3 block h-px w-10 bg-primary" aria-hidden />
           </div>
           {columns.map((column, i) => (
-            <nav key={i} aria-label={column.title}>
+            <nav
+              key={i}
+              aria-label={column.title}
+              className="md:border-l md:border-border md:px-10"
+            >
               <p className="font-sans text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 {column.title}
               </p>
@@ -68,7 +75,7 @@ export function Footer({ id, wordmark, columns, colophon }: FooterProps) {
           ))}
         </div>
         {colophon ? (
-          <p className="mt-12 font-sans text-xs tracking-wide text-muted-foreground">
+          <p className="mt-12 border-t border-border pt-6 text-center font-sans text-xs tracking-wide text-muted-foreground">
             {colophon}
           </p>
         ) : null}

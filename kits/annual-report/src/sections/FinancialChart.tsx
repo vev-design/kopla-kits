@@ -10,6 +10,8 @@ import type { SectionBaseProps } from '@/types';
  * token-themed SVG that re-skins with the system.
  */
 export interface FinancialChartProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "03"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "Performance"). */
   eyebrow?: string | null;
   /** Section heading. 1 sentence, 3–9 words, no trailing period. */
@@ -40,7 +42,7 @@ function ChartFrame({
       <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card">
         <MediaBlock media={chart} />
       </div>
-      <figcaption className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+      <figcaption className="font-mono text-xs uppercase tracking-[0.16em] tabular-nums text-muted-foreground">
         {caption}
       </figcaption>
     </figure>
@@ -49,6 +51,7 @@ function ChartFrame({
 
 export function FinancialChart({
   id,
+  index,
   eyebrow,
   heading,
   body,
@@ -64,7 +67,11 @@ export function FinancialChart({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-14 max-w-2xl">
-          {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+          {eyebrow || index ? (
+            <Badge variant="rule" index={index}>
+              {eyebrow}
+            </Badge>
+          ) : null}
           <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
@@ -93,6 +100,7 @@ export function FinancialChart({
 }
 
 export const FinancialChartDemo: FinancialChartProps = {
+  index: '03',
   eyebrow: 'Performance',
   heading: 'Revenue and margins moved together',
   body: 'Top-line growth held across the year while operating leverage widened margins. We continued to reinvest in the business without compromising the cash generation that funds our dividend.',

@@ -18,8 +18,9 @@ const figureMedia = cva('w-full overflow-hidden rounded-md bg-muted', {
 /**
  * A captioned media frame — the editorial system's image well. Wraps a photo
  * (or any media node) in a token-themed, ratio-controlled frame with an
- * optional caption set in the muted sans voice. Pass an `<img>` or a block as
- * children so the same frame serves photographs and charts alike.
+ * optional caption set as a newspaper cutline: a hairline rule, then the
+ * muted sans voice. Pass an `<img>` or a block as children so the same
+ * frame serves photographs and charts alike.
  */
 export interface FigureProps extends React.ComponentProps<'figure'> {
   /** Aspect ratio of the media frame. */
@@ -35,7 +36,7 @@ export function Figure({ ratio, caption, children, className, ...props }: Figure
     <figure className={cn('w-full', className)} {...props}>
       <div className={figureMedia({ ratio })}>{children}</div>
       {caption ? (
-        <figcaption className="mt-3 font-sans text-sm text-muted-foreground">
+        <figcaption className="mt-3 border-t border-border pt-2 font-sans text-sm text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}

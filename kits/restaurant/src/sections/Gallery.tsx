@@ -1,5 +1,6 @@
 import { Badge } from '@/components/Badge';
-import { Reveal, Stagger } from '@/motion';
+import { Divider } from '@/components/Divider';
+import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
 
@@ -43,8 +44,11 @@ export function Gallery({
           <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
+          <Divider className="max-w-[7rem]" />
         </Reveal>
-        <Stagger
+        {/* Span classes must sit on the grid's direct children — Stagger wraps
+            each child in its own div, which would swallow them. */}
+        <div
           className={cn(
             'grid gap-4',
             variant === 'mosaic'
@@ -53,13 +57,13 @@ export function Gallery({
           )}
         >
           {images.map((image, i) => (
-            <figure
+            <Reveal
               key={image.src}
               className={cn(
-                'group relative overflow-hidden rounded-xl border border-border',
                 variant === 'mosaic' && i % 5 === 0 && 'md:col-span-2 md:row-span-2',
               )}
             >
+            <figure className="group relative h-full overflow-hidden rounded-xl border border-border">
               <img
                 src={image.src}
                 alt={image.caption ?? ''}
@@ -69,13 +73,14 @@ export function Gallery({
                 )}
               />
               {image.caption ? (
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-4 text-xs font-medium uppercase tracking-[0.18em] text-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-4 text-xs font-medium uppercase tracking-eyebrow text-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   {image.caption}
                 </figcaption>
               ) : null}
             </figure>
+            </Reveal>
           ))}
-        </Stagger>
+        </div>
       </div>
     </section>
   );

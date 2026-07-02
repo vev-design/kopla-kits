@@ -3,11 +3,17 @@
 A warm, moody design system for fine dining. The look is candle-lit and
 considered: a deep espresso canvas, warm cream type, and a single refined gold
 accent (`#C8A24A`) used the way a restaurant uses brass — sparingly, on the
-details that matter. Headlines are set in a Playfair Display serif for an
-editorial, menu-card feel, while body copy stays in clean Inter so descriptions
-and hours read plainly. This is the collection's only warm-dark system, and it
-commits to that mood: every surface sits on the dark ground, imagery carries the
-warmth, and the gold does the rest.
+details that matter. Headlines, dish names, and prices are set in a Playfair
+Display serif for an editorial, menu-card feel — with italic serif accents on
+taglines and attributions — while body copy stays in clean Inter so
+descriptions and hours read plainly. Two signature motifs carry the identity:
+classic gold dotted leaders on every menu line ("Dish name ...... price", with
+tabular-figure prices), and a centered ornament rule — a thin gold hairline
+with a small diamond flourish — beneath every section heading, echoed from the
+hero down to the footer wordmark. Eyebrows and labels share one generous
+letter-spacing across the system. This is the collection's only warm-dark
+system, and it commits to that mood: every surface sits on the dark ground,
+imagery carries the warmth, and the gold does the rest.
 
 It is a complete restaurant page, not a marketing funnel. Each section is a
 fluid, full-width band a downstream caller fills through props: a translucent

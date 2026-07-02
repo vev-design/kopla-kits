@@ -6,10 +6,10 @@ import type { SectionBaseProps } from '@/types';
 
 /**
  * A warm image-and-text section about the studio's approach. A serene photo
- * sits on one side of a soft headline, a short reflective paragraph, a small
- * set of guiding principles, and an optional link. Use `variant` to place the
- * image on the left or the right. Use after the offerings to share the
- * studio's spirit.
+ * in the kit's signature arched frame sits on one side of a soft headline, a
+ * short reflective paragraph, a small set of guiding principles, and an
+ * optional link. Use `variant` to place the image on the left or the right.
+ * Use after the offerings to share the studio's spirit.
  */
 export interface PhilosophyProps extends SectionBaseProps {
   /** Small label above the heading. 1–3 words, sentence case (e.g. "Our approach"). */
@@ -31,7 +31,8 @@ export interface PhilosophyProps extends SectionBaseProps {
     href: string;
   } | null;
   /**
-   * Serene image (portrait or square; studio, nature, or people).
+   * Serene image (studio, nature, or people). Shown in a tall arched frame,
+   * so pick a portrait crop with headroom at the top.
    * @kind image
    */
   image: string;
@@ -51,7 +52,7 @@ export function Philosophy({
 }: PhilosophyProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-background">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-28 md:grid-cols-2">
         <Reveal
           className={cn(
             'flex flex-col items-start gap-6',
@@ -62,7 +63,9 @@ export function Philosophy({
           <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
-          <p className="text-lg text-muted-foreground text-pretty">{body}</p>
+          <p className="text-lg leading-relaxed text-muted-foreground text-pretty">
+            {body}
+          </p>
           {principles && principles.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {principles.map((principle) => (
@@ -88,11 +91,11 @@ export function Philosophy({
         <Reveal
           className={cn(variant === 'image-left' ? 'md:order-1' : 'md:order-2')}
         >
-          <div className="overflow-hidden rounded-xl">
+          <div className="mx-auto w-full max-w-md overflow-hidden rounded-t-full rounded-b-xl md:max-w-none">
             <img
               src={image}
               alt=""
-              className="aspect-[4/5] w-full object-cover"
+              className="aspect-[3/4] w-full object-cover"
             />
           </div>
         </Reveal>

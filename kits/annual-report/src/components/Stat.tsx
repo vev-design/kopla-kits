@@ -60,7 +60,7 @@ export function Stat({
         {label}
       </span>
       {delta ? (
-        <span className="font-mono text-xs font-medium tracking-wide text-primary">
+        <span className="font-mono text-xs font-medium tracking-wide tabular-nums text-primary">
           {delta}
         </span>
       ) : null}

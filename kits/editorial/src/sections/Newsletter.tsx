@@ -3,11 +3,12 @@ import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * A quiet subscribe block that turns the read outward: an eyebrow, a
- * serif headline, a line of reassurance, and a single email capture
- * field with a button. Place near the end of the piece, before the
- * Footer. The form is presentational — wire `action` to a real endpoint
- * downstream if needed.
+ * A quiet subscribe block that turns the read outward, set as two ruled
+ * newspaper columns: the eyebrow, serif headline, and a line of
+ * reassurance on the left; the email capture field and button on the
+ * right, past a hairline vertical rule. Place near the end of the piece,
+ * before the Footer. The form is presentational — wire `action` to a
+ * real endpoint downstream if needed.
  */
 export interface NewsletterProps extends SectionBaseProps {
   /** Eyebrow above the headline. 1–3 words, Title Case (e.g. "Stay With Us"). */
@@ -41,32 +42,38 @@ export function Newsletter({
       id={id ?? undefined}
       className="w-full border-y border-border bg-secondary px-6 py-20 md:py-28"
     >
-      <Reveal className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-        <h2 className="mt-4 font-serif text-4xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
-          {headline}
-        </h2>
-        {body ? (
-          <p className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
-            {body}
-          </p>
-        ) : null}
-        <form
-          action={action ?? undefined}
-          className="mt-9 flex w-full max-w-md flex-col gap-3 sm:flex-row"
-        >
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder={placeholder ?? undefined}
-            aria-label="Email address"
-            className="h-11 w-full flex-1 rounded-md border border-input bg-background px-4 font-sans text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
-          />
-          <Button type="submit" size="lg" className="h-11 shrink-0">
-            {buttonLabel}
-          </Button>
-        </form>
+      {/* Two ruled columns on md+: copy left, capture right, a hairline
+          vertical rule floating mid-gutter between them. */}
+      <Reveal className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-10 md:grid-cols-[3fr_2fr] md:gap-0">
+        <div className="md:pr-14">
+          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+          <h2 className="mt-4 font-serif text-4xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
+            {headline}
+          </h2>
+          {body ? (
+            <p className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
+              {body}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col justify-center md:border-l md:border-border md:pl-14">
+          <form
+            action={action ?? undefined}
+            className="flex w-full flex-col gap-3"
+          >
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder={placeholder ?? undefined}
+              aria-label="Email address"
+              className="h-11 w-full rounded-md border border-input bg-background px-4 font-sans text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+            />
+            <Button type="submit" size="lg" className="h-11 shrink-0">
+              {buttonLabel}
+            </Button>
+          </form>
+        </div>
       </Reveal>
     </section>
   );

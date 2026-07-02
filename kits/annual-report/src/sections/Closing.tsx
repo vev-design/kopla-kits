@@ -11,6 +11,8 @@ import type { SectionBaseProps } from '@/types';
  * section of the document.
  */
 export interface ClosingProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "07"). 2 digits. */
+  index?: string | null;
   /** Small label above the statement. 1–4 words, no punctuation (e.g. "In closing"). */
   eyebrow?: string | null;
   /** Closing statement / thank-you. 1–2 sentences, 12–34 words. */
@@ -33,6 +35,7 @@ export interface ClosingProps extends SectionBaseProps {
 
 export function Closing({
   id,
+  index,
   eyebrow,
   statement,
   signoff,
@@ -43,7 +46,11 @@ export function Closing({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-4xl px-6 py-28 text-center md:px-12 md:py-36">
         <Reveal className="flex flex-col items-center gap-8">
-          {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+          {eyebrow || index ? (
+            <Badge variant="rule" index={index}>
+              {eyebrow}
+            </Badge>
+          ) : null}
           <p className="max-w-2xl font-serif text-3xl font-medium leading-snug tracking-tight text-balance md:text-4xl">
             {statement}
           </p>
@@ -75,6 +82,7 @@ export function Closing({
 }
 
 export const ClosingDemo: ClosingProps = {
+  index: '07',
   eyebrow: 'In closing',
   statement:
     'Thank you to our shareholders, customers, and colleagues for the trust that made this year possible.',

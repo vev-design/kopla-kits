@@ -1,4 +1,5 @@
 import { Reveal } from '@/motion';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -18,6 +19,10 @@ export interface TitleSlideProps extends SectionBaseProps {
   presenter?: string | null;
   /** Date or occasion line (e.g. "Series A · March 2026"). Max 30 characters. */
   date?: string | null;
+  /** This slide's position in the deck, rendered as slide chrome — a mono "01 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
 export function TitleSlide({
@@ -27,12 +32,15 @@ export function TitleSlide({
   subtitle,
   presenter,
   date,
+  progress,
+  footer,
 }: TitleSlideProps) {
   return (
     <section
       id={id ?? undefined}
       className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden bg-background px-6 py-24 md:px-16"
     >
+      <SlideChrome progress={progress} footer={footer} />
       {/* Decorative accent wash anchored bottom-left. */}
       <div
         aria-hidden
@@ -48,7 +56,7 @@ export function TitleSlide({
           ) : null}
         </Reveal>
         <Reveal transition={{ delay: 0.05 }}>
-          <h1 className="font-display text-6xl leading-[0.95] font-bold tracking-tight text-balance md:text-8xl lg:text-9xl">
+          <h1 className="font-display text-6xl leading-[0.9] font-bold tracking-tighter text-balance md:text-8xl lg:text-9xl">
             {title}
           </h1>
         </Reveal>
@@ -84,4 +92,6 @@ export const TitleSlideDemo: TitleSlideProps = {
     'We turn scattered spreadsheets and radio chatter into one live picture of every job in the field.',
   presenter: 'Ada Lovelace, CEO',
   date: 'Series A · March 2026',
+  progress: { current: 1, total: 6 },
+  footer: 'Northwind — Series A',
 };

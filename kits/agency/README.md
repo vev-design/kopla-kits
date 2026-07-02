@@ -13,9 +13,14 @@ This is a presentation system for an agency's own site, not a marketing
 funnel. Every section is a fluid, full-width band a downstream caller fills
 through props: a sticky navbar, a type-led hero, a numbered capabilities
 list, a selected-work grid, a working-process walkthrough, animated headline
-statistics, a bold project enquiry, and a structured footer. Motion is
-purposeful — scroll-in reveals, staggered grid entrances, and stats that
-count up as they enter the viewport.
+statistics, a bold project enquiry, and a structured footer. Two signature
+motifs run through the chain: every content section's header carries a
+prop-driven monospace index marker ("01", "02", …) closed by a hairline
+rule — the page reads like a numbered table of contents — and the footer
+signs off with the brand name as an oversized display wordmark clipped at
+the bottom edge of the page. Motion is purposeful — scroll-in reveals,
+staggered grid entrances, and stats that count up as they enter the
+viewport.
 
 ## Composition
 
@@ -25,9 +30,12 @@ fixes the wordmark and a single "start a project" action in reach at all
 times. **Hero** opens with an oversized type statement — the studio's point
 of view in a handful of words — so personality lands before any detail.
 
-**Services** answers "what do you actually do" with a numbered, monospace-
-indexed list that feels like a contents page; its grid rules set the
-editorial rhythm the rest of the page follows. **WorkGrid** is the proof: a
+From **Services** onward each section header carries its monospace index
+marker — "01" Services through "05" ContactCTA in the canonical chain — so
+the scroll reads like a numbered table of contents. **Services** answers
+"what do you actually do" with a numbered, monospace-indexed list that feels
+like a contents page; its grid rules set the editorial rhythm the rest of
+the page follows. **WorkGrid** is the proof: a
 responsive grid of selected case studies with a hover-driven treatment, the
 section a creative buyer scrolls to first. **Process** demystifies the
 engagement with a small set of working steps, lowering the risk of reaching
@@ -36,7 +44,9 @@ expansive beat after the denser grid and steps.
 
 With voice established and proof shown, **ContactCTA** makes the ask in the
 loudest type on the page: one headline, one email, one button, nothing to
-distract from starting a project. **Footer** closes calmly with the wordmark,
-link columns, and contact details. The rhythm deliberately alternates dense
+distract from starting a project. **Footer** closes with link columns and
+small print, then signs off with the oversized wordmark clipped at the
+bottom edge — the brand gets the literal last word. The rhythm deliberately
+alternates dense
 and sparse — a type-led hero, a tight list, an image grid, a few steps, huge
 numbers, a single message — so the eye keeps moving toward the enquiry.

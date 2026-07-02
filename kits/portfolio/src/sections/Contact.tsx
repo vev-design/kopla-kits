@@ -29,7 +29,7 @@ export function Contact({ id, headline, body, email, links }: ContactProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-20 md:py-32">
       <Reveal className="flex flex-col items-start gap-6">
-        <h2 className="font-display text-4xl font-semibold tracking-tight text-balance md:text-6xl">
+        <h2 className="font-display text-4xl font-medium tracking-tight text-balance md:text-6xl">
           {headline}
         </h2>
         {body ? <p className="max-w-xl text-lg text-muted-foreground text-pretty">{body}</p> : null}

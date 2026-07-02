@@ -2,9 +2,10 @@ import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * Single-voice social proof: one strong customer quote with an attributed
- * author, role, and optional avatar, set on a lifted near-black band. Use
- * after the feature grid to convert explanation into belief — one engineer's
+ * Single-voice social proof in a dev-tool register: a left-aligned quote set
+ * against an iris left-border accent — no oversized quote marks — with the
+ * attribution rendered in monospace like a code comment (name — role). Use
+ * after the feature grid to convert explanation into belief; one engineer's
  * voice outweighs a wall of capabilities.
  */
 export interface TestimonialProps extends SectionBaseProps {
@@ -25,23 +26,29 @@ export function Testimonial({ id, quote, author, role, avatar }: TestimonialProp
   return (
     <section id={id ?? undefined} className="w-full border-y border-border bg-card/40">
       <div className="mx-auto w-full max-w-4xl px-6 py-24">
-        <Reveal className="flex flex-col items-center gap-10 text-center">
-          <blockquote className="text-2xl font-medium leading-snug tracking-tight text-balance md:text-3xl">
-            &ldquo;{quote}&rdquo;
-          </blockquote>
-          <figcaption className="flex flex-col items-center gap-4">
-            {avatar ? (
-              <img
-                src={avatar}
-                alt=""
-                className="size-14 rounded-full border border-border object-cover"
-              />
-            ) : null}
-            <div className="flex flex-col gap-0.5">
-              <span className="font-semibold tracking-tight">{author}</span>
-              <span className="text-sm text-muted-foreground">{role}</span>
-            </div>
-          </figcaption>
+        <Reveal>
+          <figure className="flex flex-col gap-8 border-l-2 border-ring pl-8 md:pl-10">
+            <blockquote className="text-2xl font-medium leading-snug tracking-tight text-pretty md:text-3xl">
+              {quote}
+            </blockquote>
+            <figcaption className="flex items-center gap-4">
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt=""
+                  className="size-10 rounded-md border border-border object-cover"
+                />
+              ) : null}
+              <p className="font-mono text-sm text-muted-foreground">
+                <span className="text-muted-foreground/60" aria-hidden>
+                  {'// '}
+                </span>
+                <span className="text-foreground">{author}</span>
+                {' — '}
+                {role}
+              </p>
+            </figcaption>
+          </figure>
         </Reveal>
       </div>
     </section>

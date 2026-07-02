@@ -45,7 +45,7 @@ export function CTA({ id, headline, body, primaryCta, secondaryCta }: CTAProps) 
               {headline}
             </h2>
             {body ? (
-              <p className="max-w-xl text-lg text-primary-foreground/80 text-pretty">
+              <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/80 text-pretty">
                 {body}
               </p>
             ) : null}

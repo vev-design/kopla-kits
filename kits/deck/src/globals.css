@@ -5,7 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 /* The bold DARK presentation scheme — near-black canvas, near-white ink,
-   electric cyan accent. Single-scheme by design; add a second
+   electric cyan accent. Every slide can carry shared "slide chrome"
+   (src/components/SlideChrome.tsx): a mono counter + progress dots pinned
+   top-right and a running footer label pinned bottom-left, both mono
+   (--font-mono) so the furniture reads as instrument-panel type against the
+   Space Grotesk display voice. Single-scheme by design; add a second
    scheme only if a light counterpart is ever wanted. */
 :root {
   --radius: 0.75rem;

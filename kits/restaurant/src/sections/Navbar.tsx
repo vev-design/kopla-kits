@@ -50,7 +50,7 @@ export function Navbar({ id, logo, links, cta }: NavbarProps) {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-primary"
+                className="text-xs font-medium uppercase tracking-eyebrow text-muted-foreground transition-colors hover:text-primary"
               >
                 {link.label}
               </a>

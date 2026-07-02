@@ -61,7 +61,7 @@ export function Story({
           <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
-          <Divider align="full" className="max-w-[8rem] justify-start" />
+          <Divider align="start" />
           <div className="flex flex-col gap-4">
             {paragraphs.map((paragraph, i) => (
               <p key={i} className="text-base text-muted-foreground text-pretty md:text-lg">

@@ -1,14 +1,15 @@
 import type { SectionBaseProps } from '@/types';
 
 /**
- * Structured closing footer with a large wordmark, link columns, and a
- * small-print line. Hairline rules and monospace headings keep the editorial
- * voice to the very bottom; always the last section on the page.
+ * Structured closing footer: link columns and a small-print line, signed off
+ * by an oversized display wordmark clipped at the bottom edge of the page.
+ * Hairline rules and monospace headings keep the editorial voice to the very
+ * bottom; always the last section on the page.
  */
 export interface FooterProps extends SectionBaseProps {
-  /** Brand wordmark. Plain text, 1–2 words (e.g. "Field Studio"). */
+  /** Brand wordmark, rendered as the oversized clipped display type at the bottom. Plain text, 1–2 words (e.g. "Field Studio"). */
   logo: string;
-  /** Short studio blurb under the wordmark. 1 sentence, 8–18 words. */
+  /** Short studio blurb in the first column. 1 sentence, 8–18 words. */
   blurb?: string | null;
   /** Link columns. 2–4 columns, each with a heading and 2–5 links. */
   columns: {
@@ -31,13 +32,10 @@ export interface FooterProps extends SectionBaseProps {
 
 export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
   return (
-    <section id={id ?? undefined} className="w-full bg-background">
-      <div className="mx-auto w-full max-w-7xl px-6 py-16">
+    <section id={id ?? undefined} className="w-full border-t border-border bg-background">
+      <div className="mx-auto w-full max-w-7xl px-6 pt-16">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-[1.6fr_repeat(3,1fr)]">
           <div className="col-span-2 flex flex-col gap-3 md:col-span-1">
-            <span className="text-3xl font-bold tracking-tight uppercase md:text-4xl">
-              {logo}
-            </span>
             {blurb ? (
               <p className="max-w-xs text-sm text-muted-foreground text-pretty">
                 {blurb}
@@ -69,6 +67,11 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
             {legal}
           </p>
         ) : null}
+        <div className="mt-10 overflow-hidden">
+          <span className="block translate-y-[0.14em] text-[clamp(4rem,14vw,13rem)] font-bold uppercase leading-none tracking-[-0.05em] whitespace-nowrap">
+            {logo}
+          </span>
+        </div>
       </div>
     </section>
   );

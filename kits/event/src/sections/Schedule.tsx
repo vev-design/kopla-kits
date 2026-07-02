@@ -25,7 +25,9 @@ export interface ScheduleProps extends SectionBaseProps {
 export function Schedule({ id, heading, sessions }: ScheduleProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-4xl px-6 py-20 md:py-28">
-      <h2 className="mb-8 text-3xl font-bold tracking-tight md:text-4xl">{heading}</h2>
+      <h2 className="mb-8 font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl">
+        {heading}
+      </h2>
       <ul className="flex flex-col">
         {sessions.map((s, i) => (
           <li

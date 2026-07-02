@@ -11,6 +11,15 @@ labels. Corners are a measured medium radius. The system is single-scheme by
 design — there is no dark variant — because a report wants the steady, even feel
 of a printed page.
 
+The identity comes from print-report structure. The cover sets the fiscal year
+as one enormous serif numeral filling the page — outlined ink on the navy image
+variant, a pale navy wash on paper — with the title set against it. Every
+section after the cover carries a TOC-style numbered kicker ("02 — Financial
+Highlights") with the numeral in tabular figures under the hairline rule the
+cover's masthead establishes, so scrolling the document feels like paging a
+bound report. Every number in the system — key figures, deltas, segment shares,
+priority indices — is set in tabular figures so columns align like a filing.
+
 This is a data-rich presentation, not a magazine or a pitch deck. Every section
 is a fluid, full-width beat a downstream caller fills through props: a serif
 title page, a letter from leadership, animated key figures, financial charts,
@@ -25,11 +34,14 @@ count-ups that make the numbers land without theatrics.
 
 The chain reads the way an annual report reads — it earns trust before it asks
 for it, and it moves from voice, to numbers, to narrative, to intent. **Cover**
-opens like a title page: company name, report title, fiscal year, and a single
-tagline over an optional full-bleed image, establishing the year's tone in one
-serif statement. **LetterFromLeadership** follows with a human voice — the CEO's
-address — so the reader meets a person before a spreadsheet; it sets the
-interpretive frame for everything that follows.
+opens like a title page: a masthead hairline with the company name and period,
+the fiscal year as a giant serif numeral, and the report title set against it —
+establishing the year's tone in one typographic statement. From here the
+sections are numbered like a table of contents ("01 — From the CEO" through
+"07 — In closing" in the demos), each `index` prop rendered as a tabular
+numeral on the kicker rule. **LetterFromLeadership** follows with a human
+voice — the CEO's address — so the reader meets a person before a spreadsheet;
+it sets the interpretive frame for everything that follows.
 
 With tone established, the report turns to evidence. **Highlights** delivers the
 headline figures as oversized numbers that count up on scroll — the single most

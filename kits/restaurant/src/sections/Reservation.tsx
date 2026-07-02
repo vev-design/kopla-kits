@@ -60,7 +60,7 @@ export function Reservation({
       <div className="absolute inset-0 bg-background/80" />
       <Reveal className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-6 px-6 py-28 text-center md:py-36">
         {overline ? (
-          <p className="text-xs font-medium uppercase tracking-[0.32em] text-primary">
+          <p className="text-xs font-medium uppercase tracking-eyebrow text-primary">
             {overline}
           </p>
         ) : null}
@@ -69,7 +69,9 @@ export function Reservation({
         </h2>
         <Divider />
         {body ? (
-          <p className="max-w-xl text-lg text-muted-foreground text-pretty">{body}</p>
+          <p className="max-w-xl font-serif text-lg italic text-muted-foreground text-pretty md:text-xl">
+            {body}
+          </p>
         ) : null}
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <Button asChild size="lg">

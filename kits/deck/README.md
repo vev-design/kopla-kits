@@ -9,6 +9,16 @@ is scroll-first — sections reveal as they enter the viewport, and the hero sta
 scales with scroll progress so the deck reads as a moving narrative rather than
 a stack of static blocks.
 
+The system's signature motif is its **slide chrome**: every slide can carry a
+small mono counter ("02 / 06") with a row of progress dots pinned to the
+top-right corner, and a running footer label (deck title or occasion) pinned to
+the bottom-left. The chrome is one shared internal component
+(`src/components/SlideChrome.tsx`), so it is pixel-identical on every slide —
+set each section's `progress` prop (same `total` everywhere, incrementing
+`current`) and a shared `footer` string to make the scroll feel like paging
+through a real deck. Both props are optional; omit them and the slides render
+clean.
+
 Use this system when the goal is to persuade in a single linear scroll: a
 founder pitch, a vision keynote, a fundraising story, a product launch
 narrative. It is deliberately spare on web-app chrome (no toolbar, no footer) —

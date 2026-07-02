@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Nunito:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -5,6 +6,9 @@
 
 /* Wellness — light, airy studio look. Warm cream canvas, muted sage accent
    (#6B8F71 ≈ oklch(0.62 0.05 150)), warm charcoal type, large pill-soft radii.
+   Fraunces serif display headings over Nunito body copy with generous
+   leading. Signature motif: photography is masked into soft full arches
+   (rounded-t-full over a gently rounded base) so imagery reads organic.
    Single light scheme: calm, organic, generous whitespace. */
 :root {
   --radius: 1.25rem;

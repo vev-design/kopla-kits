@@ -9,6 +9,8 @@ import type { SectionBaseProps } from '@/types';
  * alternate the `variant` when stacking several.
  */
 export interface ProjectFeatureProps extends SectionBaseProps {
+  /** Discipline / category, set as an italic serif lead-in above the title. 1–3 words, e.g. "Product design". */
+  category?: string | null;
   /** Project title. 1–4 words. */
   title: string;
   /** What it was / the brief. 2–4 sentences, 30–70 words. */
@@ -38,6 +40,7 @@ export interface ProjectFeatureProps extends SectionBaseProps {
 
 export function ProjectFeature({
   id,
+  category,
   title,
   summary,
   image,
@@ -55,7 +58,14 @@ export function ProjectFeature({
         )}
       >
         <div className="flex flex-col gap-5">
-          <h2 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">{title}</h2>
+          <div className="flex flex-col gap-1.5">
+            {category ? (
+              <p className="font-serif text-xl italic text-primary md:text-2xl">{category}</p>
+            ) : null}
+            <h2 className="font-display text-3xl font-medium tracking-tight md:text-4xl">
+              {title}
+            </h2>
+          </div>
           <p className="text-base leading-relaxed text-muted-foreground text-pretty">{summary}</p>
           {(year || role) && (
             <dl className="flex gap-8 text-sm">
@@ -79,6 +89,7 @@ export function ProjectFeature({
 
 export const ProjectFeatureDemo: ProjectFeatureProps[] = [
   {
+    category: 'Product design',
     title: 'Cadence',
     summary:
       'A scheduling app for distributed teams. I led the redesign from research through a shipped design system, simplifying the core week view and cutting setup to under a minute.',
@@ -89,6 +100,7 @@ export const ProjectFeatureDemo: ProjectFeatureProps[] = [
     variant: 'image-right',
   },
   {
+    category: 'Brand identity',
     title: 'Northwind',
     summary:
       'Brand and marketing site for a logistics startup. Built a flexible visual language and a component kit the team still ships with today.',

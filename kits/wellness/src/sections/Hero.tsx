@@ -7,8 +7,9 @@ import type { SectionBaseProps } from '@/types';
 /**
  * Calm, spacious hero for the studio. An optional eyebrow chip, a soft serif
  * headline, a gentle supporting line, and a primary CTA sit beside a serene
- * rounded image. Generous whitespace and unhurried pacing set the tone. Use as
- * the first content section after the navbar.
+ * arched image — the kit's signature organic photo treatment. Generous
+ * whitespace and unhurried pacing set the tone. Use as the first content
+ * section after the navbar.
  */
 export interface HeroProps extends SectionBaseProps {
   /** Short label above the headline. 1–4 words, sentence case, no punctuation (e.g. "A place to breathe"). */
@@ -38,7 +39,8 @@ export interface HeroProps extends SectionBaseProps {
     href: string;
   } | null;
   /**
-   * Serene hero image (portrait or square; yoga, spa, or nature).
+   * Serene hero image (yoga, spa, or nature). Shown in a tall arched frame,
+   * so pick a portrait crop with headroom at the top.
    * @kind image
    */
   image: string;
@@ -55,14 +57,14 @@ export function Hero({
 }: HeroProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-background">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2 md:py-32">
         <Reveal className="flex flex-col items-start gap-6">
           {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
           <h1 className="font-serif text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl">
             {headline}
           </h1>
           {subhead ? (
-            <p className="max-w-md text-lg text-muted-foreground text-pretty">
+            <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
               {subhead}
             </p>
           ) : null}
@@ -86,11 +88,11 @@ export function Hero({
           </div>
         </Reveal>
         <Reveal>
-          <div className="overflow-hidden rounded-xl">
+          <div className="mx-auto w-full max-w-md overflow-hidden rounded-t-full rounded-b-xl md:max-w-none">
             <img
               src={image}
               alt=""
-              className="aspect-[4/5] w-full object-cover"
+              className="aspect-[3/4] w-full object-cover"
             />
           </div>
         </Reveal>

@@ -2,14 +2,15 @@ import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * Opening cover for a longform piece: a small publication kicker, an
- * oversized serif title, and a byline/date dateline. This is the first
- * section on the page — it sets voice and establishes the masthead before
- * any body copy. Type-led, generous margins, crimson used only on the rule
- * above the kicker.
+ * Opening cover set like a broadsheet front page: a dateline strip between
+ * hairline rules, the publication wordmark centered in the serif face with
+ * a double hairline rule beneath, then the headline, standfirst, and a
+ * centered byline. This is the first section on the page — it establishes
+ * the masthead before any body copy. Type-led and centered; crimson appears
+ * only on the small rules flanking the byline.
  */
 export interface MastheadProps extends SectionBaseProps {
-  /** Publication or section kicker above the title. 1–4 words, Title Case (e.g. "The Atlantic", "Features"). */
+  /** Publication name set as the centered wordmark. 1–4 words, Title Case (e.g. "The Long Field"). */
   publication: string;
   /** The headline of the piece. 1 line, 3–9 words, no trailing period. */
   title: string;
@@ -17,9 +18,9 @@ export interface MastheadProps extends SectionBaseProps {
   subtitle?: string | null;
   /** Author name for the byline. 2–3 words (e.g. "Maren Lindqvist"). */
   author?: string | null;
-  /** Publication date, already formatted. Max 24 characters (e.g. "June 2, 2026"). */
+  /** Publication date shown in the top dateline strip, already formatted. Max 24 characters (e.g. "June 2, 2026"). */
   date?: string | null;
-  /** Optional read-time or section label on the dateline. Max 16 characters (e.g. "12 min read"). */
+  /** Optional read-time or edition label in the dateline strip. Max 16 characters (e.g. "12 min read"). */
   meta?: string | null;
 }
 
@@ -32,20 +33,36 @@ export function Masthead({
   date,
   meta,
 }: MastheadProps) {
-  const dateline = [author, date, meta].filter(Boolean);
+  const hasDateline = Boolean(date || meta);
   return (
     <section
       id={id ?? undefined}
-      className="w-full bg-background px-6 pt-24 pb-16 md:pt-36 md:pb-24"
+      className="w-full bg-background px-6 pt-14 pb-16 md:pt-20 md:pb-24"
     >
-      <Reveal className="mx-auto w-full max-w-3xl">
-        <div className="flex items-center gap-3">
-          <span className="h-px w-10 bg-primary" aria-hidden />
-          <p className="font-sans text-xs font-semibold tracking-[0.28em] text-primary uppercase">
-            {publication}
-          </p>
+      <Reveal className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
+        {hasDateline ? (
+          <div className="w-full border-y border-border py-2.5">
+            <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-sans text-[0.7rem] tracking-[0.24em] text-muted-foreground uppercase">
+              {date ? <span>{date}</span> : null}
+              {date && meta ? (
+                <span className="text-border" aria-hidden>
+                  &middot;
+                </span>
+              ) : null}
+              {meta ? <span>{meta}</span> : null}
+            </p>
+          </div>
+        ) : null}
+        {/* Wordmark: the publication set like a newspaper nameplate. */}
+        <p className="mt-10 font-serif text-4xl leading-none font-bold tracking-[-0.01em] text-foreground md:text-5xl">
+          {publication}
+        </p>
+        {/* Double hairline rule beneath the nameplate — the masthead's signature. */}
+        <div className="mt-6 w-full" aria-hidden>
+          <div className="border-t border-foreground" />
+          <div className="mt-[3px] border-t border-foreground" />
         </div>
-        <h1 className="mt-8 font-serif text-5xl leading-[1.04] font-bold tracking-[-0.02em] text-balance text-foreground md:text-7xl">
+        <h1 className="mt-12 font-serif text-5xl leading-[1.04] font-bold tracking-[-0.02em] text-balance text-foreground md:text-7xl">
           {title}
         </h1>
         {subtitle ? (
@@ -53,23 +70,13 @@ export function Masthead({
             {subtitle}
           </p>
         ) : null}
-        {dateline.length > 0 ? (
-          <div className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-5 font-sans text-sm text-muted-foreground">
-            {author ? (
-              <span className="font-medium text-foreground">By {author}</span>
-            ) : null}
-            {date ? (
-              <>
-                {author ? <span className="text-border">/</span> : null}
-                <span>{date}</span>
-              </>
-            ) : null}
-            {meta ? (
-              <>
-                {author || date ? <span className="text-border">/</span> : null}
-                <span className="tracking-wide uppercase">{meta}</span>
-              </>
-            ) : null}
+        {author ? (
+          <div className="mt-10 flex items-center gap-4">
+            <span className="h-px w-8 bg-primary" aria-hidden />
+            <p className="font-sans text-xs font-medium tracking-[0.22em] text-foreground uppercase">
+              By {author}
+            </p>
+            <span className="h-px w-8 bg-primary" aria-hidden />
           </div>
         ) : null}
       </Reveal>

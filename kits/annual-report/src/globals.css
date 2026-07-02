@@ -7,7 +7,10 @@
 /* Annual Report — light editorial-corporate scheme. Crisp neutral paper,
    ink-dark text, a sober deep-navy primary (#1E3A5F ≈ oklch(0.36 0.06 250)).
    Serif display for gravitas, clean sans for body, mono for tabular figures.
-   Single light scheme by design. */
+   The identity comes from print-report structure: a giant serif year numeral
+   on the cover (outlined on navy, a pale navy wash on paper), TOC-style
+   numbered section kickers ("02 — Financial Highlights" under a hairline
+   rule), and tabular figures on every number. Single light scheme by design. */
 :root {
   --radius: 0.5rem;
   --background: oklch(0.985 0.004 250);

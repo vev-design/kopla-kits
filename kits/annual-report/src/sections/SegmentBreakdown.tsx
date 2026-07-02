@@ -10,6 +10,8 @@ import type { SectionBaseProps } from '@/types';
  * bar that visualizes its share of the whole. Use after the headline charts.
  */
 export interface SegmentBreakdownProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "04"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "By segment"). */
   eyebrow?: string | null;
   /** Section heading. 1 sentence, 3–9 words, no trailing period. */
@@ -31,6 +33,7 @@ export interface SegmentBreakdownProps extends SectionBaseProps {
 
 export function SegmentBreakdown({
   id,
+  index,
   eyebrow,
   heading,
   body,
@@ -40,7 +43,11 @@ export function SegmentBreakdown({
     <section id={id ?? undefined} className="w-full bg-secondary">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-14 max-w-2xl">
-          {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+          {eyebrow || index ? (
+            <Badge variant="rule" index={index}>
+              {eyebrow}
+            </Badge>
+          ) : null}
           <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
@@ -74,7 +81,7 @@ export function SegmentBreakdown({
                     style={{ width: `${Math.max(0, Math.min(100, segment.share))}%` }}
                   />
                 </div>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="font-mono text-xs uppercase tracking-[0.16em] tabular-nums text-muted-foreground">
                   {segment.share}% of total
                 </span>
               </div>
@@ -91,6 +98,7 @@ export function SegmentBreakdown({
 }
 
 export const SegmentBreakdownDemo: SegmentBreakdownProps = {
+  index: '04',
   eyebrow: 'By segment',
   heading: 'Where the growth came from',
   body: 'All three segments grew, led by recurring software and a resilient industrial base across our key regions.',
