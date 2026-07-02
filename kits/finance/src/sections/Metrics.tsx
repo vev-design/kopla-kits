@@ -27,7 +27,7 @@ export function Metrics({ id, eyebrow, stats }: MetricsProps) {
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         {eyebrow ? (
           <Reveal>
-            <p className="mb-10 text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p className="mb-10 font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               {eyebrow}
             </p>
           </Reveal>

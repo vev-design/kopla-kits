@@ -1,5 +1,6 @@
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -16,6 +17,10 @@ export interface QuoteSlideProps extends SectionBaseProps {
   attributionRole?: string | null;
   /** Text alignment for the quote block. */
   variant?: 'centered' | 'left';
+  /** This slide's position in the deck, rendered as slide chrome — a mono "05 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
 export function QuoteSlide({
@@ -24,15 +29,18 @@ export function QuoteSlide({
   attributionName,
   attributionRole,
   variant = 'centered',
+  progress,
+  footer,
 }: QuoteSlideProps) {
   return (
     <section
       id={id ?? undefined}
       className={cn(
-        'flex min-h-screen w-full flex-col justify-center bg-card px-6 py-24 md:px-16',
+        'relative flex min-h-screen w-full flex-col justify-center bg-card px-6 py-24 md:px-16',
         variant === 'centered' && 'items-center text-center',
       )}
     >
+      <SlideChrome progress={progress} footer={footer} />
       <div
         className={cn(
           'mx-auto w-full',
@@ -80,4 +88,6 @@ export const QuoteSlideDemo: QuoteSlideProps = {
   attributionName: 'Marcus Reyes',
   attributionRole: 'Operations Director, Veridian Utilities',
   variant: 'centered',
+  progress: { current: 5, total: 6 },
+  footer: 'Northwind — Series A',
 };

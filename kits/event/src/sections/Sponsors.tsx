@@ -21,7 +21,10 @@ export function Sponsors({ id, label, names }: SponsorsProps) {
       ) : null}
       <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
         {names.map((name, i) => (
-          <span key={i} className="text-lg font-semibold tracking-tight text-foreground/40">
+          <span
+            key={i}
+            className="font-display text-lg uppercase tracking-tight text-foreground/35"
+          >
             {name}
           </span>
         ))}

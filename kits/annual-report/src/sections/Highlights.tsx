@@ -13,6 +13,8 @@ import type { SectionBaseProps } from '@/types';
  * @hydrate
  */
 export interface HighlightsProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "02"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "Financial Highlights"). */
   eyebrow?: string | null;
   /** Section heading. 1 sentence, 3–8 words, no trailing period. */
@@ -77,12 +79,16 @@ function CountUp({ value }: { value: string }) {
   );
 }
 
-export function Highlights({ id, eyebrow, heading, figures }: HighlightsProps) {
+export function Highlights({ id, index, eyebrow, heading, figures }: HighlightsProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-secondary">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-16 max-w-2xl">
-          {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+          {eyebrow || index ? (
+            <Badge variant="rule" index={index}>
+              {eyebrow}
+            </Badge>
+          ) : null}
           <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
@@ -101,7 +107,7 @@ export function Highlights({ id, eyebrow, heading, figures }: HighlightsProps) {
                 {figure.label}
               </span>
               {figure.delta ? (
-                <span className="font-mono text-xs font-medium tracking-wide text-secondary-foreground">
+                <span className="font-mono text-xs font-medium tracking-wide tabular-nums text-secondary-foreground">
                   {figure.delta}
                 </span>
               ) : null}
@@ -114,6 +120,7 @@ export function Highlights({ id, eyebrow, heading, figures }: HighlightsProps) {
 }
 
 export const HighlightsDemo: HighlightsProps = {
+  index: '02',
   eyebrow: 'Financial Highlights',
   heading: 'The year in numbers',
   figures: [

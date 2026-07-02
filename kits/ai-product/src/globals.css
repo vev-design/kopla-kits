@@ -4,11 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* AI Product — the classic dark developer-platform look (Vercel / Linear /
-   model-lab aesthetic). A neutral near-black canvas, near-white ink, a
-   white primary action, and a single electric-iris accent reserved for
-   glows, gradients, and the highlighted plan. Single-scheme by design —
-   this kit IS dark; there is no light counterpart. */
+/* AI Product — the dark developer-platform look (Vercel / Linear /
+   model-lab aesthetic), engineered rather than decorated. A neutral
+   near-black canvas, near-white ink, a white primary action, and a single
+   electric-iris accent reserved for glows, gradients, and the highlighted
+   plan. Geist carries headings and body; Geist Mono carries the kit's
+   terminal voice — the hero's terminal window, eyebrows and micro-labels,
+   the hairline "used by" table, and code-comment attributions. Layouts are
+   hairline-ruled and asymmetric (left-aligned hero, bento feature grid).
+   Single-scheme by design — this kit IS dark; there is no light
+   counterpart. */
 :root {
   --radius: 0.625rem;
   --background: oklch(0.145 0 0);

@@ -4,9 +4,12 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Finance — light-default, trustworthy emerald accent (#0E8C6A ≈ oklch(0.58 0.10 165)).
-   Crisp neutrals with a faint cool-green cast, deep ink foreground, small-to-medium
-   radius. Inter for UI; JetBrains Mono carries every figure so data reads as data.
-   The chart tokens ride a coherent emerald→teal→blue spread for the signature charts. */
+   Crisp neutrals on a flat white ground (no gradient washes — sections read as
+   product surface, not template), deep ink foreground, small-to-medium radius.
+   Inter for UI; JetBrains Mono with tabular numerals is the data voice — hero
+   panel figure, ticker strip, metric rows, prices, and every uppercase eyebrow —
+   so numbers look engineered, not decorated. The chart tokens ride a coherent
+   emerald→teal→blue spread for the signature charts. */
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

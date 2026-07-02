@@ -24,7 +24,7 @@ export interface TestimonialProps extends SectionBaseProps {
 export function Testimonial({ id, quote, author, role, avatar }: TestimonialProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-secondary/50">
-      <div className="mx-auto w-full max-w-3xl px-6 py-24">
+      <div className="mx-auto w-full max-w-3xl px-6 py-28">
         <Reveal className="flex flex-col items-center gap-10 text-center">
           <blockquote className="font-serif text-2xl font-medium leading-relaxed tracking-tight text-balance md:text-3xl">
             &ldquo;{quote}&rdquo;

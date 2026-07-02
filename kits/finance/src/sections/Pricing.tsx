@@ -51,7 +51,7 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
           {eyebrow ? (
-            <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               {eyebrow}
             </p>
           ) : null}

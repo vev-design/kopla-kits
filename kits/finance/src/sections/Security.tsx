@@ -61,7 +61,7 @@ export function Security({ id, eyebrow, heading, subhead, items }: SecurityProps
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-14 flex max-w-2xl flex-col gap-4">
           {eyebrow ? (
-            <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               {eyebrow}
             </p>
           ) : null}

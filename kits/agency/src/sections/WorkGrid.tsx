@@ -10,6 +10,8 @@ import type { SectionBaseProps } from '@/types';
  * column count with `variant`.
  */
 export interface WorkGridProps extends SectionBaseProps {
+  /** Section index marker in the header — monospace beside the eyebrow, closed by a hairline rule. Zero-padded two digits in page order (e.g. "02"); omit to hide. */
+  index?: string | null;
   /** Monospace label above the heading. 1–3 words, sentence case, no punctuation (e.g. "Selected work"). */
   eyebrow?: string | null;
   /** Section heading. 1 phrase, 2–6 words, no trailing period. */
@@ -39,6 +41,7 @@ export interface WorkGridProps extends SectionBaseProps {
 
 export function WorkGrid({
   id,
+  index,
   eyebrow,
   heading,
   projects,
@@ -47,20 +50,28 @@ export function WorkGrid({
   return (
     <section id={id ?? undefined} className="w-full border-b border-foreground bg-background">
       <div className="mx-auto w-full max-w-7xl px-6 py-20 md:py-28">
-        <Reveal className="mb-14 flex items-end justify-between gap-6 border-b border-border pb-6">
-          <div className="flex flex-col gap-4">
-            {eyebrow ? (
-              <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                {eyebrow}
-              </p>
-            ) : null}
+        <Reveal className="mb-14 flex flex-col gap-4 border-b border-border pb-6">
+          {index || eyebrow ? (
+            <div className="flex items-center gap-4">
+              {index ? (
+                <span className="font-mono text-sm font-medium text-primary">{index}</span>
+              ) : null}
+              {eyebrow ? (
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  {eyebrow}
+                </p>
+              ) : null}
+              <span aria-hidden className="h-px flex-1 bg-border" />
+            </div>
+          ) : null}
+          <div className="flex items-end justify-between gap-6">
             <h2 className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
               {heading}
             </h2>
+            <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground md:inline">
+              {String(projects.length).padStart(2, '0')} projects
+            </span>
           </div>
-          <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground md:inline">
-            {String(projects.length).padStart(2, '0')} projects
-          </span>
         </Reveal>
         <Stagger
           className={cn(
@@ -102,6 +113,7 @@ export function WorkGrid({
 }
 
 export const WorkGridDemo: WorkGridProps = {
+  index: '02',
   eyebrow: 'Selected work',
   heading: 'Recent projects',
   projects: [

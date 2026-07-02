@@ -29,7 +29,9 @@ export function Speakers({ id, heading, intro, speakers }: SpeakersProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-6xl px-6 py-20 md:py-28">
       <div className="mb-10 flex flex-col gap-3">
-        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{heading}</h2>
+        <h2 className="font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl">
+          {heading}
+        </h2>
         {intro ? <p className="max-w-xl text-muted-foreground text-pretty">{intro}</p> : null}
       </div>
       <Stagger className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">

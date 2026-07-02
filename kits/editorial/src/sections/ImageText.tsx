@@ -6,9 +6,11 @@ import { Eyebrow, Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * A body beat that pairs one media block with a block of prose. Use these
- * down the article and flip the `variant` between rows so the media
- * alternates sides and the read never feels mechanical. The text column
+ * A body beat that pairs one media block with a block of prose, the two
+ * columns separated by a hairline rule so the row reads like ruled
+ * newspaper columns. Use these down the article and flip the `variant`
+ * between rows so the media alternates sides and the read never feels
+ * mechanical. The text column
  * holds a small kicker, a serif subhead, and a paragraph or two; the
  * media column holds a single supporting photograph — or a small chart
  * when the story turns on numbers — with an optional caption.
@@ -45,15 +47,24 @@ export function ImageText({
   const imageFirst = variant === 'image-left';
   return (
     <section id={id ?? undefined} className="w-full bg-background py-14 md:py-20">
-      <Reveal className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-16">
+      {/* On md+ the two columns read as ruled newspaper columns: the grid gap
+          collapses and a hairline rule sits between media and text, with
+          padding on both sides so the rule floats mid-gutter. */}
+      <Reveal className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-0">
         <Figure
           ratio="tall"
           caption={caption}
-          className={imageFirst ? 'md:order-1' : 'md:order-2'}
+          className={imageFirst ? 'md:order-1 md:pr-14' : 'md:order-2 md:pl-14'}
         >
           <MediaBlock media={media} />
         </Figure>
-        <div className={cn(imageFirst ? 'md:order-2' : 'md:order-1')}>
+        <div
+          className={cn(
+            imageFirst
+              ? 'md:order-2 md:border-l md:border-border md:pl-14'
+              : 'md:order-1 md:border-r md:border-border md:pr-14',
+          )}
+        >
           {kicker ? <Eyebrow>{kicker}</Eyebrow> : null}
           <h2 className="mt-4 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-4xl">
             {heading}

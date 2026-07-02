@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
 import { Eyebrow } from '@/components';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -19,9 +20,21 @@ export interface StatBigProps extends SectionBaseProps {
   label: string;
   /** Supporting context line under the label. 1 sentence, 10–24 words. */
   support?: string | null;
+  /** This slide's position in the deck, rendered as slide chrome — a mono "03 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
-export function StatBig({ id, eyebrow, value, label, support }: StatBigProps) {
+export function StatBig({
+  id,
+  eyebrow,
+  value,
+  label,
+  support,
+  progress,
+  footer,
+}: StatBigProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -37,6 +50,7 @@ export function StatBig({ id, eyebrow, value, label, support }: StatBigProps) {
       ref={ref}
       className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-6 py-24 text-center md:px-16"
     >
+      <SlideChrome progress={progress} footer={footer} />
       <div
         aria-hidden
         className="pointer-events-none absolute top-1/2 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
@@ -47,7 +61,7 @@ export function StatBig({ id, eyebrow, value, label, support }: StatBigProps) {
         </Reveal>
         <motion.span
           style={{ scale, opacity }}
-          className="block font-display text-[7rem] leading-none font-bold tracking-tight text-primary tabular-nums md:text-[14rem] lg:text-[18rem]"
+          className="block font-display text-[8rem] leading-[0.9] font-bold tracking-tighter text-primary tabular-nums md:text-[16rem] lg:text-[20rem]"
         >
           {value}
         </motion.span>
@@ -74,4 +88,6 @@ export const StatBigDemo: StatBigProps = {
   label: 'Net revenue retention',
   support:
     'Customers spend more with us every quarter, and almost none of them leave once a crew is live in the field.',
+  progress: { current: 3, total: 6 },
+  footer: 'Northwind — Series A',
 };

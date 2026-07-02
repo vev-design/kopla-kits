@@ -47,14 +47,14 @@ export interface MembershipProps extends SectionBaseProps {
 export function Membership({ id, eyebrow, heading, subhead, tiers }: MembershipProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-muted/40">
-      <div className="mx-auto w-full max-w-6xl px-6 py-24">
-        <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-28">
+        <Reveal className="mb-16 flex flex-col items-center gap-4 text-center">
           {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
           <h2 className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
           {subhead ? (
-            <p className="max-w-xl text-lg text-muted-foreground text-pretty">
+            <p className="max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
               {subhead}
             </p>
           ) : null}
@@ -74,7 +74,9 @@ export function Membership({ id, eyebrow, heading, subhead, tiers }: MembershipP
                     <Badge variant="solid">Most loved</Badge>
                   ) : null}
                 </div>
-                <p className="text-sm text-muted-foreground">{tier.description}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {tier.description}
+                </p>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="font-serif text-4xl font-semibold tracking-tight">

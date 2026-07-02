@@ -10,6 +10,8 @@ import type { SectionBaseProps } from '@/types';
  * plan; keep the tone measured and concrete.
  */
 export interface OutlookProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "06"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "Looking ahead"). */
   eyebrow?: string | null;
   /** Section heading. 1 sentence, 4–10 words, no trailing period. */
@@ -25,16 +27,17 @@ export interface OutlookProps extends SectionBaseProps {
   }[];
 }
 
-export function Outlook({ id, eyebrow, heading, body, priorities }: OutlookProps) {
+export function Outlook({ id, index, eyebrow, heading, body, priorities }: OutlookProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-primary text-primary-foreground">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <div className="grid gap-12 md:grid-cols-[1fr_1fr] md:gap-16">
           <Reveal>
             <div className="md:sticky md:top-24">
-              {eyebrow ? (
+              {eyebrow || index ? (
                 <Badge
                   variant="rule"
+                  index={index}
                   className="border-primary-foreground/40 text-primary-foreground"
                 >
                   {eyebrow}
@@ -60,7 +63,7 @@ export function Outlook({ id, eyebrow, heading, body, priorities }: OutlookProps
                 </span>
                 <div className="flex flex-col gap-2">
                   <span className="flex items-baseline gap-3">
-                    <span className="font-mono text-xs tracking-[0.16em] text-primary-foreground/50">
+                    <span className="font-mono text-xs tracking-[0.16em] tabular-nums text-primary-foreground/50">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <span className="font-serif text-xl font-semibold tracking-tight md:text-2xl">
@@ -81,6 +84,7 @@ export function Outlook({ id, eyebrow, heading, body, priorities }: OutlookProps
 }
 
 export const OutlookDemo: OutlookProps = {
+  index: '06',
   eyebrow: 'Looking ahead',
   heading: 'Our priorities for the year ahead',
   body: 'We enter the new year with momentum and a clear plan. Our focus is to compound the advantages we built this year — deepening recurring revenue, investing in capacity, and holding the operational discipline that turns growth into durable returns for shareholders.',

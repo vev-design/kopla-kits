@@ -1,6 +1,7 @@
 import { Reveal, Stagger } from '@/motion';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from '@/components';
+import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -20,14 +21,26 @@ export interface AgendaListProps extends SectionBaseProps {
     /** Optional one-line description under the title. 1 sentence, max 12 words. */
     detail?: string | null;
   }[];
+  /** This slide's position in the deck, rendered as slide chrome — a mono "02 / 06" counter plus progress dots in the top-right corner. Use the same `total` on every slide; omit to hide. */
+  progress?: SlideProgress | null;
+  /** Running footer label pinned bottom-left — deck title or occasion (e.g. "Northwind — Series A"). 2–5 words, max 40 characters; omit to hide. */
+  footer?: string | null;
 }
 
-export function AgendaList({ id, eyebrow, heading, items }: AgendaListProps) {
+export function AgendaList({
+  id,
+  eyebrow,
+  heading,
+  items,
+  progress,
+  footer,
+}: AgendaListProps) {
   return (
     <section
       id={id ?? undefined}
-      className="flex min-h-screen w-full flex-col justify-center bg-background px-6 py-24 md:px-16"
+      className="relative flex min-h-screen w-full flex-col justify-center bg-background px-6 py-24 md:px-16"
     >
+      <SlideChrome progress={progress} footer={footer} />
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <div className="mb-12 md:mb-16">
@@ -77,4 +90,6 @@ export const AgendaListDemo: AgendaListProps = {
     { title: 'The Market', detail: 'A category waiting to be defined.' },
     { title: 'The Ask', detail: 'What we are raising and why now.' },
   ],
+  progress: { current: 2, total: 6 },
+  footer: 'Northwind — Series A',
 };

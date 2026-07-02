@@ -7,7 +7,9 @@ import type { SectionBaseProps } from '@/types';
  * A multi-image spread that opens the page back up after the type-led
  * body — the visual exhale before the close. Renders a two- or
  * three-column grid of captioned photographs under an optional section
- * heading. Each image reveals in sequence as the grid enters.
+ * heading, with hairline vertical rules between columns so the spread
+ * reads like a ruled newspaper page. Each image reveals in sequence as
+ * the grid enters.
  */
 export interface GalleryGridProps extends SectionBaseProps {
   /** Optional kicker above the heading. 1–3 words, Title Case. */
@@ -48,14 +50,28 @@ export function GalleryGrid({
             ) : null}
           </Reveal>
         ) : null}
+        {/* Tiles are separated by hairline vertical rules so the spread reads
+            as ruled newspaper columns. The rules are applied per-tile (not
+            `divide-x`) so the leftmost tile of each row stays rule-free at
+            both the 2-up and 3-up breakpoints. */}
         <Stagger
           className={cn(
-            'grid grid-cols-1 gap-6 sm:grid-cols-2',
+            'grid grid-cols-1 gap-x-0 gap-y-10 sm:-mx-5 sm:grid-cols-2',
             columns === 'three' ? 'lg:grid-cols-3' : 'lg:grid-cols-2',
           )}
         >
           {items.map((item, i) => (
-            <Figure key={i} ratio="portrait" caption={item.caption}>
+            <Figure
+              key={i}
+              ratio="portrait"
+              caption={item.caption}
+              className={cn(
+                'sm:px-5',
+                i % 2 === 1 && 'sm:border-l sm:border-border',
+                columns === 'three' &&
+                  (i % 3 !== 0 ? 'lg:border-l lg:border-border' : 'lg:border-l-0'),
+              )}
+            >
               <img
                 src={item.image}
                 alt={item.caption ?? ''}

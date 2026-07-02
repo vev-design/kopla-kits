@@ -47,7 +47,7 @@ export function Footer({ id, logo, blurb, hours, address, social, legal }: Foote
               {logo}
             </div>
             {blurb ? (
-              <p className="max-w-xs text-sm text-muted-foreground text-pretty">
+              <p className="max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty">
                 {blurb}
               </p>
             ) : null}

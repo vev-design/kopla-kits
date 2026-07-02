@@ -5,8 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Editorial — paper-white ground, near-black ink, one restrained crimson.
-   Single-scheme by design; color is deliberately scarce — the type and the
-   margins carry it. Add a dark variant later if wanted. */
+   Single-scheme by design; color is deliberately scarce — the identity
+   comes from print-newspaper details instead: a double hairline rule under
+   the masthead nameplate, ruled kicker/dateline strips, an oversized serif
+   drop cap on the lead, hairline column rules between side-by-side blocks,
+   and cutline captions over a hairline. `--border` is the hairline
+   throughout; `--foreground` inks the masthead's double rule. Add a dark
+   variant later if wanted. */
 :root {
   --radius: 0.25rem;
   --background: oklch(0.985 0.004 80);

@@ -9,6 +9,8 @@ import type { SectionBaseProps } from '@/types';
  * cover, to set the year's tone in a human voice.
  */
 export interface LetterFromLeadershipProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "01"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "From the CEO"). */
   eyebrow?: string | null;
   /** Heading for the letter. 1 sentence, 3–9 words, no trailing period. */
@@ -30,6 +32,7 @@ export interface LetterFromLeadershipProps extends SectionBaseProps {
 
 export function LetterFromLeadership({
   id,
+  index,
   eyebrow,
   heading,
   paragraphs,
@@ -52,7 +55,11 @@ export function LetterFromLeadership({
         >
           <Reveal>
             <div className={isSplit ? 'md:sticky md:top-24' : 'mb-12'}>
-              {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+              {eyebrow || index ? (
+                <Badge variant="rule" index={index}>
+                  {eyebrow}
+                </Badge>
+              ) : null}
               <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
                 {heading}
               </h2>
@@ -98,6 +105,7 @@ export function LetterFromLeadership({
 }
 
 export const LetterFromLeadershipDemo: LetterFromLeadershipProps = {
+  index: '01',
   eyebrow: 'From the CEO',
   heading: 'A foundation built for the decade ahead',
   paragraphs: [

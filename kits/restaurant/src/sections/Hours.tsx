@@ -1,6 +1,7 @@
 import { MapPin, Phone } from 'lucide-react';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
+import { Divider } from '@/components/Divider';
 import { Button } from '@/components/ui/button';
 import { Reveal } from '@/motion';
 import type { SectionBaseProps } from '@/types';
@@ -15,6 +16,10 @@ export interface HoursProps extends SectionBaseProps {
   overline?: string | null;
   /** Section heading. 1 sentence, 2–6 words, no trailing period. */
   heading: string;
+  /** Title over the opening-hours card. 1–2 words, title case. Defaults to "Hours". */
+  hoursLabel?: string | null;
+  /** Title over the address card. 1–3 words, title case. Defaults to "Find Us". */
+  locationLabel?: string | null;
   /** Opening-hours rows. 3–7 items. */
   hours: {
     /** Day or day range. 1–3 words, title case (e.g. "Tue – Thu"). */
@@ -38,7 +43,17 @@ export interface HoursProps extends SectionBaseProps {
   } | null;
 }
 
-export function Hours({ id, overline, heading, hours, address, note, phone }: HoursProps) {
+export function Hours({
+  id,
+  overline,
+  heading,
+  hoursLabel,
+  locationLabel,
+  hours,
+  address,
+  note,
+  phone,
+}: HoursProps) {
   return (
     <section id={id ?? undefined} className="w-full bg-card/40">
       <div className="mx-auto w-full max-w-5xl px-6 py-24 md:py-32">
@@ -47,10 +62,13 @@ export function Hours({ id, overline, heading, hours, address, note, phone }: Ho
           <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
+          <Divider className="max-w-[7rem]" />
         </Reveal>
         <Reveal className="grid gap-6 md:grid-cols-2">
           <Card variant="surface">
-            <h3 className="font-serif text-xl tracking-wide text-primary">Hours</h3>
+            <h3 className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary">
+              {hoursLabel ?? 'Hours'}
+            </h3>
             <dl className="flex flex-col">
               {hours.map((row) => (
                 <div
@@ -58,14 +76,16 @@ export function Hours({ id, overline, heading, hours, address, note, phone }: Ho
                   className="flex items-baseline justify-between gap-3 border-b border-border/60 py-2.5 last:border-b-0"
                 >
                   <dt className="text-sm text-foreground">{row.day}</dt>
-                  <dd className="text-sm text-muted-foreground">{row.time}</dd>
+                  <dd className="text-sm tabular-nums text-muted-foreground">{row.time}</dd>
                 </div>
               ))}
             </dl>
           </Card>
           <Card variant="surface" className="justify-between">
             <div className="flex flex-col gap-4">
-              <h3 className="font-serif text-xl tracking-wide text-primary">Find Us</h3>
+              <h3 className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary">
+                {locationLabel ?? 'Find Us'}
+              </h3>
               <p className="flex items-start gap-3 text-sm text-foreground">
                 <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
                 <span className="whitespace-pre-line text-pretty">{address}</span>
@@ -96,6 +116,8 @@ export function Hours({ id, overline, heading, hours, address, note, phone }: Ho
 export const HoursDemo: HoursProps = {
   overline: 'Visit',
   heading: 'Hours & Location',
+  hoursLabel: 'Hours',
+  locationLabel: 'Find Us',
   hours: [
     { day: 'Tue – Thu', time: '5 – 10 pm' },
     { day: 'Fri – Sat', time: '5 – 11 pm' },

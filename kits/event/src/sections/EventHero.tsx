@@ -1,22 +1,24 @@
 import { Reveal } from '@/motion';
 import { Badge, Button } from '@/components';
-import { Calendar, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * Top-of-page event banner — the name, a one-line pitch, the date + location,
- * and the primary ticket CTA. Use as the first section, above the fold.
+ * Full-bleed poster hero — the event name and dates as huge uppercase display
+ * type (dates in solid accent), the venue line, ticket CTAs, and a scrolling
+ * accent marquee strip along the base. Use as the first section, above the
+ * fold.
  */
 export interface EventHeroProps extends SectionBaseProps {
-  /** Short uppercase kicker. 1–3 words, e.g. "Conference 2026". */
+  /** Short kicker rendered as a solid chip. 1–3 words, e.g. "Conference 2026". */
   eyebrow?: string | null;
-  /** Event name. 1 line, 1–5 words. */
+  /** Event name, set as oversized uppercase display type. 1 line, 1–4 words. */
   title: string;
   /** One-line pitch. 1 sentence, 8–20 words. */
   tagline: string;
-  /** Date line. ~3–6 words, e.g. "May 14–15, 2026". */
+  /** Event dates, set as an oversized accent-colored lockup. 2–5 words, e.g. "May 14–15, 2026". */
   date: string;
-  /** Location. ~2–5 words, e.g. "Berlin + online". */
+  /** Venue / location line. 2–5 words, e.g. "Berlin + online". */
   location: string;
   /** Primary CTA. */
   cta: {
@@ -38,6 +40,36 @@ export interface EventHeroProps extends SectionBaseProps {
      */
     href: string;
   } | null;
+  /** Phrases for the scrolling marquee strip at the base. 2–5 items, 2–6 words each (e.g. "3,000 builders"). Cleared, it falls back to the date and location. */
+  marquee?: string[] | null;
+}
+
+/** Internal: the looping accent strip. Content is duplicated for a seamless
+ *  -50% translate loop; animation only runs under `motion-safe`. */
+function HeroMarquee({ phrases }: { phrases: string[] }) {
+  // Repeat the set so one copy always overflows the viewport width.
+  const run = Array.from({ length: 4 }, () => phrases).flat();
+  const strip = (hidden?: boolean) => (
+    <div aria-hidden={hidden ? true : undefined} className="flex shrink-0 items-center">
+      {run.map((phrase, i) => (
+        <span
+          key={i}
+          className="flex items-center gap-5 pl-5 font-display text-base uppercase leading-none tracking-tight whitespace-nowrap md:text-lg"
+        >
+          {phrase}
+          <span aria-hidden className="size-1.5 rotate-45 bg-primary-foreground/50" />
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="w-full overflow-hidden bg-primary py-3.5 text-primary-foreground">
+      <div className="flex w-max motion-safe:animate-marquee">
+        {strip()}
+        {strip(true)}
+      </div>
+    </div>
+  );
 }
 
 export function EventHero({
@@ -49,47 +81,53 @@ export function EventHero({
   location,
   cta,
   secondaryCta,
+  marquee,
 }: EventHeroProps) {
+  const phrases = marquee && marquee.length > 0 ? marquee : [date, location];
   return (
     <section
       id={id ?? undefined}
-      className="relative flex min-h-[80vh] w-full flex-col items-center justify-center overflow-hidden px-6 py-24 text-center"
+      className="relative flex min-h-svh w-full flex-col overflow-hidden"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-1/3 left-1/2 h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl"
-      />
-      <Reveal className="relative flex max-w-3xl flex-col items-center gap-6">
-        {eyebrow ? (
-          <Badge tone="soft" size="kicker">
-            {eyebrow}
-          </Badge>
-        ) : null}
-        <h1 className="font-display text-6xl font-bold leading-[0.95] tracking-tight text-balance md:text-8xl">
-          {title}
-        </h1>
-        <p className="max-w-2xl text-lg text-muted-foreground text-pretty md:text-xl">{tagline}</p>
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium">
-          <span className="inline-flex items-center gap-2">
-            <Calendar size={15} strokeWidth={2.25} className="text-primary" />
-            {date}
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <MapPin size={15} strokeWidth={2.25} className="text-primary" />
-            {location}
-          </span>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-          <Button asChild size="lg">
-            <a href={cta.href}>{cta.label}</a>
-          </Button>
-          {secondaryCta ? (
-            <Button asChild variant="outline" size="lg">
-              <a href={secondaryCta.href}>{secondaryCta.label}</a>
-            </Button>
-          ) : null}
-        </div>
-      </Reveal>
+      <div className="flex w-full flex-1 flex-col justify-center px-6 pt-24 pb-14 md:px-12 lg:px-16">
+        <Reveal className="flex w-full flex-col gap-8 md:gap-10">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            {eyebrow ? (
+              <Badge tone="solid" size="kicker">
+                {eyebrow}
+              </Badge>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em]">
+              <MapPin size={14} strokeWidth={2.5} className="text-primary" />
+              {location}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <h1 className="font-display max-w-[10ch] text-[clamp(3.5rem,12vw,10rem)] uppercase leading-[0.85] tracking-[-0.02em] text-balance">
+              {title}
+            </h1>
+            <p className="font-display text-[clamp(2.25rem,7.5vw,6.5rem)] uppercase leading-[0.9] tracking-[-0.02em] text-primary">
+              {date}
+            </p>
+          </div>
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
+            <p className="max-w-md text-lg text-muted-foreground text-pretty md:text-xl">
+              {tagline}
+            </p>
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
+              <Button asChild size="lg">
+                <a href={cta.href}>{cta.label}</a>
+              </Button>
+              {secondaryCta ? (
+                <Button asChild variant="outline" size="lg">
+                  <a href={secondaryCta.href}>{secondaryCta.label}</a>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+      <HeroMarquee phrases={phrases} />
     </section>
   );
 }
@@ -102,4 +140,5 @@ export const EventHeroDemo: EventHeroProps = {
   location: 'Berlin + online',
   cta: { label: 'Get tickets', href: '#tickets' },
   secondaryCta: { label: 'View schedule', href: '#schedule' },
+  marquee: ['May 14–15, 2026', 'Berlin + online', '1,200 builders', 'Two stages'],
 };

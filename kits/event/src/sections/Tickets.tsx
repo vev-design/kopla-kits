@@ -38,7 +38,9 @@ export interface TicketsProps extends SectionBaseProps {
 export function Tickets({ id, heading, tiers }: TicketsProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-20 md:py-28">
-      <h2 className="mb-10 text-center text-3xl font-bold tracking-tight md:text-4xl">{heading}</h2>
+      <h2 className="mb-10 text-center font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl">
+        {heading}
+      </h2>
       <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {tiers.map((tier, i) => (
           <TicketCard key={i} emphasis={tier.highlighted ? 'highlighted' : 'plain'}>

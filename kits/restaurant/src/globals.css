@@ -5,9 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Restaurant — warm-dark, single scheme. Deep espresso canvas, warm cream
-   foreground, refined gold accent (#C8A24A ≈ oklch(0.73 0.114 82)). Serif
-   display (Playfair Display) for headlines, Inter for body. Candle-lit and
-   considered — tasteful medium-large radius. */
+   foreground, refined gold accent (#C8A24A ≈ oklch(0.73 0.114 82)). Playfair
+   Display carries every display moment — headlines, dish names, prices,
+   italic serif accents — while Inter keeps body copy plainly readable.
+   Two signature motifs run through the sections: gold dotted leaders on
+   every menu line ("Dish ...... price"), and a centered ornament rule (thin
+   gold hairline with a small diamond flourish) beneath section headings.
+   Eyebrows share one wide letter-spacing token (`--tracking-eyebrow`).
+   Candle-lit and considered — tasteful medium-large radius. */
 :root {
   --radius: 0.625rem;
   --background: oklch(0.18 0.012 60);
@@ -48,6 +53,7 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --tracking-eyebrow: 0.28em;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

@@ -73,7 +73,7 @@ export function Performance({
             )}
           >
             {eyebrow ? (
-              <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
+              <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
                 {eyebrow}
               </p>
             ) : null}

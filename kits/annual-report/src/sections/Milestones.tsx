@@ -9,6 +9,8 @@ import type { SectionBaseProps } from '@/types';
  * shape between the numbers and the outlook.
  */
 export interface MilestonesProps extends SectionBaseProps {
+  /** TOC-style section number set before the eyebrow in tabular figures (e.g. "05"). 2 digits. */
+  index?: string | null;
   /** Small label above the heading. 1–4 words, no punctuation (e.g. "The year in review"). */
   eyebrow?: string | null;
   /** Section heading. 1 sentence, 3–9 words, no trailing period. */
@@ -28,6 +30,7 @@ export interface MilestonesProps extends SectionBaseProps {
 
 export function Milestones({
   id,
+  index,
   eyebrow,
   heading,
   milestones,
@@ -39,7 +42,11 @@ export function Milestones({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-5xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-16 max-w-2xl">
-          {eyebrow ? <Badge variant="rule">{eyebrow}</Badge> : null}
+          {eyebrow || index ? (
+            <Badge variant="rule" index={index}>
+              {eyebrow}
+            </Badge>
+          ) : null}
           <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
             {heading}
           </h2>
@@ -74,7 +81,7 @@ export function Milestones({
                       : ''
                   }
                 >
-                  <span className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-primary">
+                  <span className="font-mono text-xs font-medium uppercase tracking-[0.18em] tabular-nums text-primary">
                     {milestone.period}
                   </span>
                   <h3 className="mt-2 font-serif text-2xl font-semibold tracking-tight md:text-3xl">
@@ -94,6 +101,7 @@ export function Milestones({
 }
 
 export const MilestonesDemo: MilestonesProps = {
+  index: '05',
   eyebrow: 'The year in review',
   heading: 'Milestones that shaped the year',
   milestones: [

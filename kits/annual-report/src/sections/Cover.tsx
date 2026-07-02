@@ -1,21 +1,23 @@
 import { motion, useScroll, useTransform } from 'motion/react';
 import { useRef } from 'react';
 import { Reveal } from '@/motion';
-import { Badge } from '@/components/Badge';
+import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
 
 /**
- * The report's title page — a full-viewport, serif-led cover that opens the
- * document. Leads with the company name, the report title, the fiscal year, and
- * a single forward-looking tagline, over an optional full-bleed image with a
- * gentle scroll parallax. Use as the very first section.
+ * The report's title page — a full-viewport cover built around the kit's
+ * signature motif: the fiscal year set as one enormous serif numeral filling
+ * the page, outlined on the navy `image` variant and washed in pale navy on the
+ * paper `plain` variant, with the title and tagline set against it. A masthead
+ * hairline carries the company name and full period label; the background
+ * image gets a gentle scroll parallax. Use as the very first section.
  */
 export interface CoverProps extends SectionBaseProps {
-  /** Company name, set small above the title. 1–4 words (e.g. "Meridian Industries"). */
+  /** Company name, set small on the masthead rule. 1–4 words (e.g. "Meridian Industries"). */
   company: string;
   /** Report title. 1 short line, 2–5 words, no trailing period (e.g. "Annual Report"). */
   title: string;
-  /** Fiscal year or period the report covers. 4–9 characters (e.g. "2025", "FY 2025"). */
+  /** Fiscal year or period the report covers. The digits become the giant cover numeral. 4–9 characters (e.g. "2025", "FY 2025"). */
   year: string;
   /** Tagline / theme for the year. 1 sentence, 5–14 words, no trailing period. */
   tagline?: string | null;
@@ -24,7 +26,7 @@ export interface CoverProps extends SectionBaseProps {
    * @kind image
    */
   image?: string | null;
-  /** Layout variant. `image` overlays type on a full-bleed photo; `plain` is type on paper. */
+  /** Layout variant. `image` sets an outlined numeral over a full-bleed photo on navy; `plain` sets a pale solid numeral on paper. */
   variant?: 'image' | 'plain';
 }
 
@@ -43,13 +45,20 @@ export function Cover({
     offset: ['start start', 'end start'],
   });
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
-  const showImage = variant === 'image' && image;
+  const onNavy = variant === 'image';
+  const showImage = onNavy && image;
+  // The giant numeral is the digits only — "FY 2025" mastheads in full but
+  // covers as "2025" so long period labels never overflow the page.
+  const numeral = year.match(/\d+/g)?.at(-1) ?? year;
 
   return (
     <section
       id={id ?? undefined}
       ref={ref}
-      className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-primary text-primary-foreground"
+      className={cn(
+        'relative flex min-h-screen w-full flex-col overflow-hidden',
+        onNavy ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground',
+      )}
     >
       {showImage ? (
         <>
@@ -66,53 +75,109 @@ export function Cover({
         </>
       ) : null}
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-between px-6 py-16 md:px-12 md:py-20">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-14 md:px-12 md:py-16">
+        {/* Masthead — the hairline rule the numbered sections echo. */}
         <Reveal>
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.28em] text-primary-foreground/70">
-            {company}
-          </p>
+          <div
+            className={cn(
+              'flex items-baseline justify-between gap-6 border-b pb-4',
+              onNavy ? 'border-primary-foreground/30' : 'border-border',
+            )}
+          >
+            <p
+              className={cn(
+                'font-mono text-xs font-medium uppercase tracking-[0.28em]',
+                onNavy ? 'text-primary-foreground/70' : 'text-muted-foreground',
+              )}
+            >
+              {company}
+            </p>
+            <p
+              className={cn(
+                'font-mono text-xs font-medium uppercase tracking-[0.28em] tabular-nums',
+                onNavy ? 'text-primary-foreground/70' : 'text-muted-foreground',
+              )}
+            >
+              {year}
+            </p>
+          </div>
         </Reveal>
 
-        <div className="flex flex-col gap-8">
-          <Reveal>
-            <h1 className="font-serif text-6xl font-semibold leading-[0.95] tracking-tight text-balance md:text-8xl lg:text-9xl">
+        {/* The signature: an enormous serif year numeral filling the page. */}
+        <div className="flex flex-1 flex-col justify-center pt-8">
+          <Reveal transition={{ delay: 0.05 }}>
+            <span
+              aria-hidden
+              className={cn(
+                'pointer-events-none block select-none text-right font-serif font-semibold leading-[0.78] tracking-tight tabular-nums',
+                'text-[clamp(9rem,30vw,23rem)]',
+                onNavy
+                  ? 'text-transparent opacity-80 [-webkit-text-stroke:2px_var(--primary-foreground)]'
+                  : 'text-primary/15',
+              )}
+            >
+              {numeral}
+            </span>
+          </Reveal>
+
+          <Reveal transition={{ delay: 0.1 }}>
+            <h1 className="relative -mt-8 max-w-3xl font-serif text-5xl font-semibold leading-[0.98] tracking-tight text-balance md:-mt-16 md:text-7xl">
               {title}
             </h1>
           </Reveal>
-          <Reveal transition={{ delay: 0.08 }}>
-            <span className="block font-serif text-5xl font-normal tabular-nums text-primary-foreground/80 md:text-6xl">
-              {year}
-            </span>
-          </Reveal>
         </div>
 
-        <div className="flex items-end justify-between gap-8">
-          {tagline ? (
-            <Reveal transition={{ delay: 0.12 }}>
-              <p className="max-w-md font-serif text-xl italic leading-snug text-primary-foreground/85 text-pretty md:text-2xl">
+        {/* Folio line — tagline against the year, closed by a hairline. */}
+        <Reveal transition={{ delay: 0.16 }}>
+          <div
+            className={cn(
+              'mt-12 flex items-end justify-between gap-8 border-t pt-6',
+              onNavy ? 'border-primary-foreground/30' : 'border-border',
+            )}
+          >
+            {tagline ? (
+              <p
+                className={cn(
+                  'max-w-md font-serif text-lg italic leading-snug text-pretty md:text-xl',
+                  onNavy ? 'text-primary-foreground/85' : 'text-foreground/80',
+                )}
+              >
                 {tagline}
               </p>
-            </Reveal>
-          ) : (
-            <span />
-          )}
-          <Reveal transition={{ delay: 0.16 }}>
-            <Badge variant="outline" className="border-primary-foreground/30 bg-transparent text-primary-foreground/70">
-              {year}
-            </Badge>
-          </Reveal>
-        </div>
+            ) : (
+              <span />
+            )}
+            <p
+              className={cn(
+                'font-mono text-xs font-medium uppercase tracking-[0.2em] tabular-nums whitespace-nowrap',
+                onNavy ? 'text-primary-foreground/60' : 'text-muted-foreground',
+              )}
+            >
+              {numeral}
+            </p>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
 }
 
-export const CoverDemo: CoverProps = {
-  company: 'Meridian Industries',
-  title: 'Annual Report',
-  year: '2025',
-  tagline: 'A year of disciplined growth and steady returns for our shareholders',
-  image:
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1900&q=80',
-  variant: 'image',
-};
+export const CoverDemo: CoverProps[] = [
+  {
+    company: 'Meridian Industries',
+    title: 'Annual Report',
+    year: '2025',
+    tagline: 'A year of disciplined growth and steady returns for our shareholders',
+    image:
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1900&q=80',
+    variant: 'image',
+  },
+  {
+    company: 'Meridian Industries',
+    title: 'Annual Report',
+    year: 'FY 2025',
+    tagline: 'The record of a year built on operational discipline',
+    image: null,
+    variant: 'plain',
+  },
+];

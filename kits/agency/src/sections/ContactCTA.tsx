@@ -9,6 +9,8 @@ import type { SectionBaseProps } from '@/types';
  * inverted near-black band. Place just before the footer.
  */
 export interface ContactCTAProps extends SectionBaseProps {
+  /** Section index marker in the header — monospace beside the eyebrow, closed by a hairline rule. Zero-padded two digits in page order (e.g. "05"); omit to hide. */
+  index?: string | null;
   /** Monospace label above the headline. 1–3 words, sentence case, no punctuation (e.g. "Start a project"). */
   eyebrow?: string | null;
   /** Oversized closing statement. 1 phrase, 3–7 words, no trailing period. */
@@ -27,15 +29,23 @@ export interface ContactCTAProps extends SectionBaseProps {
   };
 }
 
-export function ContactCTA({ id, eyebrow, headline, email, cta }: ContactCTAProps) {
+export function ContactCTA({ id, index, eyebrow, headline, email, cta }: ContactCTAProps) {
   return (
     <section id={id ?? undefined} className="w-full border-b border-foreground bg-foreground text-background">
       <div className="mx-auto w-full max-w-7xl px-6 py-24 md:py-32">
         <Reveal className="flex flex-col gap-12">
-          {eyebrow ? (
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-background/60">
-              {eyebrow}
-            </p>
+          {index || eyebrow ? (
+            <div className="flex items-center gap-4">
+              {index ? (
+                <span className="font-mono text-sm font-medium text-primary">{index}</span>
+              ) : null}
+              {eyebrow ? (
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-background/60">
+                  {eyebrow}
+                </p>
+              ) : null}
+              <span aria-hidden className="h-px flex-1 bg-background/20" />
+            </div>
           ) : null}
           <h2 className="max-w-5xl text-5xl font-bold leading-[0.95] tracking-[-0.03em] text-balance uppercase sm:text-7xl md:text-8xl">
             {headline}
@@ -65,6 +75,7 @@ export function ContactCTA({ id, eyebrow, headline, email, cta }: ContactCTAProp
 }
 
 export const ContactCTADemo: ContactCTAProps = {
+  index: '05',
   eyebrow: 'Start a project',
   headline: 'Got something to build',
   email: 'hello@fieldstudio.example',

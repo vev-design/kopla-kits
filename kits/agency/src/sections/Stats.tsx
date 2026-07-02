@@ -11,6 +11,8 @@ import type { SectionBaseProps } from '@/types';
  * @hydrate
  */
 export interface StatsProps extends SectionBaseProps {
+  /** Section index marker in the header — monospace beside the eyebrow, closed by a hairline rule. Zero-padded two digits in page order (e.g. "04"); omit to hide. */
+  index?: string | null;
   /** Monospace label above the figures. 1–3 words, sentence case, no punctuation (e.g. "By the numbers"). */
   eyebrow?: string | null;
   /** Stat figures. 2–4 items. */
@@ -68,15 +70,23 @@ function StatFigure({ value }: { value: string }) {
   );
 }
 
-export function Stats({ id, eyebrow, stats }: StatsProps) {
+export function Stats({ id, index, eyebrow, stats }: StatsProps) {
   return (
     <section id={id ?? undefined} className="w-full border-b border-foreground bg-background">
       <div className="mx-auto w-full max-w-7xl px-6 py-20 md:py-28">
-        {eyebrow ? (
+        {index || eyebrow ? (
           <Reveal>
-            <p className="mb-14 font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
-              {eyebrow}
-            </p>
+            <div className="mb-14 flex items-center gap-4">
+              {index ? (
+                <span className="font-mono text-sm font-medium text-primary">{index}</span>
+              ) : null}
+              {eyebrow ? (
+                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  {eyebrow}
+                </p>
+              ) : null}
+              <span aria-hidden className="h-px flex-1 bg-border" />
+            </div>
           </Reveal>
         ) : null}
         <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
@@ -97,6 +107,7 @@ export function Stats({ id, eyebrow, stats }: StatsProps) {
 }
 
 export const StatsDemo: StatsProps = {
+  index: '04',
   eyebrow: 'By the numbers',
   stats: [
     { value: '120+', label: 'Projects shipped' },
