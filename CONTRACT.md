@@ -124,6 +124,39 @@ variant axes from explicit string-union props, preview states from
 `<Name>Showcase`. Provenance beyond `origin: generated` (e.g. a Figma
 `fileKey`/`nodeId`) is the host import pipeline's concern, not the kit build's.
 
+## Advanced components (top-level `components/`)
+
+Alongside `kits/`, the repo carries a **kit-agnostic catalog of advanced
+components** — prebuilt, token-themed implementations of behavior that is
+easy to get wrong (scroll-driven storytelling, animated counters,
+marquees, …). They are **copy-in** components: a consumer (usually an
+agent) copies the source into a workspace's `src/components/` and
+registers one barrel line; the copy then forks with the workspace,
+exactly like any other catalog component. `components/AGENTS.md` is the
+agent-facing copy-in guide.
+
+- One folder per component: `components/<Name>/` (PascalCase) with
+  `component.json` (metadata: `name` = folder, `description`,
+  `whenToUse`, `tags[]`, `hydrate`, `vendor[]` — all required) and
+  `<Name>.tsx`, the copy-in source. `component.json` is metadata, never
+  materialized — same rule as `kit.json`.
+- Components follow the kit component contract above (typed JSDoc'd
+  `*Props`, explicit string-union variant axes, `<Name>Showcase`,
+  token-themed styling, `@hydrate` opt-in) so the copied file surfaces
+  into `design.json.components` with **no rework**.
+- **No npm dependencies beyond `_base`'s.** A component that needs a
+  third-party lib ships it as pinned, pre-bundled code in a
+  `<Name>.vendor/` folder (relative imports, so the copy stays
+  verbatim), recorded in `component.json.vendor` as
+  `{ pkg, version, license }` entries — the auditable record of what's
+  inside the blob. `vendor: []` when nothing is vendored.
+- CI: `scripts/build-components.mjs` assembles blank ∪ every component
+  (the exact copy-in) and runs the real toolchain, then asserts each
+  component surfaced in `design.json.components`.
+- Packed additively into the published bundle under a `components` key
+  (`{ "<Name>": { manifest, files } }`); consumers that predate the key
+  ignore it, so adding it was not a `formatVersion` bump.
+
 ## Toolchain contract
 
 For every kit, the assembled workspace must pass:

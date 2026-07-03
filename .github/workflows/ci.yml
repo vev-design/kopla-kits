@@ -27,6 +27,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: node scripts/pack-kits.mjs
       - run: node scripts/build-kit.mjs --all
+      - run: node scripts/build-components.mjs
 
   # The demo must build — it's also what Vercel deploys for preview URLs.
   demo:

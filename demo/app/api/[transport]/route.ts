@@ -45,14 +45,29 @@ function tokenEssentials(tokens: KitTokens | undefined): Record<string, string> 
   return out;
 }
 
+interface ComponentManifest {
+  name: string;
+  description: string;
+  whenToUse: string;
+  tags: string[];
+  hydrate: boolean;
+  vendor: { pkg: string; version: string; license: string }[];
+}
+
 const base = bundle.base as Record<string, string>;
 const kits = bundle.kits as Record<
   string,
   { manifest: KitManifest; files: Record<string, string> }
 >;
+// The advanced-components catalog — additive bundle key, {} on older bundles.
+const components = ((bundle as Record<string, unknown>).components ?? {}) as Record<
+  string,
+  { manifest: ComponentManifest; files: Record<string, string> }
+>;
 
 const REPO = 'vev-design/kopla-kits';
 const SLUGS = Object.keys(kits).sort();
+const COMPONENT_NAMES = Object.keys(components).sort();
 
 const decode = (b64: string) => Buffer.from(b64, 'base64').toString('utf8');
 
@@ -165,6 +180,39 @@ const handler = createMcpHandler(
         return { content: [{ type: 'text', text: decode(file) }] };
       },
     );
+    if (COMPONENT_NAMES.length > 0) {
+      server.tool(
+        'list_components',
+        'List the advanced-components catalog: prebuilt, token-themed copy-in components (scroll-driven storytelling, animated counters, marquees, …) that drop into any kit workspace. Each entry carries `whenToUse` guidance (what it is for AND not for — the primary selection signal), tags, and whether it needs client-side hydration. Kit-agnostic: they restyle with whichever system they are copied into.',
+        {},
+        () => {
+          const catalog = COMPONENT_NAMES.map((name) => components[name]!.manifest);
+          return { content: [{ type: 'text', text: JSON.stringify(catalog, null, 2) }] };
+        },
+      );
+
+      server.tool(
+        'get_component',
+        'Get one advanced component: its manifest and the full copy-in source. To use it, copy every file (component.json is metadata, already excluded) into the workspace’s src/components/ keeping the relative layout, then register it with an `export * from "./<Name>";` line in src/components/index.ts — the build surfaces it into design.json.components with no rework.',
+        {
+          name: z
+            .enum(COMPONENT_NAMES as [string, ...string[]])
+            .describe('Component name, from list_components'),
+        },
+        ({ name }) => {
+          const { manifest, files } = components[name]!;
+          const sources = Object.keys(files)
+            .sort()
+            .map((p) => `── src/components/${p} ──\n${decode(files[p]!)}`)
+            .join('\n\n');
+          return {
+            content: [
+              { type: 'text', text: [JSON.stringify(manifest, null, 2), '', sources].join('\n') },
+            ],
+          };
+        },
+      );
+    }
   },
   {
     serverInfo: { name: 'kopla-kits', version: '0.1.0' },

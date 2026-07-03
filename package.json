@@ -14,7 +14,8 @@
   "scripts": {
     "pack-kits": "node scripts/pack-kits.mjs",
     "build-kit": "node scripts/build-kit.mjs",
-    "ci": "node scripts/pack-kits.mjs && node scripts/build-kit.mjs --all",
+    "build-components": "node scripts/build-components.mjs",
+    "ci": "node scripts/pack-kits.mjs && node scripts/build-kit.mjs --all && node scripts/build-components.mjs",
     "prepublishOnly": "node scripts/pack-kits.mjs"
   },
   "engines": {
