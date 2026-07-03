@@ -1,0 +1,8 @@
+{
+  "name": "Marquee",
+  "description": "An endless horizontal ticker of short text items, scrolling in a seamless loop with faded edges.",
+  "whenToUse": "Social proof and momentum strips — client names, press mentions, ticker headlines, value-prop keywords — when the user asks for a marquee, ticker, or endlessly scrolling strip. Pure CSS animation: works without JavaScript and honors prefers-reduced-motion. NOT for logo images (use a LogoCloud-style section) or content the reader must be able to study.",
+  "tags": ["ticker", "social-proof", "css-only"],
+  "hydrate": false,
+  "vendor": []
+}

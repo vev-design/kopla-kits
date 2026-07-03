@@ -1,0 +1,8 @@
+{
+  "name": "Scrollytelling",
+  "description": "Scroll-driven story: text steps scroll past a pinned visual panel that switches as each step enters the viewport.",
+  "whenToUse": "Narrative content that unfolds in ordered steps — product tours, how-it-works walkthroughs, annual-report story beats, data stories. Reach for it when the user asks for scrollytelling, a scroll-driven story, a sticky/pinned walkthrough, or steps that highlight as you scroll. NOT for plain feature grids or short lists that fit one viewport — those don't need scroll choreography.",
+  "tags": ["scroll", "storytelling", "interactive"],
+  "hydrate": true,
+  "vendor": []
+}

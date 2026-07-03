@@ -1,0 +1,8 @@
+{
+  "name": "CountUp",
+  "description": "A number that counts up from zero when it scrolls into view, then settles on its final value.",
+  "whenToUse": "Stat and metric beats — KPI rows, results sections, annual-report highlights — where the user asks for animated numbers, counters, or stats that 'tick up'. Renders the final value on the server so the number is real without JavaScript. NOT for numbers inside running prose, and not a replacement for a chart when the shape of the data matters.",
+  "tags": ["stats", "animation", "numbers"],
+  "hydrate": true,
+  "vendor": []
+}

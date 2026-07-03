@@ -13,13 +13,17 @@
 //   {
 //     formatVersion: 1,
 //     base: { "<relpath>": "<base64>", ... },
-//     kits: { "<slug>": { manifest, files: { "<relpath>": "<base64>" } } }
+//     kits: { "<slug>": { manifest, files: { "<relpath>": "<base64>" } } },
+//     components: { "<Name>": { manifest, files: { "<relpath>": "<base64>" } } }
 //   }
 //
 // `base` is the kit-invariant substrate (kits/_base). Each kit's `files`
 // are its overlay — they win on path collisions when a workspace is
 // materialized as base ∪ kit. `manifest` is the parsed kit.json +
-// derived slug (the folder name).
+// derived slug (the folder name). `components` is the advanced-components
+// catalog (top-level components/): kit-agnostic copy-in components, one
+// entry per folder, `manifest` = parsed component.json + derived name.
+// Additive — consumers that predate it ignore the key.
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { collectTokensFromCss } from '../kits/_base/scripts/lib/tokens.mjs';
@@ -30,6 +34,7 @@ import process from 'node:process';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
 const BASE_SRC = resolve(KITS_SRC, '_base');
+const COMPONENTS_SRC = resolve(ROOT, 'components');
 const OUT_PATH = resolve(ROOT, 'dist/kits-bundle.json');
 
 const SKIP_DIRS = new Set([
@@ -44,10 +49,10 @@ const SKIP_DIRS = new Set([
 ]);
 // `.gitkeep` is a marker for empty dirs in git; we don't need to ship
 // it to consumers. Empty directories materialize implicitly when the
-// first child file lands. `kit.json` is kit METADATA, not a workspace
-// file — it's read into the manifest, never materialized, so it's
-// excluded from the packed file tree here too.
-const SKIP_FILES = new Set(['.DS_Store', 'pnpm-lock.yaml', '.gitkeep', 'kit.json']);
+// first child file lands. `kit.json` / `component.json` are METADATA,
+// not workspace files — they're read into the manifest, never
+// materialized, so they're excluded from the packed file trees too.
+const SKIP_FILES = new Set(['.DS_Store', 'pnpm-lock.yaml', '.gitkeep', 'kit.json', 'component.json']);
 
 async function walk(dir, acc = []) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -180,9 +185,92 @@ async function packKits() {
   return kits;
 }
 
+const NAME_RE = /^[A-Z][A-Za-z0-9]*$/;
+
+function validateComponentManifest(name, raw) {
+  const errs = [];
+  if (typeof raw !== 'object' || raw === null) errs.push('component.json must be a JSON object');
+  const m = /** @type {Record<string, unknown>} */ (raw ?? {});
+  if (m.name !== name) errs.push(`\`name\` must equal the folder name ("${name}")`);
+  if (typeof m.description !== 'string' || !m.description.trim())
+    errs.push('`description` (non-empty string) required');
+  if (typeof m.whenToUse !== 'string' || !m.whenToUse.trim())
+    errs.push('`whenToUse` (non-empty string) required');
+  if (!Array.isArray(m.tags) || !m.tags.every((t) => typeof t === 'string'))
+    errs.push('`tags` (string[]) required');
+  if (typeof m.hydrate !== 'boolean') errs.push('`hydrate` (boolean) required');
+  if (
+    !Array.isArray(m.vendor) ||
+    !m.vendor.every(
+      (v) =>
+        typeof v === 'object' &&
+        v !== null &&
+        typeof v.pkg === 'string' &&
+        typeof v.version === 'string' &&
+        typeof v.license === 'string',
+    )
+  )
+    errs.push('`vendor` ({ pkg, version, license }[]; [] when nothing is vendored) required');
+  if (errs.length > 0) {
+    console.error(`pack: component "${name}" component.json invalid:\n  - ${errs.join('\n  - ')}`);
+    process.exit(1);
+  }
+  return {
+    name,
+    description: m.description,
+    whenToUse: m.whenToUse,
+    tags: m.tags,
+    hydrate: m.hydrate,
+    vendor: m.vendor,
+  };
+}
+
+/** The advanced-components catalog (top-level components/, one folder per
+ *  component). Optional — an empty catalog packs as {}. */
+async function packComponents() {
+  let entries;
+  try {
+    entries = await readdir(COMPONENTS_SRC, { withFileTypes: true });
+  } catch {
+    return {};
+  }
+  const names = entries
+    .filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name))
+    .map((e) => e.name)
+    .sort();
+
+  /** @type {Record<string, { manifest: object, files: Record<string,string> }>} */
+  const components = {};
+  for (const name of names) {
+    if (!NAME_RE.test(name)) {
+      console.error(`pack: component folder "${name}" is not a valid component name (PascalCase)`);
+      process.exit(1);
+    }
+    const dir = resolve(COMPONENTS_SRC, name);
+    let manifestRaw;
+    try {
+      manifestRaw = JSON.parse(await readFile(resolve(dir, 'component.json'), 'utf8'));
+    } catch (err) {
+      console.error(`pack: component "${name}" is missing or has an unparseable component.json: ${err.message}`);
+      process.exit(1);
+    }
+    const manifest = validateComponentManifest(name, manifestRaw);
+    const files = await packTree(dir, `comp:${name}`);
+    // The copy-in source is the whole point — catch a folder that lost it.
+    if (!(`${name}.tsx` in files)) {
+      console.error(`pack: component "${name}" is missing its source file ${name}.tsx`);
+      process.exit(1);
+    }
+    components[name] = { manifest, files };
+  }
+  if (names.length > 0) console.log(`pack: components → ${names.length} (${names.join(', ')})`);
+  return components;
+}
+
 const base = await packTree(BASE_SRC, 'base   ');
 const kits = await packKits();
+const components = await packComponents();
 
 await mkdir(dirname(OUT_PATH), { recursive: true });
-await writeFile(OUT_PATH, JSON.stringify({ formatVersion: 1, base, kits }));
+await writeFile(OUT_PATH, JSON.stringify({ formatVersion: 1, base, kits, components }));
 console.log(`pack: → ${relative(ROOT, OUT_PATH)}`);
