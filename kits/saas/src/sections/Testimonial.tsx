@@ -25,20 +25,24 @@ export function Testimonial({ id, quote, author, role, avatar }: TestimonialProp
     <section id={id ?? undefined} className="w-full bg-secondary/50">
       <div className="mx-auto w-full max-w-4xl px-6 py-24">
         <Reveal className="flex flex-col items-center gap-10 text-center">
-          <blockquote className="text-2xl font-medium leading-snug tracking-tight text-balance md:text-3xl">
+          <blockquote
+            data-slot="quote"
+            className="text-2xl font-medium leading-snug tracking-tight text-balance md:text-3xl"
+          >
             &ldquo;{quote}&rdquo;
           </blockquote>
           <figcaption className="flex flex-col items-center gap-4">
             {avatar ? (
               <img
+                data-slot="avatar"
                 src={avatar}
                 alt=""
                 className="size-14 rounded-full border border-border object-cover"
               />
             ) : null}
             <div className="flex flex-col gap-0.5">
-              <span className="font-semibold tracking-tight">{author}</span>
-              <span className="text-sm text-muted-foreground">{role}</span>
+              <span data-slot="author" className="font-semibold tracking-tight">{author}</span>
+              <span data-slot="role" className="text-sm text-muted-foreground">{role}</span>
             </div>
           </figcaption>
         </Reveal>

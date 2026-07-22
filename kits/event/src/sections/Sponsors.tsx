@@ -15,7 +15,10 @@ export function Sponsors({ id, label, names }: SponsorsProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-14">
       {label ? (
-        <p className="mb-6 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p
+          data-slot="eyebrow"
+          className="mb-6 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+        >
           {label}
         </p>
       ) : null}
@@ -23,6 +26,7 @@ export function Sponsors({ id, label, names }: SponsorsProps) {
         {names.map((name, i) => (
           <span
             key={i}
+            data-slot="item"
             className="font-display text-lg uppercase tracking-tight text-foreground/35"
           >
             {name}

@@ -39,20 +39,34 @@ export function Hero({ id, overline, name, tagline, cta, image }: HeroProps) {
       id={id ?? undefined}
       className="relative flex min-h-screen w-full items-center justify-center overflow-hidden"
     >
-      <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+      <img
+        data-slot="media"
+        src={image}
+        alt=""
+        className="absolute inset-0 size-full object-cover"
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background" />
       <Reveal className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-32 text-center">
         {overline ? (
-          <p className="text-xs font-medium uppercase tracking-eyebrow text-primary">
+          <p
+            data-slot="eyebrow"
+            className="text-xs font-medium uppercase tracking-eyebrow text-primary"
+          >
             {overline}
           </p>
         ) : null}
-        <h1 className="font-serif text-6xl font-medium tracking-tight text-balance md:text-8xl">
+        <h1
+          data-slot="heading"
+          className="font-serif text-6xl font-medium tracking-tight text-balance md:text-8xl"
+        >
           {name}
         </h1>
         <Divider />
         {tagline ? (
-          <p className="max-w-xl font-serif text-xl italic text-muted-foreground text-pretty md:text-2xl">
+          <p
+            data-slot="subhead"
+            className="max-w-xl font-serif text-xl italic text-muted-foreground text-pretty md:text-2xl"
+          >
             {tagline}
           </p>
         ) : null}

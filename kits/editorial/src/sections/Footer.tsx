@@ -42,7 +42,7 @@ export function Footer({ id, wordmark, columns, colophon }: FooterProps) {
             the closing page reads like a ruled newspaper back page. */}
         <div className="grid grid-cols-1 gap-10 border-t border-border pt-12 md:grid-cols-[1.5fr_repeat(3,1fr)] md:gap-x-0">
           <div className="md:pr-10">
-            <p className="font-serif text-2xl font-bold tracking-[-0.01em] text-foreground">
+            <p data-slot="wordmark" className="font-serif text-2xl font-bold tracking-[-0.01em] text-foreground">
               {wordmark}
             </p>
             <span className="mt-3 block h-px w-10 bg-primary" aria-hidden />
@@ -50,10 +50,11 @@ export function Footer({ id, wordmark, columns, colophon }: FooterProps) {
           {columns.map((column, i) => (
             <nav
               key={i}
+              data-slot="item"
               aria-label={column.title}
               className="md:border-l md:border-border md:px-10"
             >
-              <p className="font-sans text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              <p data-slot="item-heading" className="font-sans text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 {column.title}
               </p>
               <ul className="mt-4 flex flex-col gap-2.5">

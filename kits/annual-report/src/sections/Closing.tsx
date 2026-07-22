@@ -47,15 +47,21 @@ export function Closing({
       <div className="mx-auto w-full max-w-4xl px-6 py-28 text-center md:px-12 md:py-36">
         <Reveal className="flex flex-col items-center gap-8">
           {eyebrow || index ? (
-            <Badge variant="rule" index={index}>
+            <Badge data-slot="eyebrow" variant="rule" index={index}>
               {eyebrow}
             </Badge>
           ) : null}
-          <p className="max-w-2xl font-serif text-3xl font-medium leading-snug tracking-tight text-balance md:text-4xl">
+          <p
+            data-slot="heading"
+            className="max-w-2xl font-serif text-3xl font-medium leading-snug tracking-tight text-balance md:text-4xl"
+          >
             {statement}
           </p>
           {signoff ? (
-            <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <span
+              data-slot="signoff"
+              className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground"
+            >
               {signoff}
             </span>
           ) : null}
@@ -71,7 +77,10 @@ export function Closing({
 
         {disclaimer ? (
           <Reveal>
-            <p className="mx-auto mt-20 max-w-2xl border-t border-border pt-8 text-xs leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="body"
+              className="mx-auto mt-20 max-w-2xl border-t border-border pt-8 text-xs leading-relaxed text-muted-foreground text-pretty"
+            >
               {disclaimer}
             </p>
           </Reveal>

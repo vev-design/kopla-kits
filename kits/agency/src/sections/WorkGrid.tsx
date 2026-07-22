@@ -57,7 +57,7 @@ export function WorkGrid({
                 <span className="font-mono text-sm font-medium text-primary">{index}</span>
               ) : null}
               {eyebrow ? (
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   {eyebrow}
                 </p>
               ) : null}
@@ -65,7 +65,7 @@ export function WorkGrid({
             </div>
           ) : null}
           <div className="flex items-end justify-between gap-6">
-            <h2 className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
+            <h2 data-slot="heading" className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
               {heading}
             </h2>
             <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground md:inline">
@@ -82,11 +82,13 @@ export function WorkGrid({
           {projects.map((project) => (
             <a
               key={project.title}
+              data-slot="item"
               href={project.href}
               className="group flex flex-col gap-5"
             >
               <div className="relative overflow-hidden rounded-sm border border-border">
                 <img
+                  data-slot="media"
                   src={project.image}
                   alt=""
                   className="aspect-[4/3] w-full object-cover grayscale transition-all duration-500 group-hover:scale-[1.03] group-hover:grayscale-0"
@@ -98,7 +100,7 @@ export function WorkGrid({
                   <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     {project.client} — {project.category}
                   </span>
-                  <h3 className="text-2xl font-bold tracking-tight transition-colors group-hover:text-primary md:text-3xl">
+                  <h3 data-slot="item-heading" className="text-2xl font-bold tracking-tight transition-colors group-hover:text-primary md:text-3xl">
                     {project.title}
                   </h3>
                 </div>

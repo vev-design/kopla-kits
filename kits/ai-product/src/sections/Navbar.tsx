@@ -41,6 +41,7 @@ export function Navbar({ id, logo, links, cta }: NavbarProps) {
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
         <a
           href="#top"
+          data-slot="logo"
           className="flex items-center gap-2.5 text-base font-semibold tracking-tight"
         >
           <span
@@ -54,6 +55,7 @@ export function Navbar({ id, logo, links, cta }: NavbarProps) {
             <li key={link.href}>
               <a
                 href={link.href}
+                data-slot="item"
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}

@@ -29,7 +29,11 @@ export interface AvatarProps extends React.ComponentProps<'div'> {
 
 export function Avatar({ radius, className, children, ...props }: AvatarProps) {
   return (
-    <div className={cn(avatarFrame({ radius }), className)} {...props}>
+    <div
+      data-kopla-component="Avatar"
+      className={cn(avatarFrame({ radius }), className)}
+      {...props}
+    >
       {children}
     </div>
   );

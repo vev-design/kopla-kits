@@ -48,12 +48,12 @@ export function ArticleHero({
         {hasDateline ? (
           <div className="mb-10 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 border-y border-border py-3">
             {kicker ? (
-              <p className="font-sans text-xs font-semibold tracking-[0.28em] text-primary uppercase">
+              <p data-slot="eyebrow" className="font-sans text-xs font-semibold tracking-[0.28em] text-primary uppercase">
                 {kicker}
               </p>
             ) : null}
             {byline || date ? (
-              <p className="flex flex-wrap items-baseline gap-x-3 font-sans text-xs tracking-[0.16em] text-muted-foreground uppercase">
+              <p data-slot="byline" className="flex flex-wrap items-baseline gap-x-3 font-sans text-xs tracking-[0.16em] text-muted-foreground uppercase">
                 {byline ? <span className="text-foreground">{byline}</span> : null}
                 {byline && date ? (
                   <span className="text-border" aria-hidden>
@@ -69,6 +69,7 @@ export function ArticleHero({
             so the lead text stays intact + complete for assistive tech (no
             aria-hidden split, no duplicated/hidden characters). */}
         <p
+          data-slot="body"
           className={cn(
             'font-serif text-2xl leading-[1.55] text-foreground text-pretty md:text-[1.75rem]',
             dropCap &&
@@ -82,6 +83,7 @@ export function ArticleHero({
         <Reveal className="mx-auto mt-14 w-full max-w-6xl px-6">
           <Figure ratio="wide" caption={caption}>
             <img
+              data-slot="media"
               src={image}
               alt={caption ?? ''}
               className="h-full w-full object-cover"

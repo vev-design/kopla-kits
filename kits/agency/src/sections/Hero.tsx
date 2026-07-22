@@ -49,16 +49,16 @@ export function Hero({ id, eyebrow, headline, accentWord, subhead, cta }: HeroPr
       <div className="mx-auto w-full max-w-7xl px-6 pt-24 pb-20 md:pt-32 md:pb-28">
         <Reveal className="flex flex-col gap-10">
           {eyebrow ? (
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+            <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="max-w-5xl text-6xl font-bold leading-[0.92] tracking-[-0.03em] text-balance uppercase sm:text-7xl md:text-8xl lg:text-9xl">
+          <h1 data-slot="heading" className="max-w-5xl text-6xl font-bold leading-[0.92] tracking-[-0.03em] text-balance uppercase sm:text-7xl md:text-8xl lg:text-9xl">
             {renderHeadline(headline, accentWord)}
           </h1>
           <div className="flex flex-col items-start gap-8 border-t border-border pt-8 md:flex-row md:items-center md:justify-between">
             {subhead ? (
-              <p className="max-w-xl text-lg text-muted-foreground text-pretty md:text-xl">
+              <p data-slot="subhead" className="max-w-xl text-lg text-muted-foreground text-pretty md:text-xl">
                 {subhead}
               </p>
             ) : null}

@@ -40,8 +40,15 @@ export function Gallery({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
         <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
-          {overline ? <Badge variant="gold">{overline}</Badge> : null}
-          <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
+          {overline ? (
+            <Badge data-slot="eyebrow" variant="gold">
+              {overline}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           <Divider className="max-w-[7rem]" />
@@ -63,8 +70,9 @@ export function Gallery({
                 variant === 'mosaic' && i % 5 === 0 && 'md:col-span-2 md:row-span-2',
               )}
             >
-            <figure className="group relative h-full overflow-hidden rounded-xl border border-border">
+            <figure data-slot="item" className="group relative h-full overflow-hidden rounded-xl border border-border">
               <img
+                data-slot="media"
                 src={image.src}
                 alt={image.caption ?? ''}
                 className={cn(
@@ -73,7 +81,7 @@ export function Gallery({
                 )}
               />
               {image.caption ? (
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-4 text-xs font-medium uppercase tracking-eyebrow text-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <figcaption data-slot="item-body" className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-4 text-xs font-medium uppercase tracking-eyebrow text-foreground opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   {image.caption}
                 </figcaption>
               ) : null}

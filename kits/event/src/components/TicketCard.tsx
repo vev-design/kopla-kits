@@ -32,7 +32,11 @@ export interface TicketCardProps extends React.ComponentProps<'div'> {
 
 export function TicketCard({ emphasis, className, children, ...props }: TicketCardProps) {
   return (
-    <div className={cn(ticketCard({ emphasis }), className)} {...props}>
+    <div
+      data-kopla-component="TicketCard"
+      className={cn(ticketCard({ emphasis }), className)}
+      {...props}
+    >
       {children}
     </div>
   );

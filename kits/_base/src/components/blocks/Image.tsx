@@ -17,5 +17,5 @@ export interface ImageBlockProps {
 }
 
 export function ImageBlock({ src, alt }: ImageBlockProps) {
-  return <img src={src} alt={alt} className="h-full w-full object-cover" />;
+  return <img data-slot="media" src={src} alt={alt} className="h-full w-full object-cover" />;
 }

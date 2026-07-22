@@ -32,6 +32,7 @@ export function Divider({ className, align, ...props }: DividerProps) {
   return (
     <div
       role="separator"
+      data-kopla-component="Divider"
       className={cn(dividerVariants({ align }), className)}
       {...props}
     >

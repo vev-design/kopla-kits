@@ -49,20 +49,29 @@ export function TitleSlide({
       <div className="relative mx-auto w-full max-w-6xl">
         <Reveal>
           {kicker ? (
-            <p className="mb-8 inline-flex items-center gap-3 text-xs font-semibold tracking-[0.28em] text-primary uppercase">
+            <p
+              data-slot="eyebrow"
+              className="mb-8 inline-flex items-center gap-3 text-xs font-semibold tracking-[0.28em] text-primary uppercase"
+            >
               <span className="h-px w-10 bg-primary" />
               {kicker}
             </p>
           ) : null}
         </Reveal>
         <Reveal transition={{ delay: 0.05 }}>
-          <h1 className="font-display text-6xl leading-[0.9] font-bold tracking-tighter text-balance md:text-8xl lg:text-9xl">
+          <h1
+            data-slot="heading"
+            className="font-display text-6xl leading-[0.9] font-bold tracking-tighter text-balance md:text-8xl lg:text-9xl"
+          >
             {title}
           </h1>
         </Reveal>
         {subtitle ? (
           <Reveal transition={{ delay: 0.12 }}>
-            <p className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl">
+            <p
+              data-slot="subhead"
+              className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl"
+            >
               {subtitle}
             </p>
           </Reveal>
@@ -70,12 +79,16 @@ export function TitleSlide({
         {presenter || date ? (
           <Reveal transition={{ delay: 0.2 }}>
             <div className="mt-16 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium tracking-wide text-foreground/80 md:text-base">
-              {presenter ? <span>{presenter}</span> : null}
+              {presenter ? (
+                <span data-slot="presenter">{presenter}</span>
+              ) : null}
               {presenter && date ? (
                 <span className="text-primary">·</span>
               ) : null}
               {date ? (
-                <span className="text-muted-foreground">{date}</span>
+                <span data-slot="date" className="text-muted-foreground">
+                  {date}
+                </span>
               ) : null}
             </div>
           </Reveal>

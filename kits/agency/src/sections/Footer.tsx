@@ -37,14 +37,14 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-[1.6fr_repeat(3,1fr)]">
           <div className="col-span-2 flex flex-col gap-3 md:col-span-1">
             {blurb ? (
-              <p className="max-w-xs text-sm text-muted-foreground text-pretty">
+              <p data-slot="body" className="max-w-xs text-sm text-muted-foreground text-pretty">
                 {blurb}
               </p>
             ) : null}
           </div>
           {columns.map((column) => (
-            <div key={column.heading} className="flex flex-col gap-3">
-              <h3 className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <div key={column.heading} data-slot="item" className="flex flex-col gap-3">
+              <h3 data-slot="item-heading" className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 {column.heading}
               </h3>
               <ul className="flex flex-col gap-2.5">
@@ -63,12 +63,12 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
           ))}
         </div>
         {legal ? (
-          <p className="mt-12 border-t border-border pt-6 font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          <p data-slot="legal" className="mt-12 border-t border-border pt-6 font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
             {legal}
           </p>
         ) : null}
         <div className="mt-10 overflow-hidden">
-          <span className="block translate-y-[0.14em] text-[clamp(4rem,14vw,13rem)] font-bold uppercase leading-none tracking-[-0.05em] whitespace-nowrap">
+          <span data-slot="logo" className="block translate-y-[0.14em] text-[clamp(4rem,14vw,13rem)] font-bold uppercase leading-none tracking-[-0.05em] whitespace-nowrap">
             {logo}
           </span>
         </div>

@@ -54,13 +54,25 @@ export function Stat({
   ...props
 }: StatProps) {
   return (
-    <div className={cn('flex flex-col gap-3', className)} {...props}>
-      <span className={cn(figureVariants({ size, tone }))}>{value}</span>
-      <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+    <div
+      data-kopla-component="Stat"
+      className={cn('flex flex-col gap-3', className)}
+      {...props}
+    >
+      <span data-slot="value" className={cn(figureVariants({ size, tone }))}>
+        {value}
+      </span>
+      <span
+        data-slot="label"
+        className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground"
+      >
         {label}
       </span>
       {delta ? (
-        <span className="font-mono text-xs font-medium tracking-wide tabular-nums text-primary">
+        <span
+          data-slot="delta"
+          className="font-mono text-xs font-medium tracking-wide tabular-nums text-primary"
+        >
           {delta}
         </span>
       ) : null}

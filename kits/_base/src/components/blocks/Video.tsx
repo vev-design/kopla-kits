@@ -52,6 +52,7 @@ export function VideoBlock({ src, poster, title }: VideoBlockProps) {
   if (embed) {
     return (
       <iframe
+        data-slot="media"
         src={embed}
         title={title}
         className="h-full w-full"
@@ -64,6 +65,7 @@ export function VideoBlock({ src, poster, title }: VideoBlockProps) {
   }
   return (
     <video
+      data-slot="media"
       src={src}
       poster={poster ?? undefined}
       aria-label={title}

@@ -56,7 +56,10 @@ export function QuoteSlide({
           </span>
         </Reveal>
         <Reveal transition={{ delay: 0.08 }}>
-          <blockquote className="mt-2 font-display text-3xl leading-tight font-medium tracking-tight text-balance md:text-5xl lg:text-6xl">
+          <blockquote
+            data-slot="quote"
+            className="mt-2 font-display text-3xl leading-tight font-medium tracking-tight text-balance md:text-5xl lg:text-6xl"
+          >
             {quote}
           </blockquote>
         </Reveal>
@@ -67,11 +70,17 @@ export function QuoteSlide({
               variant === 'centered' && 'items-center',
             )}
           >
-            <span className="text-lg font-semibold tracking-tight md:text-xl">
+            <span
+              data-slot="attribution-name"
+              className="text-lg font-semibold tracking-tight md:text-xl"
+            >
               {attributionName}
             </span>
             {attributionRole ? (
-              <span className="text-base text-muted-foreground md:text-lg">
+              <span
+                data-slot="attribution-role"
+                className="text-base text-muted-foreground md:text-lg"
+              >
                 {attributionRole}
               </span>
             ) : null}

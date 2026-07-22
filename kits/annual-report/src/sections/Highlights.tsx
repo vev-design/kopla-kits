@@ -85,11 +85,14 @@ export function Highlights({ id, index, eyebrow, heading, figures }: HighlightsP
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-16 max-w-2xl">
           {eyebrow || index ? (
-            <Badge variant="rule" index={index}>
+            <Badge data-slot="eyebrow" variant="rule" index={index}>
               {eyebrow}
             </Badge>
           ) : null}
-          <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+          <h2
+            data-slot="heading"
+            className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
         </Reveal>
@@ -98,16 +101,26 @@ export function Highlights({ id, index, eyebrow, heading, figures }: HighlightsP
           {figures.map((figure) => (
             <Reveal
               key={figure.label}
+              data-slot="item"
               className="flex flex-col gap-3 border-t-2 border-primary pt-6"
             >
-              <span className="block font-serif text-6xl font-semibold leading-none tracking-tight text-primary md:text-7xl">
+              <span
+                data-slot="value"
+                className="block font-serif text-6xl font-semibold leading-none tracking-tight text-primary md:text-7xl"
+              >
                 <CountUp value={figure.value} />
               </span>
-              <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              <span
+                data-slot="label"
+                className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground"
+              >
                 {figure.label}
               </span>
               {figure.delta ? (
-                <span className="font-mono text-xs font-medium tracking-wide tabular-nums text-secondary-foreground">
+                <span
+                  data-slot="delta"
+                  className="font-mono text-xs font-medium tracking-wide tabular-nums text-secondary-foreground"
+                >
                   {figure.delta}
                 </span>
               ) : null}

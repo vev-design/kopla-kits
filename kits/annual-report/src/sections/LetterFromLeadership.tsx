@@ -56,11 +56,14 @@ export function LetterFromLeadership({
           <Reveal>
             <div className={isSplit ? 'md:sticky md:top-24' : 'mb-12'}>
               {eyebrow || index ? (
-                <Badge variant="rule" index={index}>
+                <Badge data-slot="eyebrow" variant="rule" index={index}>
                   {eyebrow}
                 </Badge>
               ) : null}
-              <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+              <h2
+                data-slot="heading"
+                className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+              >
                 {heading}
               </h2>
             </div>
@@ -71,6 +74,7 @@ export function LetterFromLeadership({
               {paragraphs.map((paragraph, i) => (
                 <p
                   key={i}
+                  data-slot="body"
                   className="font-serif text-lg leading-relaxed text-foreground/85 text-pretty md:text-xl"
                 >
                   {paragraph}
@@ -82,16 +86,23 @@ export function LetterFromLeadership({
               <div className="mt-12 flex items-center gap-5 border-t border-border pt-8">
                 {portrait ? (
                   <img
+                    data-slot="media"
                     src={portrait}
                     alt=""
                     className="size-16 shrink-0 rounded-full object-cover grayscale"
                   />
                 ) : null}
                 <div className="flex flex-col">
-                  <span className="font-serif text-xl font-semibold tracking-tight text-primary">
+                  <span
+                    data-slot="signature"
+                    className="font-serif text-xl font-semibold tracking-tight text-primary"
+                  >
                     {signatureName}
                   </span>
-                  <span className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <span
+                    data-slot="signature-role"
+                    className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground"
+                  >
                     {signatureRole}
                   </span>
                 </div>

@@ -33,10 +33,10 @@ export interface FigureProps extends React.ComponentProps<'figure'> {
 
 export function Figure({ ratio, caption, children, className, ...props }: FigureProps) {
   return (
-    <figure className={cn('w-full', className)} {...props}>
-      <div className={figureMedia({ ratio })}>{children}</div>
+    <figure data-kopla-component="Figure" className={cn('w-full', className)} {...props}>
+      <div data-slot="surface" className={figureMedia({ ratio })}>{children}</div>
       {caption ? (
-        <figcaption className="mt-3 border-t border-border pt-2 font-sans text-sm text-muted-foreground">
+        <figcaption data-slot="caption" className="mt-3 border-t border-border pt-2 font-sans text-sm text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}

@@ -16,6 +16,7 @@ export interface EyebrowProps extends React.ComponentProps<'p'> {
 export function Eyebrow({ className, children, ...props }: EyebrowProps) {
   return (
     <p
+      data-kopla-component="Eyebrow"
       className={cn(
         'text-xs font-semibold tracking-[0.28em] text-primary uppercase',
         className,

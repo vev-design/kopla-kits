@@ -42,7 +42,7 @@ export function Masthead({
       <Reveal className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
         {hasDateline ? (
           <div className="w-full border-y border-border py-2.5">
-            <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-sans text-[0.7rem] tracking-[0.24em] text-muted-foreground uppercase">
+            <p data-slot="dateline" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-sans text-[0.7rem] tracking-[0.24em] text-muted-foreground uppercase">
               {date ? <span>{date}</span> : null}
               {date && meta ? (
                 <span className="text-border" aria-hidden>
@@ -54,7 +54,7 @@ export function Masthead({
           </div>
         ) : null}
         {/* Wordmark: the publication set like a newspaper nameplate. */}
-        <p className="mt-10 font-serif text-4xl leading-none font-bold tracking-[-0.01em] text-foreground md:text-5xl">
+        <p data-slot="wordmark" className="mt-10 font-serif text-4xl leading-none font-bold tracking-[-0.01em] text-foreground md:text-5xl">
           {publication}
         </p>
         {/* Double hairline rule beneath the nameplate — the masthead's signature. */}
@@ -62,18 +62,18 @@ export function Masthead({
           <div className="border-t border-foreground" />
           <div className="mt-[3px] border-t border-foreground" />
         </div>
-        <h1 className="mt-12 font-serif text-5xl leading-[1.04] font-bold tracking-[-0.02em] text-balance text-foreground md:text-7xl">
+        <h1 data-slot="heading" className="mt-12 font-serif text-5xl leading-[1.04] font-bold tracking-[-0.02em] text-balance text-foreground md:text-7xl">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-7 max-w-2xl font-serif text-xl leading-relaxed text-muted-foreground italic md:text-2xl">
+          <p data-slot="subhead" className="mt-7 max-w-2xl font-serif text-xl leading-relaxed text-muted-foreground italic md:text-2xl">
             {subtitle}
           </p>
         ) : null}
         {author ? (
           <div className="mt-10 flex items-center gap-4">
             <span className="h-px w-8 bg-primary" aria-hidden />
-            <p className="font-sans text-xs font-medium tracking-[0.22em] text-foreground uppercase">
+            <p data-slot="byline" className="font-sans text-xs font-medium tracking-[0.22em] text-foreground uppercase">
               By {author}
             </p>
             <span className="h-px w-8 bg-primary" aria-hidden />

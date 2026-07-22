@@ -81,15 +81,15 @@ export function Features({
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
           {eyebrow ? (
-            <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p data-slot="eyebrow" className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-4xl">
+          <h2 data-slot="heading" className="max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-4xl">
             {heading}
           </h2>
           {subhead ? (
-            <p className="max-w-2xl text-lg text-muted-foreground text-pretty">
+            <p data-slot="subhead" className="max-w-2xl text-lg text-muted-foreground text-pretty">
               {subhead}
             </p>
           ) : null}
@@ -105,14 +105,14 @@ export function Features({
           {features.map((feature) => {
             const Icon = ICONS[feature.icon] ?? Sparkles;
             return (
-              <Card key={feature.title} variant="feature">
-                <span className="inline-flex size-11 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <Card key={feature.title} data-slot="item" variant="feature">
+                <span data-slot="icon" className="inline-flex size-11 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                   <Icon className="size-5" strokeWidth={2.25} />
                 </span>
-                <h3 className="text-lg font-semibold tracking-tight">
+                <h3 data-slot="item-heading" className="text-lg font-semibold tracking-tight">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-muted-foreground text-pretty">
+                <p data-slot="item-body" className="text-sm text-muted-foreground text-pretty">
                   {feature.body}
                 </p>
               </Card>

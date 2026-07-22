@@ -81,15 +81,23 @@ export function FeatureGrid({ id, eyebrow, heading, subhead, features }: Feature
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-12 flex max-w-2xl flex-col items-start gap-4">
           {eyebrow ? (
-            <p className="font-mono text-xs tracking-[0.18em] text-accent-foreground uppercase">
+            <p
+              data-slot="eyebrow"
+              className="font-mono text-xs tracking-[0.18em] text-accent-foreground uppercase"
+            >
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="text-3xl font-semibold tracking-tight text-balance md:text-4xl">
+          <h2
+            data-slot="heading"
+            className="text-3xl font-semibold tracking-tight text-balance md:text-4xl"
+          >
             {heading}
           </h2>
           {subhead ? (
-            <p className="text-lg text-muted-foreground text-pretty">{subhead}</p>
+            <p data-slot="subhead" className="text-lg text-muted-foreground text-pretty">
+              {subhead}
+            </p>
           ) : null}
         </Reveal>
         {/* Span classes must sit on the grid's direct children — Stagger wraps
@@ -108,21 +116,29 @@ export function FeatureGrid({ id, eyebrow, heading, subhead, features }: Feature
                 )}
               >
                 <Card
+                  data-slot="item"
                   variant="feature"
                   className={cn('h-full', isAnchor && 'lg:p-8')}
                 >
                 <div className="flex items-center justify-between gap-4">
-                  <span className="inline-flex size-10 items-center justify-center rounded-lg border border-ring/30 bg-accent/40 text-accent-foreground">
+                  <span
+                    data-slot="icon"
+                    className="inline-flex size-10 items-center justify-center rounded-lg border border-ring/30 bg-accent/40 text-accent-foreground"
+                  >
                     <Icon className="size-5" strokeWidth={2} />
                   </span>
                   {feature.label ? (
-                    <span className="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
+                    <span
+                      data-slot="item-label"
+                      className="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase"
+                    >
                       {feature.label}
                     </span>
                   ) : null}
                 </div>
                 <div className="flex flex-col gap-2">
                   <h3
+                    data-slot="item-heading"
                     className={cn(
                       'font-semibold tracking-tight',
                       isAnchor ? 'text-2xl' : 'text-lg',
@@ -131,6 +147,7 @@ export function FeatureGrid({ id, eyebrow, heading, subhead, features }: Feature
                     {feature.title}
                   </h3>
                   <p
+                    data-slot="item-body"
                     className={cn(
                       'text-muted-foreground text-pretty',
                       isAnchor ? 'text-base' : 'text-sm',
@@ -147,6 +164,7 @@ export function FeatureGrid({ id, eyebrow, heading, subhead, features }: Feature
                     )}
                   >
                     <img
+                      data-slot="media"
                       src={feature.image}
                       alt=""
                       className={cn(

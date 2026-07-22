@@ -17,9 +17,13 @@ export interface StatProps extends React.ComponentProps<'div'> {
 
 export function Stat({ label, value, className, ...props }: StatProps) {
   return (
-    <div className={cn('flex flex-col gap-0.5', className)} {...props}>
-      <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+    <div data-kopla-component="Stat" className={cn('flex flex-col gap-0.5', className)} {...props}>
+      <dt data-slot="label" className="text-xs uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd data-slot="value" className="font-medium">
+        {value}
+      </dd>
     </div>
   );
 }

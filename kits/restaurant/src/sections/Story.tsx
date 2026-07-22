@@ -46,6 +46,7 @@ export function Story({
           )}
         >
           <img
+            data-slot="media"
             src={image}
             alt=""
             className="aspect-[4/5] w-full object-cover"
@@ -57,20 +58,27 @@ export function Story({
             variant === 'image-right' ? 'md:order-1' : 'md:order-2',
           )}
         >
-          {overline ? <Badge variant="gold">{overline}</Badge> : null}
-          <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
+          {overline ? (
+            <Badge data-slot="eyebrow" variant="gold">
+              {overline}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           <Divider align="start" />
           <div className="flex flex-col gap-4">
             {paragraphs.map((paragraph, i) => (
-              <p key={i} className="text-base text-muted-foreground text-pretty md:text-lg">
+              <p key={i} data-slot="body" className="text-base text-muted-foreground text-pretty md:text-lg">
                 {paragraph}
               </p>
             ))}
           </div>
           {attribution ? (
-            <p className="font-serif text-lg italic text-primary">{attribution}</p>
+            <p data-slot="attribution" className="font-serif text-lg italic text-primary">{attribution}</p>
           ) : null}
         </Reveal>
       </div>

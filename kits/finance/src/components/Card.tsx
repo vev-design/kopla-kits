@@ -36,7 +36,7 @@ export interface CardProps extends React.ComponentProps<'div'> {
 
 export function Card({ className, variant, children, ...props }: CardProps) {
   return (
-    <div className={cn(cardVariants({ variant }), className)} {...props}>
+    <div data-kopla-component="Card" className={cn(cardVariants({ variant }), className)} {...props}>
       {children}
     </div>
   );

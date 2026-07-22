@@ -52,7 +52,7 @@ export function CountUp({ value, prefix, suffix, decimals = 0, duration = 1.6 }:
   }, [inView, value, decimals, duration]);
 
   return (
-    <span ref={ref} className="tabular-nums">
+    <span ref={ref} data-kopla-component="CountUp" className="tabular-nums">
       {prefix}
       {display}
       {suffix}

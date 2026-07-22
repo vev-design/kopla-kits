@@ -56,20 +56,34 @@ export function Reservation({
       id={id ?? undefined}
       className="relative flex w-full items-center justify-center overflow-hidden"
     >
-      <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+      <img
+        data-slot="media"
+        src={image}
+        alt=""
+        className="absolute inset-0 size-full object-cover"
+      />
       <div className="absolute inset-0 bg-background/80" />
       <Reveal className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-6 px-6 py-28 text-center md:py-36">
         {overline ? (
-          <p className="text-xs font-medium uppercase tracking-eyebrow text-primary">
+          <p
+            data-slot="eyebrow"
+            className="text-xs font-medium uppercase tracking-eyebrow text-primary"
+          >
             {overline}
           </p>
         ) : null}
-        <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-6xl">
+        <h2
+          data-slot="heading"
+          className="font-serif text-4xl font-medium tracking-tight text-balance md:text-6xl"
+        >
           {heading}
         </h2>
         <Divider />
         {body ? (
-          <p className="max-w-xl font-serif text-lg italic text-muted-foreground text-pretty md:text-xl">
+          <p
+            data-slot="body"
+            className="max-w-xl font-serif text-lg italic text-muted-foreground text-pretty md:text-xl"
+          >
             {body}
           </p>
         ) : null}

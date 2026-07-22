@@ -61,29 +61,29 @@ export function Security({ id, eyebrow, heading, subhead, items }: SecurityProps
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-14 flex max-w-2xl flex-col gap-4">
           {eyebrow ? (
-            <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p data-slot="eyebrow" className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
+          <h2 data-slot="heading" className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
             {heading}
           </h2>
           {subhead ? (
-            <p className="text-lg text-muted-foreground text-pretty">{subhead}</p>
+            <p data-slot="subhead" className="text-lg text-muted-foreground text-pretty">{subhead}</p>
           ) : null}
         </Reveal>
         <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => {
             const Icon = ICONS[item.icon] ?? ShieldCheck;
             return (
-              <Card key={item.title} variant="feature" className="bg-secondary/40">
-                <span className="inline-flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Card key={item.title} data-slot="item" variant="feature" className="bg-secondary/40">
+                <span data-slot="icon" className="inline-flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Icon className="size-5" strokeWidth={2.25} />
                 </span>
-                <h3 className="text-lg font-semibold tracking-tight">
+                <h3 data-slot="item-heading" className="text-lg font-semibold tracking-tight">
                   {item.title}
                 </h3>
-                <p className="text-sm text-muted-foreground text-pretty">
+                <p data-slot="item-body" className="text-sm text-muted-foreground text-pretty">
                   {item.body}
                 </p>
               </Card>

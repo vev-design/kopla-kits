@@ -42,9 +42,9 @@ export function GalleryGrid({
       <div className="mx-auto w-full max-w-6xl px-6">
         {kicker || heading ? (
           <Reveal className="mb-10 max-w-2xl">
-            {kicker ? <Eyebrow>{kicker}</Eyebrow> : null}
+            {kicker ? <Eyebrow data-slot="eyebrow">{kicker}</Eyebrow> : null}
             {heading ? (
-              <h2 className="mt-3 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-foreground md:text-4xl">
+              <h2 data-slot="heading" className="mt-3 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-foreground md:text-4xl">
                 {heading}
               </h2>
             ) : null}
@@ -63,6 +63,7 @@ export function GalleryGrid({
           {items.map((item, i) => (
             <Figure
               key={i}
+              data-slot="item"
               ratio="portrait"
               caption={item.caption}
               className={cn(
@@ -73,6 +74,7 @@ export function GalleryGrid({
               )}
             >
               <img
+                data-slot="media"
                 src={item.image}
                 alt={item.caption ?? ''}
                 className="h-full w-full object-cover"

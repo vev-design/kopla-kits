@@ -47,13 +47,23 @@ export function MenuList({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-5xl px-6 py-24 md:py-32">
         <Reveal className="mb-16 flex flex-col items-center gap-5 text-center">
-          {overline ? <Badge variant="gold">{overline}</Badge> : null}
-          <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
+          {overline ? (
+            <Badge data-slot="eyebrow" variant="gold">
+              {overline}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           <Divider className="max-w-[7rem]" />
           {intro ? (
-            <p className="max-w-xl font-serif text-lg italic text-muted-foreground text-pretty">
+            <p
+              data-slot="subhead"
+              className="max-w-xl font-serif text-lg italic text-muted-foreground text-pretty"
+            >
               {intro}
             </p>
           ) : null}
@@ -67,32 +77,44 @@ export function MenuList({
           {categories.map((category) => (
             <div key={category.name} className="flex flex-col gap-7">
               <div className="flex flex-col items-center gap-3">
-                <h3 className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary">
+                <h3
+                  data-slot="category"
+                  className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary"
+                >
                   {category.name}
                 </h3>
                 <span className="h-px w-10 bg-primary/40" aria-hidden />
               </div>
               <ul className="flex flex-col gap-6">
                 {category.items.map((item) => (
-                  <li key={item.name} className="flex flex-col gap-1.5">
+                  <li key={item.name} data-slot="item" className="flex flex-col gap-1.5">
                     {/* Dot leader: items-baseline + an empty bordered flex
                         item — an empty box's synthesized baseline is its
                         bottom edge, so the dotted border sits on the text
                         baseline like a set menu, not a form field. */}
                     <div className="flex items-baseline gap-2.5">
-                      <span className="font-serif text-lg leading-snug tracking-wide">
+                      <span
+                        data-slot="item-heading"
+                        className="font-serif text-lg leading-snug tracking-wide"
+                      >
                         {item.name}
                       </span>
                       <span
                         className="min-w-8 flex-1 self-baseline border-b-2 border-dotted border-primary/35"
                         aria-hidden
                       />
-                      <span className="font-serif text-lg leading-snug tabular-nums text-primary">
+                      <span
+                        data-slot="price"
+                        className="font-serif text-lg leading-snug tabular-nums text-primary"
+                      >
                         {item.price}
                       </span>
                     </div>
                     {item.description ? (
-                      <p className="max-w-md text-sm text-muted-foreground text-pretty">
+                      <p
+                        data-slot="item-body"
+                        className="max-w-md text-sm text-muted-foreground text-pretty"
+                      >
                         {item.description}
                       </p>
                     ) : null}

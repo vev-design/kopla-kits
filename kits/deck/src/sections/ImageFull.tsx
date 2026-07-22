@@ -57,6 +57,7 @@ export function ImageFull({
       className="relative flex min-h-screen w-full overflow-hidden bg-background"
     >
       <motion.div
+        data-slot="media"
         aria-hidden
         style={{ y, backgroundImage: `url(${image})` }}
         // scale-125 → 12.5% overflow per edge, exceeding the ±8% parallax
@@ -79,16 +80,24 @@ export function ImageFull({
       >
         <div className="max-w-3xl">
           <Reveal>
-            {eyebrow ? <Eyebrow className="mb-5">{eyebrow}</Eyebrow> : null}
+            {eyebrow ? (
+              <Eyebrow data-slot="eyebrow" className="mb-5">
+                {eyebrow}
+              </Eyebrow>
+            ) : null}
           </Reveal>
           <Reveal transition={{ delay: 0.06 }}>
-            <h2 className="font-display text-4xl font-bold tracking-tight text-balance md:text-7xl">
+            <h2
+              data-slot="heading"
+              className="font-display text-4xl font-bold tracking-tight text-balance md:text-7xl"
+            >
               {heading}
             </h2>
           </Reveal>
           {caption ? (
             <Reveal transition={{ delay: 0.12 }}>
               <p
+                data-slot="caption"
                 className={cn(
                   'mt-6 max-w-xl text-lg leading-relaxed text-foreground/80 text-pretty md:text-xl',
                   (variant === 'center' || variant === 'bottom-center') &&

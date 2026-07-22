@@ -19,7 +19,10 @@ export function LogoCloud({ id, eyebrow, logos }: LogoCloudProps) {
       <div className="mx-auto w-full max-w-6xl px-6 py-12">
         <Reveal className="flex flex-col items-center gap-8">
           {eyebrow ? (
-            <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+            <p
+              data-slot="eyebrow"
+              className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase"
+            >
               {eyebrow}
             </p>
           ) : null}
@@ -27,6 +30,7 @@ export function LogoCloud({ id, eyebrow, logos }: LogoCloudProps) {
             {logos.map((logo) => (
               <li
                 key={logo}
+                data-slot="item"
                 className="text-lg font-semibold tracking-tight text-muted-foreground/70 transition-colors hover:text-foreground"
               >
                 {logo}

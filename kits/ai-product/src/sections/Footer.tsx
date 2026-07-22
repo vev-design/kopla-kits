@@ -38,7 +38,10 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div className="col-span-2 flex flex-col gap-3 md:col-span-1">
-            <div className="flex items-center gap-2.5 text-base font-semibold tracking-tight">
+            <div
+              data-slot="logo"
+              className="flex items-center gap-2.5 text-base font-semibold tracking-tight"
+            >
               <span
                 className="inline-block size-5 rounded-md bg-gradient-to-br from-chart-1 via-chart-2 to-chart-3"
                 aria-hidden
@@ -46,14 +49,20 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
               {logo}
             </div>
             {blurb ? (
-              <p className="max-w-xs text-sm text-muted-foreground text-pretty">
+              <p
+                data-slot="body"
+                className="max-w-xs text-sm text-muted-foreground text-pretty"
+              >
                 {blurb}
               </p>
             ) : null}
           </div>
           {columns.map((column) => (
-            <div key={column.heading} className="flex flex-col gap-3">
-              <h3 className="font-mono text-xs tracking-[0.12em] text-foreground uppercase">
+            <div key={column.heading} data-slot="item" className="flex flex-col gap-3">
+              <h3
+                data-slot="item-heading"
+                className="font-mono text-xs tracking-[0.12em] text-foreground uppercase"
+              >
                 {column.heading}
               </h3>
               <ul className="flex flex-col gap-2.5">
@@ -61,6 +70,7 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
                   <li key={link.href}>
                     <a
                       href={link.href}
+                      data-slot="item-body"
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}
@@ -72,7 +82,10 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
           ))}
         </div>
         {legal ? (
-          <p className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground">
+          <p
+            data-slot="legal"
+            className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground"
+          >
             {legal}
           </p>
         ) : null}

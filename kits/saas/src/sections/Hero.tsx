@@ -60,12 +60,22 @@ export function Hero({
     >
       <div className="mx-auto w-full max-w-5xl px-6 pt-24 pb-16 text-center md:pt-32">
         <Reveal className="flex flex-col items-center gap-6">
-          {eyebrow ? <Badge variant="outline">{eyebrow}</Badge> : null}
-          <h1 className="max-w-3xl text-5xl font-bold tracking-tight text-balance md:text-6xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="outline">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h1
+            data-slot="heading"
+            className="max-w-3xl text-5xl font-bold tracking-tight text-balance md:text-6xl"
+          >
             {headline}
           </h1>
           {subhead ? (
-            <p className="max-w-2xl text-lg text-muted-foreground text-pretty md:text-xl">
+            <p
+              data-slot="subhead"
+              className="max-w-2xl text-lg text-muted-foreground text-pretty md:text-xl"
+            >
               {subhead}
             </p>
           ) : null}
@@ -89,6 +99,7 @@ export function Hero({
           <Reveal>
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-primary/10">
               <img
+                data-slot="media"
                 src={image}
                 alt=""
                 className="aspect-video w-full object-cover"

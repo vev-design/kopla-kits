@@ -45,14 +45,22 @@ export function Badge({ className, size, dot, asChild = false, children, ...prop
     // The child element owns its own markup; only the pill classes are merged
     // onto it (Radix `Slot` requires a single child, so no dot is injected).
     return (
-      <Slot className={cn(badgeVariants({ size, dot }), className)} {...props}>
+      <Slot
+        data-kopla-component="Badge"
+        className={cn(badgeVariants({ size, dot }), className)}
+        {...props}
+      >
         {children}
       </Slot>
     );
   }
   return (
-    <span className={cn(badgeVariants({ size, dot }), className)} {...props}>
-      {dot ? <span className="size-1.5 rounded-full bg-primary" /> : null}
+    <span
+      data-kopla-component="Badge"
+      className={cn(badgeVariants({ size, dot }), className)}
+      {...props}
+    >
+      {dot ? <span data-slot="icon" className="size-1.5 rounded-full bg-primary" /> : null}
       {children}
     </span>
   );

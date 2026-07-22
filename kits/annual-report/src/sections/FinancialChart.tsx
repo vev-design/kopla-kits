@@ -39,10 +39,16 @@ function ChartFrame({
 }) {
   return (
     <figure className="flex flex-col gap-4">
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card">
+      <div
+        data-slot="media"
+        className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card"
+      >
         <MediaBlock media={chart} />
       </div>
-      <figcaption className="font-mono text-xs uppercase tracking-[0.16em] tabular-nums text-muted-foreground">
+      <figcaption
+        data-slot="caption"
+        className="font-mono text-xs uppercase tracking-[0.16em] tabular-nums text-muted-foreground"
+      >
         {caption}
       </figcaption>
     </figure>
@@ -68,15 +74,21 @@ export function FinancialChart({
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-14 max-w-2xl">
           {eyebrow || index ? (
-            <Badge variant="rule" index={index}>
+            <Badge data-slot="eyebrow" variant="rule" index={index}>
               {eyebrow}
             </Badge>
           ) : null}
-          <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+          <h2
+            data-slot="heading"
+            className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           {body ? (
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="body"
+              className="mt-6 text-lg leading-relaxed text-muted-foreground text-pretty"
+            >
               {body}
             </p>
           ) : null}

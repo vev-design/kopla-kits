@@ -38,23 +38,26 @@ export interface TicketsProps extends SectionBaseProps {
 export function Tickets({ id, heading, tiers }: TicketsProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-20 md:py-28">
-      <h2 className="mb-10 text-center font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl">
+      <h2
+        data-slot="heading"
+        className="mb-10 text-center font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl"
+      >
         {heading}
       </h2>
       <Reveal className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {tiers.map((tier, i) => (
-          <TicketCard key={i} emphasis={tier.highlighted ? 'highlighted' : 'plain'}>
+          <TicketCard key={i} data-slot="item" emphasis={tier.highlighted ? 'highlighted' : 'plain'}>
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{tier.name}</span>
+                <span data-slot="item-heading" className="font-semibold">{tier.name}</span>
                 {tier.highlighted ? (
-                  <Badge tone="solid" size="flag">
+                  <Badge data-slot="tag" tone="solid" size="flag">
                     Popular
                   </Badge>
                 ) : null}
               </div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-bold tracking-tight">{tier.price}</span>
+                <span data-slot="price" className="text-3xl font-bold tracking-tight">{tier.price}</span>
                 {tier.note ? (
                   <span className="text-sm text-muted-foreground">{tier.note}</span>
                 ) : null}
@@ -64,7 +67,7 @@ export function Tickets({ id, heading, tiers }: TicketsProps) {
               {tier.perks.map((perk, j) => (
                 <li key={j} className="flex items-start gap-2 text-sm">
                   <Check size={15} strokeWidth={2.5} className="mt-0.5 shrink-0 text-primary" />
-                  <span className="text-muted-foreground">{perk}</span>
+                  <span data-slot="item-body" className="text-muted-foreground">{perk}</span>
                 </li>
               ))}
             </ul>

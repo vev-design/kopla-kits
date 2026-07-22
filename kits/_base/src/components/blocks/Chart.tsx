@@ -38,6 +38,7 @@ export function ChartBlock({ type, data }: ChartBlockProps) {
 
   return (
     <svg
+      data-slot="media"
       viewBox={`0 0 ${W} ${H}`}
       role="img"
       aria-label={data.map((d) => `${d.label}: ${d.value}`).join(', ')}

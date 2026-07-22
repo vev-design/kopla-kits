@@ -60,13 +60,20 @@ export function ProjectFeature({
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             {category ? (
-              <p className="font-serif text-xl italic text-primary md:text-2xl">{category}</p>
+              <p data-slot="eyebrow" className="font-serif text-xl italic text-primary md:text-2xl">
+                {category}
+              </p>
             ) : null}
-            <h2 className="font-display text-3xl font-medium tracking-tight md:text-4xl">
+            <h2
+              data-slot="heading"
+              className="font-display text-3xl font-medium tracking-tight md:text-4xl"
+            >
               {title}
             </h2>
           </div>
-          <p className="text-base leading-relaxed text-muted-foreground text-pretty">{summary}</p>
+          <p data-slot="body" className="text-base leading-relaxed text-muted-foreground text-pretty">
+            {summary}
+          </p>
           {(year || role) && (
             <dl className="flex gap-8 text-sm">
               {year ? <Stat label="Year" value={year} /> : null}
@@ -80,7 +87,7 @@ export function ProjectFeature({
           ) : null}
         </div>
         <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary">
-          <img src={image} alt={title} className="size-full object-cover" />
+          <img data-slot="media" src={image} alt={title} className="size-full object-cover" />
         </div>
       </Reveal>
     </section>

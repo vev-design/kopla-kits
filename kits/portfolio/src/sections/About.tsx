@@ -19,15 +19,20 @@ export function About({ id, heading, bio, capabilities }: AboutProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-16 md:py-24">
       <Reveal className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.4fr] md:gap-16">
-        <h2 className="font-serif text-3xl font-medium italic tracking-tight text-primary md:text-4xl">
+        <h2
+          data-slot="heading"
+          className="font-serif text-3xl font-medium italic tracking-tight text-primary md:text-4xl"
+        >
           {heading}
         </h2>
         <div className="flex flex-col gap-8">
-          <p className="text-lg leading-relaxed text-foreground/80 text-pretty">{bio}</p>
+          <p data-slot="body" className="text-lg leading-relaxed text-foreground/80 text-pretty">
+            {bio}
+          </p>
           {capabilities && capabilities.length > 0 ? (
             <ul className="flex flex-wrap gap-2">
               {capabilities.map((cap, i) => (
-                <Badge key={i} asChild size="sm">
+                <Badge key={i} asChild size="sm" data-slot="item">
                   <li>{cap}</li>
                 </Badge>
               ))}

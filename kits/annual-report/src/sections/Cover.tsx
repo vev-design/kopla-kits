@@ -63,6 +63,7 @@ export function Cover({
       {showImage ? (
         <>
           <motion.img
+            data-slot="media"
             src={image}
             alt=""
             style={{ y }}
@@ -121,7 +122,10 @@ export function Cover({
           </Reveal>
 
           <Reveal transition={{ delay: 0.1 }}>
-            <h1 className="relative -mt-8 max-w-3xl font-serif text-5xl font-semibold leading-[0.98] tracking-tight text-balance md:-mt-16 md:text-7xl">
+            <h1
+              data-slot="heading"
+              className="relative -mt-8 max-w-3xl font-serif text-5xl font-semibold leading-[0.98] tracking-tight text-balance md:-mt-16 md:text-7xl"
+            >
               {title}
             </h1>
           </Reveal>
@@ -137,6 +141,7 @@ export function Cover({
           >
             {tagline ? (
               <p
+                data-slot="subhead"
                 className={cn(
                   'max-w-md font-serif text-lg italic leading-snug text-pretty md:text-xl',
                   onNavy ? 'text-primary-foreground/85' : 'text-foreground/80',

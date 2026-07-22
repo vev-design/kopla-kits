@@ -58,15 +58,25 @@ export function Hours({
     <section id={id ?? undefined} className="w-full bg-card/40">
       <div className="mx-auto w-full max-w-5xl px-6 py-24 md:py-32">
         <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
-          {overline ? <Badge variant="gold">{overline}</Badge> : null}
-          <h2 className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl">
+          {overline ? (
+            <Badge data-slot="eyebrow" variant="gold">
+              {overline}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="font-serif text-4xl font-medium tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           <Divider className="max-w-[7rem]" />
         </Reveal>
         <Reveal className="grid gap-6 md:grid-cols-2">
-          <Card variant="surface">
-            <h3 className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary">
+          <Card data-slot="item" variant="surface">
+            <h3
+              data-slot="item-heading"
+              className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary"
+            >
               {hoursLabel ?? 'Hours'}
             </h3>
             <dl className="flex flex-col">
@@ -81,17 +91,20 @@ export function Hours({
               ))}
             </dl>
           </Card>
-          <Card variant="surface" className="justify-between">
+          <Card data-slot="item" variant="surface" className="justify-between">
             <div className="flex flex-col gap-4">
-              <h3 className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary">
+              <h3
+                data-slot="item-heading"
+                className="font-serif text-lg font-medium uppercase tracking-eyebrow text-primary"
+              >
                 {locationLabel ?? 'Find Us'}
               </h3>
               <p className="flex items-start gap-3 text-sm text-foreground">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
-                <span className="whitespace-pre-line text-pretty">{address}</span>
+                <MapPin data-slot="icon" className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span data-slot="item-body" className="whitespace-pre-line text-pretty">{address}</span>
               </p>
               {note ? (
-                <p className="text-sm text-muted-foreground text-pretty">{note}</p>
+                <p data-slot="item-body" className="text-sm text-muted-foreground text-pretty">{note}</p>
               ) : null}
             </div>
             {phone ? (

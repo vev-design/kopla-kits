@@ -73,15 +73,15 @@ export function Performance({
             )}
           >
             {eyebrow ? (
-              <p className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
+              <p data-slot="eyebrow" className="font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
                 {eyebrow}
               </p>
             ) : null}
-            <h2 className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
+            <h2 data-slot="heading" className="text-3xl font-bold tracking-tight text-balance md:text-4xl">
               {heading}
             </h2>
             {body ? (
-              <p className="max-w-xl text-lg text-muted-foreground text-pretty">
+              <p data-slot="body" className="max-w-xl text-lg text-muted-foreground text-pretty">
                 {body}
               </p>
             ) : null}
@@ -112,14 +112,14 @@ export function Performance({
             )}
           >
             {charts.map((item) => (
-              <Card key={item.title} variant="panel" className="bg-card">
+              <Card key={item.title} data-slot="item" variant="panel" className="bg-card">
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-semibold tracking-tight">
+                  <h3 data-slot="item-heading" className="text-base font-semibold tracking-tight">
                     {item.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">{item.caption}</p>
+                  <p data-slot="item-body" className="text-sm text-muted-foreground">{item.caption}</p>
                 </div>
-                <div className="h-48 w-full">
+                <div data-slot="media" className="h-48 w-full">
                   <MediaBlock media={item.chart} />
                 </div>
               </Card>
@@ -127,7 +127,7 @@ export function Performance({
           </Stagger>
         </div>
         {disclaimer ? (
-          <p className="mt-12 border-t border-border pt-6 text-xs text-muted-foreground">
+          <p data-slot="disclaimer" className="mt-12 border-t border-border pt-6 text-xs text-muted-foreground">
             {disclaimer}
           </p>
         ) : null}

@@ -43,17 +43,26 @@ export function Footer({ id, logo, blurb, hours, address, social, legal }: Foote
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
           <div className="flex flex-col gap-3">
-            <div className="font-serif text-xl font-semibold tracking-tight">
+            <div
+              data-slot="logo"
+              className="font-serif text-xl font-semibold tracking-tight"
+            >
               {logo}
             </div>
             {blurb ? (
-              <p className="max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty">
+              <p
+                data-slot="body"
+                className="max-w-xs text-sm leading-relaxed text-muted-foreground text-pretty"
+              >
                 {blurb}
               </p>
             ) : null}
           </div>
           <div className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
+            <h3
+              data-slot="column-heading"
+              className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-foreground uppercase"
+            >
               <Clock className="size-4 text-primary" strokeWidth={2} />
               Hours
             </h3>
@@ -67,15 +76,19 @@ export function Footer({ id, logo, blurb, hours, address, social, legal }: Foote
             </ul>
           </div>
           <div className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
+            <h3
+              data-slot="column-heading"
+              className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-foreground uppercase"
+            >
               <MapPin className="size-4 text-primary" strokeWidth={2} />
               Visit
             </h3>
-            <p className="text-sm text-muted-foreground text-pretty">{address}</p>
+            <p data-slot="address" className="text-sm text-muted-foreground text-pretty">{address}</p>
             <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
               {social.map((link) => (
                 <li key={link.href}>
                   <a
+                    data-slot="nav-link"
                     href={link.href}
                     className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                   >
@@ -87,7 +100,10 @@ export function Footer({ id, logo, blurb, hours, address, social, legal }: Foote
           </div>
         </div>
         {legal ? (
-          <p className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground">
+          <p
+            data-slot="legal"
+            className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground"
+          >
             {legal}
           </p>
         ) : null}

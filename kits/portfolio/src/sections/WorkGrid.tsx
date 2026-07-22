@@ -34,7 +34,10 @@ export function WorkGrid({ id, heading, items, columns = 'two' }: WorkGridProps)
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-6xl px-6 py-16 md:py-24">
       {heading ? (
-        <h2 className="mb-8 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        <h2
+          data-slot="heading"
+          className="mb-8 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground"
+        >
           {heading}
         </h2>
       ) : null}
@@ -45,17 +48,22 @@ export function WorkGrid({ id, heading, items, columns = 'two' }: WorkGridProps)
         )}
       >
         {items.map((item, i) => (
-          <a key={i} href={item.href ?? undefined} className="group block">
+          <a key={i} href={item.href ?? undefined} data-slot="item" className="group block">
             <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-secondary">
               <img
+                data-slot="media"
                 src={item.image}
                 alt={item.title}
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
             </div>
             <div className="mt-3 flex items-baseline justify-between gap-3">
-              <span className="font-display text-lg font-medium tracking-tight">{item.title}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{item.category}</span>
+              <span data-slot="item-heading" className="font-display text-lg font-medium tracking-tight">
+                {item.title}
+              </span>
+              <span data-slot="item-body" className="shrink-0 text-xs text-muted-foreground">
+                {item.category}
+              </span>
             </div>
           </a>
         ))}

@@ -40,6 +40,7 @@ export function Navbar({ id, logo, links, cta }: NavbarProps) {
     >
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-5">
         <a
+          data-slot="logo"
           href="#top"
           className="font-serif text-xl font-semibold tracking-tight"
         >
@@ -49,6 +50,7 @@ export function Navbar({ id, logo, links, cta }: NavbarProps) {
           {links.map((link) => (
             <li key={link.href}>
               <a
+                data-slot="nav-link"
                 href={link.href}
                 className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >

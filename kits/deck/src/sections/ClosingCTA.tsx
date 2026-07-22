@@ -56,16 +56,26 @@ export function ClosingCTA({
       />
       <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center">
         <Reveal>
-          {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
+          {eyebrow ? (
+            <Eyebrow data-slot="eyebrow" className="mb-8">
+              {eyebrow}
+            </Eyebrow>
+          ) : null}
         </Reveal>
         <Reveal transition={{ delay: 0.06 }}>
-          <h2 className="font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance md:text-8xl">
+          <h2
+            data-slot="heading"
+            className="font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance md:text-8xl"
+          >
             {statement}
           </h2>
         </Reveal>
         {body ? (
           <Reveal transition={{ delay: 0.12 }}>
-            <p className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl">
+            <p
+              data-slot="body"
+              className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl"
+            >
               {body}
             </p>
           </Reveal>
@@ -81,7 +91,10 @@ export function ClosingCTA({
         ) : null}
         {contact ? (
           <Reveal transition={{ delay: 0.24 }}>
-            <p className="mt-10 font-mono text-sm tracking-wide text-muted-foreground md:text-base">
+            <p
+              data-slot="contact"
+              className="mt-10 font-mono text-sm tracking-wide text-muted-foreground md:text-base"
+            >
               {contact}
             </p>
           </Reveal>

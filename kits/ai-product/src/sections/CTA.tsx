@@ -52,11 +52,17 @@ export function CTA({ id, headline, body, primaryCta, secondaryCta }: CTAProps) 
               className="pointer-events-none absolute left-1/2 top-full h-[28rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,var(--chart-1),transparent)] opacity-30 blur-3xl"
             />
             <div className="relative flex flex-col items-center gap-6 px-6 py-16 text-center md:py-20">
-              <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-balance md:text-4xl">
+              <h2
+                data-slot="heading"
+                className="max-w-2xl text-3xl font-semibold tracking-tight text-balance md:text-4xl"
+              >
                 {headline}
               </h2>
               {body ? (
-                <p className="max-w-xl text-lg text-muted-foreground text-pretty">
+                <p
+                  data-slot="body"
+                  className="max-w-xl text-lg text-muted-foreground text-pretty"
+                >
                   {body}
                 </p>
               ) : null}

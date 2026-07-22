@@ -54,14 +54,20 @@ export function SlideChrome({ progress, footer }: SlideChromeProps) {
               ))}
             </span>
           ) : null}
-          <span className="font-mono text-xs font-medium tracking-[0.2em] text-muted-foreground tabular-nums">
+          <span
+            data-slot="counter"
+            className="font-mono text-xs font-medium tracking-[0.2em] text-muted-foreground tabular-nums"
+          >
             {String(current).padStart(2, '0')} /{' '}
             {String(total).padStart(2, '0')}
           </span>
         </div>
       ) : null}
       {footer ? (
-        <p className="pointer-events-none absolute bottom-10 left-6 z-10 font-mono text-xs tracking-[0.2em] text-muted-foreground/80 uppercase md:left-16">
+        <p
+          data-slot="footer"
+          className="pointer-events-none absolute bottom-10 left-6 z-10 font-mono text-xs tracking-[0.2em] text-muted-foreground/80 uppercase md:left-16"
+        >
           {footer}
         </p>
       ) : null}

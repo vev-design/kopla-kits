@@ -41,11 +41,17 @@ export function CTA({ id, headline, body, primaryCta, secondaryCta }: CTAProps) 
       <div className="mx-auto w-full max-w-6xl px-6 py-12">
         <Reveal>
           <div className="flex flex-col items-center gap-6 rounded-xl bg-primary px-6 py-20 text-center text-primary-foreground">
-            <h2 className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+            <h2
+              data-slot="heading"
+              className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl"
+            >
               {headline}
             </h2>
             {body ? (
-              <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/80 text-pretty">
+              <p
+                data-slot="body"
+                className="max-w-xl text-lg leading-relaxed text-primary-foreground/80 text-pretty"
+              >
                 {body}
               </p>
             ) : null}

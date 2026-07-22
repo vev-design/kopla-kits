@@ -38,6 +38,7 @@ export function Scrollytelling({ variant = 'panel-right', steps }: Scrollytellin
 
   return (
     <div
+      data-kopla-component="Scrollytelling"
       className={cn(
         'grid items-start gap-12 lg:grid-cols-2',
         variant === 'panel-left' && 'lg:[&>*:first-child]:order-2',
@@ -86,6 +87,7 @@ function Step({
   return (
     <div
       ref={ref}
+      data-slot="item"
       className={cn(
         'flex flex-col gap-4 transition-opacity duration-300',
         active ? 'opacity-100' : 'lg:opacity-40',
@@ -94,8 +96,8 @@ function Step({
       <span className="font-mono text-sm text-muted-foreground">
         {String(index + 1).padStart(2, '0')}
       </span>
-      <h3 className="text-2xl font-semibold tracking-tight text-foreground">{step.title}</h3>
-      <p className="max-w-prose text-base leading-relaxed text-muted-foreground">{step.body}</p>
+      <h3 data-slot="item-heading" className="text-2xl font-semibold tracking-tight text-foreground">{step.title}</h3>
+      <p data-slot="item-body" className="max-w-prose text-base leading-relaxed text-muted-foreground">{step.body}</p>
       <div className="mt-4 aspect-[4/3] lg:hidden">
         <StepVisual step={step} index={index} total={0} />
       </div>

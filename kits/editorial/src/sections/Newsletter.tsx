@@ -46,12 +46,12 @@ export function Newsletter({
           vertical rule floating mid-gutter between them. */}
       <Reveal className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-10 md:grid-cols-[3fr_2fr] md:gap-0">
         <div className="md:pr-14">
-          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-          <h2 className="mt-4 font-serif text-4xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
+          {eyebrow ? <Eyebrow data-slot="eyebrow">{eyebrow}</Eyebrow> : null}
+          <h2 data-slot="heading" className="mt-4 font-serif text-4xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
             {headline}
           </h2>
           {body ? (
-            <p className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p data-slot="body" className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
               {body}
             </p>
           ) : null}
@@ -62,6 +62,7 @@ export function Newsletter({
             className="flex w-full flex-col gap-3"
           >
             <input
+              data-slot="input"
               type="email"
               name="email"
               required

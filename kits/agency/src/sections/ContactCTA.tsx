@@ -40,18 +40,19 @@ export function ContactCTA({ id, index, eyebrow, headline, email, cta }: Contact
                 <span className="font-mono text-sm font-medium text-primary">{index}</span>
               ) : null}
               {eyebrow ? (
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-background/60">
+                <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-background/60">
                   {eyebrow}
                 </p>
               ) : null}
               <span aria-hidden className="h-px flex-1 bg-background/20" />
             </div>
           ) : null}
-          <h2 className="max-w-5xl text-5xl font-bold leading-[0.95] tracking-[-0.03em] text-balance uppercase sm:text-7xl md:text-8xl">
+          <h2 data-slot="heading" className="max-w-5xl text-5xl font-bold leading-[0.95] tracking-[-0.03em] text-balance uppercase sm:text-7xl md:text-8xl">
             {headline}
           </h2>
           <div className="flex flex-col items-start gap-6 border-t border-background/20 pt-8 md:flex-row md:items-center md:justify-between">
             <a
+              data-slot="cta"
               href={`mailto:${email}`}
               className="text-xl font-medium underline decoration-primary decoration-2 underline-offset-8 transition-colors hover:text-primary md:text-2xl"
             >

@@ -124,6 +124,53 @@ variant axes from explicit string-union props, preview states from
 `<Name>Showcase`. Provenance beyond `origin: generated` (e.g. a Figma
 `fileKey`/`nodeId`) is the host import pipeline's concern, not the kit build's.
 
+## Styleable parts (`data-slot` / `data-kopla-component`)
+
+Consumers offer a **visual style editor** that lets a user tweak an element
+inside a section or component (its color, font, size, background, border, …).
+For that editor to address an element with a key that **survives a rebuild**
+and resolves on published pages, the element must carry an **authored stamp** —
+a structural CSS selector or a text match is not stable when the AI re-authors
+the source. Kits provide that stamp; it is a consumer-facing guarantee.
+
+Two stamps, both plain DOM attributes that flow verbatim through `Bun.build`
+into `library.js` and through React into server-rendered HTML (the base
+`Button` already ships `data-slot="button"` — same mechanism):
+
+- **`data-slot="<part>"`** on each visually distinct inner part of a section or
+  component. This is the editor's addressable-part key.
+- **`data-kopla-component="<Name>"`** on a component primitive's **root**
+  element (`<Name>` = the exported component name). Scopes the component's parts
+  and lets a component-level edit cascade to every instance in a page.
+
+### Rules
+
+- **A section root is NOT stamped** — the editor addresses it structurally.
+  Stamp only inner parts.
+- Within a scope (a section root, or a component's `data-kopla-component` root),
+  **every `[data-slot]` element is one addressable part.** Parts a section
+  authors and parts contributed by nested primitives (a `Button`'s
+  `data-slot="button"`) coexist in the same flat enumeration.
+- **Repeated parts share the same name** (`item`, `item`, …); the editor
+  disambiguates by document order. Do NOT index-suffix in source.
+- A part name should come from the **recommended vocabulary** below for
+  cross-kit consistency; freeform names are allowed but reduce that consistency.
+- A section may **relabel** a nested primitive's slot by passing `data-slot`
+  (it spreads last and wins) — e.g. `<Badge data-slot="eyebrow">`.
+- Enforcement is **soft**: a missing stamp just means fewer editable parts (the
+  editor degrades to root-level editing). It is never a build failure.
+
+### Recommended part vocabulary
+
+Sections: `eyebrow` · `heading` · `subhead` · `body` · `media` · `item`
+(a repeated card/tile/row) · `item-heading` · `item-body` · `icon`. Calls to
+action render as the `Button` primitive, so they are addressed via its own
+`data-slot="button"` (ordinal-disambiguated); relabel to `cta` only for a bare
+link that isn't a `Button`.
+
+Components: the root carries `data-kopla-component="<Name>"`; inner parts use
+`label` · `icon` · `surface` · `title` · `description` as they apply.
+
 ## Advanced components (top-level `components/`)
 
 Alongside `kits/`, the repo carries a **kit-agnostic catalog of advanced

@@ -59,12 +59,12 @@ export function Footer({ id, logo, blurb, columns, social, legal, disclaimer }: 
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div className="col-span-2 flex flex-col gap-3 md:col-span-1">
-            <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+            <div data-slot="logo" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
               <span className="inline-block size-5 rounded-sm bg-primary" aria-hidden />
               {logo}
             </div>
             {blurb ? (
-              <p className="max-w-xs text-sm text-muted-foreground text-pretty">
+              <p data-slot="body" className="max-w-xs text-sm text-muted-foreground text-pretty">
                 {blurb}
               </p>
             ) : null}
@@ -87,8 +87,8 @@ export function Footer({ id, logo, blurb, columns, social, legal, disclaimer }: 
             ) : null}
           </div>
           {columns.map((column) => (
-            <div key={column.heading} className="flex flex-col gap-3">
-              <h3 className="text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
+            <div key={column.heading} data-slot="item" className="flex flex-col gap-3">
+              <h3 data-slot="item-heading" className="text-xs font-semibold tracking-[0.12em] text-foreground uppercase">
                 {column.heading}
               </h3>
               <ul className="flex flex-col gap-2.5">
@@ -107,12 +107,12 @@ export function Footer({ id, logo, blurb, columns, social, legal, disclaimer }: 
           ))}
         </div>
         {disclaimer ? (
-          <p className="mt-12 max-w-3xl border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
+          <p data-slot="disclaimer" className="mt-12 max-w-3xl border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
             {disclaimer}
           </p>
         ) : null}
         {legal ? (
-          <p className="mt-6 text-sm text-muted-foreground">{legal}</p>
+          <p data-slot="legal" className="mt-6 text-sm text-muted-foreground">{legal}</p>
         ) : null}
       </div>
     </section>

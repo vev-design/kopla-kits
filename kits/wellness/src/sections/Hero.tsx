@@ -59,12 +59,22 @@ export function Hero({
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2 md:py-32">
         <Reveal className="flex flex-col items-start gap-6">
-          {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
-          <h1 className="font-serif text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="soft">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h1
+            data-slot="heading"
+            className="font-serif text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-6xl"
+          >
             {headline}
           </h1>
           {subhead ? (
-            <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="subhead"
+              className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty"
+            >
               {subhead}
             </p>
           ) : null}
@@ -90,6 +100,7 @@ export function Hero({
         <Reveal>
           <div className="mx-auto w-full max-w-md overflow-hidden rounded-t-full rounded-b-xl md:max-w-none">
             <img
+              data-slot="media"
               src={image}
               alt=""
               className="aspect-[3/4] w-full object-cover"

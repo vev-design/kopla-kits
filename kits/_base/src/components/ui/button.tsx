@@ -64,6 +64,7 @@ function Button({
 
   return (
     <Comp
+      data-kopla-component="Button"
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}

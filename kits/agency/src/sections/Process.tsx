@@ -35,20 +35,20 @@ export function Process({ id, index, eyebrow, heading, steps }: ProcessProps) {
                 <span className="font-mono text-sm font-medium text-primary">{index}</span>
               ) : null}
               {eyebrow ? (
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   {eyebrow}
                 </p>
               ) : null}
               <span aria-hidden className="h-px flex-1 bg-border" />
             </div>
           ) : null}
-          <h2 className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
+          <h2 data-slot="heading" className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
             {heading}
           </h2>
         </Reveal>
         <Stagger className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
-            <div key={step.title} className="flex flex-col gap-4 border-t border-foreground pt-5">
+            <div key={step.title} data-slot="item" className="flex flex-col gap-4 border-t border-foreground pt-5">
               <div className="flex items-baseline justify-between">
                 <span className="font-mono text-xs uppercase tracking-[0.18em] text-primary">
                   {step.label}
@@ -57,8 +57,8 @@ export function Process({ id, index, eyebrow, heading, steps }: ProcessProps) {
                   {String(i + 1).padStart(2, '0')}
                 </span>
               </div>
-              <h3 className="text-xl font-bold tracking-tight">{step.title}</h3>
-              <p className="text-sm text-muted-foreground text-pretty">{step.body}</p>
+              <h3 data-slot="item-heading" className="text-xl font-bold tracking-tight">{step.title}</h3>
+              <p data-slot="item-body" className="text-sm text-muted-foreground text-pretty">{step.body}</p>
             </div>
           ))}
         </Stagger>

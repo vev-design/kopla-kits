@@ -34,10 +34,10 @@ export function Footer({ id, logo, address, hours, social, legal }: FooterProps)
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="flex flex-col items-center gap-8 text-center">
-          <span className="font-serif text-2xl font-medium tracking-wide">{logo}</span>
+          <span data-slot="logo" className="font-serif text-2xl font-medium tracking-wide">{logo}</span>
           <Divider className="max-w-[6rem]" />
           <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-            <p className="whitespace-pre-line">{address}</p>
+            <p data-slot="body" className="whitespace-pre-line">{address}</p>
             {hours ? <p>{hours}</p> : null}
           </div>
           <ul className="flex items-center gap-7">
@@ -45,6 +45,7 @@ export function Footer({ id, logo, address, hours, social, legal }: FooterProps)
               <li key={item.href}>
                 <a
                   href={item.href}
+                  data-slot="item"
                   className="text-xs font-medium uppercase tracking-eyebrow text-muted-foreground transition-colors hover:text-primary"
                 >
                   {item.label}

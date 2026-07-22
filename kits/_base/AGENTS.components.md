@@ -63,6 +63,16 @@ the extractor (`gen:design`). Another process assembles every component and publ
    component into `design.json.components` with `origin: { kind: 'generated' }`.
    Confirm it type-checks + bundles. Fix errors, done.
 
+## Styleable parts
+
+So a downstream visual style editor can address the component (and cascade an edit to every instance) across rebuilds, stamp it while authoring. Attributes only — no classes, logic, props, or content change; a missing stamp just means fewer editable parts, never a build error.
+
+- Put **`data-kopla-component="<Name>"`** on the component's **root** element (`<Name>` = the exported component name). If the root spreads props, place it **before `{...props}`** so a caller can still override.
+- Put **`data-slot="<part>"`** on each visually distinct inner part — `label` · `icon` · `surface` · `title` · `description` as they apply. Most primitives are a single element → just the root stamp.
+- `data-*` attributes are valid on intrinsic elements and on components that spread `{...props}` — no type changes needed.
+
+Canonical rules + rationale: `CONTRACT.md` § "Styleable parts".
+
 ## Never
 
 _When adding a single component (see "When this guide applies" — a from-scratch

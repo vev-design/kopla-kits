@@ -28,18 +28,25 @@ export function Testimonial({ id, quote, author, role, avatar }: TestimonialProp
       <div className="mx-auto w-full max-w-4xl px-6 py-24">
         <Reveal>
           <figure className="flex flex-col gap-8 border-l-2 border-ring pl-8 md:pl-10">
-            <blockquote className="text-2xl font-medium leading-snug tracking-tight text-pretty md:text-3xl">
+            <blockquote
+              data-slot="body"
+              className="text-2xl font-medium leading-snug tracking-tight text-pretty md:text-3xl"
+            >
               {quote}
             </blockquote>
             <figcaption className="flex items-center gap-4">
               {avatar ? (
                 <img
+                  data-slot="media"
                   src={avatar}
                   alt=""
                   className="size-10 rounded-md border border-border object-cover"
                 />
               ) : null}
-              <p className="font-mono text-sm text-muted-foreground">
+              <p
+                data-slot="attribution"
+                className="font-mono text-sm text-muted-foreground"
+              >
                 <span className="text-muted-foreground/60" aria-hidden>
                   {'// '}
                 </span>

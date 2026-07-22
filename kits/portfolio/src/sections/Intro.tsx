@@ -25,16 +25,25 @@ export function Intro({ id, name, statement, accent, meta }: IntroProps) {
       className="mx-auto flex min-h-[88vh] w-full max-w-6xl flex-col px-6 pt-10 pb-10 md:pt-12 md:pb-14"
     >
       <Reveal>
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        <p
+          data-slot="eyebrow"
+          className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground"
+        >
           {name}
         </p>
       </Reveal>
       <Reveal className="my-auto flex flex-col gap-6 py-16 md:gap-8 md:py-20">
-        <h1 className="font-display text-6xl font-medium leading-[0.98] tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl">
+        <h1
+          data-slot="heading"
+          className="font-display text-6xl font-medium leading-[0.98] tracking-tight text-balance sm:text-7xl md:text-8xl lg:text-9xl"
+        >
           {statement}
         </h1>
         {accent ? (
-          <p className="font-serif text-2xl italic leading-snug text-primary md:text-4xl">
+          <p
+            data-slot="subhead"
+            className="font-serif text-2xl italic leading-snug text-primary md:text-4xl"
+          >
             {accent}
           </p>
         ) : null}
@@ -43,7 +52,7 @@ export function Intro({ id, name, statement, accent, meta }: IntroProps) {
         <Reveal>
           <ul className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-5 text-sm text-muted-foreground">
             {meta.map((item, i) => (
-              <li key={i} className="flex items-center gap-3">
+              <li key={i} data-slot="item" className="flex items-center gap-3">
                 {i > 0 ? (
                   <span aria-hidden className="text-border">
                     /

@@ -34,14 +34,14 @@ export function Services({ id, index, eyebrow, heading, services }: ServicesProp
                 <span className="font-mono text-sm font-medium text-primary">{index}</span>
               ) : null}
               {eyebrow ? (
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   {eyebrow}
                 </p>
               ) : null}
               <span aria-hidden className="h-px flex-1 bg-border" />
             </div>
           ) : null}
-          <h2 className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
+          <h2 data-slot="heading" className="max-w-3xl text-4xl font-bold tracking-[-0.02em] text-balance uppercase md:text-6xl">
             {heading}
           </h2>
         </Reveal>
@@ -49,15 +49,16 @@ export function Services({ id, index, eyebrow, heading, services }: ServicesProp
           {services.map((service, i) => (
             <div
               key={service.title}
+              data-slot="item"
               className="grid grid-cols-1 gap-3 border-b border-border py-8 transition-colors hover:bg-secondary/60 md:grid-cols-[5rem_1fr_1.2fr] md:items-baseline md:gap-8"
             >
               <span className="font-mono text-sm text-primary">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <h3 className="text-2xl font-bold tracking-tight md:text-3xl">
+              <h3 data-slot="item-heading" className="text-2xl font-bold tracking-tight md:text-3xl">
                 {service.title}
               </h3>
-              <p className="max-w-xl text-base text-muted-foreground text-pretty">
+              <p data-slot="item-body" className="max-w-xl text-base text-muted-foreground text-pretty">
                 {service.description}
               </p>
             </div>

@@ -50,13 +50,13 @@ export function Stat({
   ...props
 }: StatProps) {
   return (
-    <div className={cn(statVariants({ align, size }), className)} {...props}>
-      <span className="font-mono font-semibold tracking-tight tabular-nums text-foreground text-[length:var(--stat-size)] leading-none">
+    <div data-kopla-component="Stat" className={cn(statVariants({ align, size }), className)} {...props}>
+      <span data-slot="value" className="font-mono font-semibold tracking-tight tabular-nums text-foreground text-[length:var(--stat-size)] leading-none">
         {value}
       </span>
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span data-slot="label" className="text-sm font-medium text-muted-foreground">{label}</span>
       {caption ? (
-        <span className="text-xs font-medium tracking-wide text-primary">
+        <span data-slot="caption" className="text-xs font-medium tracking-wide text-primary">
           {caption}
         </span>
       ) : null}

@@ -44,15 +44,21 @@ export function SegmentBreakdown({
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-14 max-w-2xl">
           {eyebrow || index ? (
-            <Badge variant="rule" index={index}>
+            <Badge data-slot="eyebrow" variant="rule" index={index}>
               {eyebrow}
             </Badge>
           ) : null}
-          <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+          <h2
+            data-slot="heading"
+            className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           {body ? (
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="body"
+              className="mt-6 text-lg leading-relaxed text-muted-foreground text-pretty"
+            >
               {body}
             </p>
           ) : null}
@@ -62,20 +68,30 @@ export function SegmentBreakdown({
           {segments.map((segment) => (
             <Card
               key={segment.name}
+              data-slot="item"
               variant="panel"
               className="rounded-none border-0 bg-card md:grid md:grid-cols-[1fr_2fr_1.5fr] md:items-center md:gap-10"
             >
               <div className="flex flex-col gap-2">
-                <span className="font-serif text-2xl font-semibold tracking-tight md:text-3xl">
+                <span
+                  data-slot="item-heading"
+                  className="font-serif text-2xl font-semibold tracking-tight md:text-3xl"
+                >
                   {segment.name}
                 </span>
-                <span className="font-serif text-4xl font-semibold tabular-nums text-primary md:text-5xl">
+                <span
+                  data-slot="value"
+                  className="font-serif text-4xl font-semibold tabular-nums text-primary md:text-5xl"
+                >
                   {segment.value}
                 </span>
               </div>
 
               <div className="mt-4 flex flex-col gap-2 md:mt-0">
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-accent">
+                <div
+                  data-slot="bar"
+                  className="h-2.5 w-full overflow-hidden rounded-full bg-accent"
+                >
                   <div
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.max(0, Math.min(100, segment.share))}%` }}
@@ -86,7 +102,10 @@ export function SegmentBreakdown({
                 </span>
               </div>
 
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground text-pretty md:mt-0">
+              <p
+                data-slot="item-body"
+                className="mt-4 text-sm leading-relaxed text-muted-foreground text-pretty md:mt-0"
+              >
                 {segment.blurb}
               </p>
             </Card>

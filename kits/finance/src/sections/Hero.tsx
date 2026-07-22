@@ -80,16 +80,16 @@ export function Hero({
       <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 pt-20 pb-16 md:grid-cols-2 md:pt-28 lg:gap-16">
         <Reveal className="flex flex-col items-start gap-6">
           {eyebrow ? (
-            <p className="flex items-center gap-2.5 font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p data-slot="eyebrow" className="flex items-center gap-2.5 font-mono text-xs font-medium tracking-[0.18em] text-primary uppercase">
               <span aria-hidden className="size-1.5 rounded-[1px] bg-primary" />
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="text-4xl font-bold tracking-tight text-balance md:text-6xl">
+          <h1 data-slot="heading" className="text-4xl font-bold tracking-tight text-balance md:text-6xl">
             {headline}
           </h1>
           {subhead ? (
-            <p className="max-w-xl text-lg text-muted-foreground text-pretty">
+            <p data-slot="subhead" className="max-w-xl text-lg text-muted-foreground text-pretty">
               {subhead}
             </p>
           ) : null}
@@ -112,21 +112,21 @@ export function Hero({
             {panel ? (
               <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                  <span data-slot="panel-label" className="font-mono text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
                     {panel.label}
                   </span>
-                  <span className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
+                  <span data-slot="panel-value" className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
                     {panel.value}
                   </span>
                 </div>
                 {panel.delta ? (
-                  <span className="rounded-md bg-accent px-2 py-1 font-mono text-xs font-medium tabular-nums text-accent-foreground">
+                  <span data-slot="panel-delta" className="rounded-md bg-accent px-2 py-1 font-mono text-xs font-medium tabular-nums text-accent-foreground">
                     {panel.delta}
                   </span>
                 ) : null}
               </div>
             ) : null}
-            <div className="aspect-[4/3] w-full sm:aspect-[16/10]">
+            <div data-slot="media" className="aspect-[4/3] w-full sm:aspect-[16/10]">
               <MediaBlock media={media} />
             </div>
           </div>
@@ -139,6 +139,7 @@ export function Hero({
               {ticker.map((item) => (
                 <div
                   key={item.label}
+                  data-slot="item"
                   className="flex shrink-0 items-baseline gap-2.5 py-3 pr-6 pl-6 first:pl-0"
                 >
                   <span className="font-mono text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">

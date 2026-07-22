@@ -29,10 +29,17 @@ export function Contact({ id, headline, body, email, links }: ContactProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-5xl px-6 py-20 md:py-32">
       <Reveal className="flex flex-col items-start gap-6">
-        <h2 className="font-display text-4xl font-medium tracking-tight text-balance md:text-6xl">
+        <h2
+          data-slot="heading"
+          className="font-display text-4xl font-medium tracking-tight text-balance md:text-6xl"
+        >
           {headline}
         </h2>
-        {body ? <p className="max-w-xl text-lg text-muted-foreground text-pretty">{body}</p> : null}
+        {body ? (
+          <p data-slot="body" className="max-w-xl text-lg text-muted-foreground text-pretty">
+            {body}
+          </p>
+        ) : null}
         <Button asChild size="lg" className="mt-2">
           <a href={`mailto:${email}`}>{email}</a>
         </Button>
@@ -42,6 +49,7 @@ export function Contact({ id, headline, body, email, links }: ContactProps) {
               <li key={i}>
                 <a
                   href={link.href}
+                  data-slot="item"
                   className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
                 >
                   {link.label}

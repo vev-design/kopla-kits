@@ -68,12 +68,22 @@ export function Offerings({
     <section id={id ?? undefined} className="w-full bg-muted/40">
       <div className="mx-auto w-full max-w-6xl px-6 py-28">
         <Reveal className="mb-16 flex flex-col items-center gap-4 text-center">
-          {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
-          <h2 className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="soft">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           {subhead ? (
-            <p className="max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="subhead"
+              className="max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty"
+            >
               {subhead}
             </p>
           ) : null}
@@ -89,14 +99,23 @@ export function Offerings({
           {offerings.map((offering) => {
             const Icon = ICONS[offering.icon] ?? Leaf;
             return (
-              <Card key={offering.title} variant="soft">
-                <span className="inline-flex size-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
+              <Card key={offering.title} data-slot="item" variant="soft">
+                <span
+                  data-slot="icon"
+                  className="inline-flex size-12 items-center justify-center rounded-full bg-accent text-accent-foreground"
+                >
                   <Icon className="size-5" strokeWidth={2} />
                 </span>
-                <h3 className="font-serif text-xl font-semibold tracking-tight">
+                <h3
+                  data-slot="item-heading"
+                  className="font-serif text-xl font-semibold tracking-tight"
+                >
                   {offering.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+                <p
+                  data-slot="item-body"
+                  className="text-sm leading-relaxed text-muted-foreground text-pretty"
+                >
                   {offering.body}
                 </p>
                 {offering.duration || offering.level ? (

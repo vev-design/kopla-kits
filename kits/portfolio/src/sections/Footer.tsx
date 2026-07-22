@@ -17,8 +17,14 @@ export function Footer({ id, name, note }: FooterProps) {
       id={id ?? undefined}
       className="mx-auto flex w-full max-w-6xl flex-col gap-2 border-t border-border px-6 py-10 sm:flex-row sm:items-center sm:justify-between"
     >
-      <span className="font-display text-sm font-semibold tracking-tight">{name}</span>
-      {note ? <span className="text-xs text-muted-foreground">{note}</span> : null}
+      <span data-slot="wordmark" className="font-display text-sm font-semibold tracking-tight">
+        {name}
+      </span>
+      {note ? (
+        <span data-slot="note" className="text-xs text-muted-foreground">
+          {note}
+        </span>
+      ) : null}
     </footer>
   );
 }

@@ -36,6 +36,7 @@ export function Outlook({ id, index, eyebrow, heading, body, priorities }: Outlo
             <div className="md:sticky md:top-24">
               {eyebrow || index ? (
                 <Badge
+                  data-slot="eyebrow"
                   variant="rule"
                   index={index}
                   className="border-primary-foreground/40 text-primary-foreground"
@@ -43,10 +44,16 @@ export function Outlook({ id, index, eyebrow, heading, body, priorities }: Outlo
                   {eyebrow}
                 </Badge>
               ) : null}
-              <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+              <h2
+                data-slot="heading"
+                className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+              >
                 {heading}
               </h2>
-              <p className="mt-6 font-serif text-lg leading-relaxed text-primary-foreground/85 text-pretty md:text-xl">
+              <p
+                data-slot="body"
+                className="mt-6 font-serif text-lg leading-relaxed text-primary-foreground/85 text-pretty md:text-xl"
+              >
                 {body}
               </p>
             </div>
@@ -56,9 +63,13 @@ export function Outlook({ id, index, eyebrow, heading, body, priorities }: Outlo
             {priorities.map((priority, i) => (
               <div
                 key={priority.title}
+                data-slot="item"
                 className="flex gap-5 border-t border-primary-foreground/20 py-6 first:border-t-0 first:pt-0"
               >
-                <span className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-primary-foreground/40">
+                <span
+                  data-slot="icon"
+                  className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-primary-foreground/40"
+                >
                   <Check className="size-4" strokeWidth={2.25} />
                 </span>
                 <div className="flex flex-col gap-2">
@@ -66,11 +77,17 @@ export function Outlook({ id, index, eyebrow, heading, body, priorities }: Outlo
                     <span className="font-mono text-xs tracking-[0.16em] tabular-nums text-primary-foreground/50">
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="font-serif text-xl font-semibold tracking-tight md:text-2xl">
+                    <span
+                      data-slot="item-heading"
+                      className="font-serif text-xl font-semibold tracking-tight md:text-2xl"
+                    >
                       {priority.title}
                     </span>
                   </span>
-                  <p className="text-base leading-relaxed text-primary-foreground/75 text-pretty">
+                  <p
+                    data-slot="item-body"
+                    className="text-base leading-relaxed text-primary-foreground/75 text-pretty"
+                  >
                     {priority.detail}
                   </p>
                 </div>

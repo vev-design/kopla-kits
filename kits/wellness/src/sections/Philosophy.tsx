@@ -59,11 +59,21 @@ export function Philosophy({
             variant === 'image-left' ? 'md:order-2' : 'md:order-1',
           )}
         >
-          {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
-          <h2 className="font-serif text-4xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="soft">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="font-serif text-4xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
-          <p className="text-lg leading-relaxed text-muted-foreground text-pretty">
+          <p
+            data-slot="body"
+            className="text-lg leading-relaxed text-muted-foreground text-pretty"
+          >
             {body}
           </p>
           {principles && principles.length > 0 ? (
@@ -71,6 +81,7 @@ export function Philosophy({
               {principles.map((principle) => (
                 <li
                   key={principle}
+                  data-slot="item"
                   className="flex items-center gap-3 text-base font-semibold"
                 >
                   <span
@@ -93,6 +104,7 @@ export function Philosophy({
         >
           <div className="mx-auto w-full max-w-md overflow-hidden rounded-t-full rounded-b-xl md:max-w-none">
             <img
+              data-slot="media"
               src={image}
               alt=""
               className="aspect-[3/4] w-full object-cover"

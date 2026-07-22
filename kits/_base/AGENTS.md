@@ -99,6 +99,17 @@ Rules:
 - Every section exports a **`<Name>Demo`** const typed by its props interface. The literal must be static — no function calls or identifiers. For sections with multiple representative variants, export `<Name>Demo: <Name>Props[]` and each entry becomes a demo instance.
 - **Re-export every section** from `src/sections/index.ts`. Only re-exported names are part of the system.
 
+### Styleable parts
+
+Downstream consumers offer a visual style editor that addresses one element inside a section by an **authored stamp** — so a rebuild doesn't move the target. Add these while authoring; they are attributes only (no classes, logic, or content change), and a missing one just means fewer editable parts, never a build error.
+
+- **Do NOT stamp the section root** (`<section id=…>`) — the editor addresses it structurally. Stamp only inner parts.
+- Put **`data-slot="<part>"`** on each visually distinct inner part. Use the shared vocabulary where it fits: `eyebrow` · `heading` · `subhead` · `body` · `media` · `item` (a repeated card/tile/row) · `item-heading` · `item-body` · `icon`. A part with no match may take a sensible freeform kebab-case name.
+- **Repeated parts share one name** — every card in a `.map()` is `data-slot="item"`; do NOT index-suffix (the editor disambiguates by document order).
+- CTAs render as the `Button` primitive, which already carries `data-slot="button"` — don't add a slot. Relabel only a bare `<a>` that isn't a `Button` to `data-slot="cta"`.
+
+Canonical rules + rationale: `CONTRACT.md` § "Styleable parts".
+
 ## How to author the README
 
 `README.md` describes the system as a whole. Layout:

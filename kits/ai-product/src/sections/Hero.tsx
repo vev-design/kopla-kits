@@ -102,12 +102,22 @@ export function Hero({
         }
       >
         <Reveal className="flex max-w-2xl flex-col items-start gap-6">
-          {eyebrow ? <Badge variant="accent">{eyebrow}</Badge> : null}
-          <h1 className="text-5xl font-semibold tracking-tight text-balance md:text-6xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="accent">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h1
+            data-slot="heading"
+            className="text-5xl font-semibold tracking-tight text-balance md:text-6xl"
+          >
             {headline}
           </h1>
           {subhead ? (
-            <p className="text-lg text-muted-foreground text-pretty md:text-xl">
+            <p
+              data-slot="subhead"
+              className="text-lg text-muted-foreground text-pretty md:text-xl"
+            >
               {subhead}
             </p>
           ) : null}
@@ -127,7 +137,10 @@ export function Hero({
         </Reveal>
         {terminal ? (
           <Reveal>
-            <div className="rounded-xl bg-gradient-to-b from-ring/40 to-border p-px shadow-[0_0_80px_-20px_var(--ring)]">
+            <div
+              data-slot="media"
+              className="rounded-xl bg-gradient-to-b from-ring/40 to-border p-px shadow-[0_0_80px_-20px_var(--ring)]"
+            >
               <div className="overflow-hidden rounded-xl bg-card">
                 <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                   <span className="size-2.5 rounded-full bg-muted-foreground/30" aria-hidden />
@@ -155,7 +168,7 @@ export function Hero({
           <Reveal>
             <div className="rounded-xl bg-gradient-to-b from-ring/40 to-border p-px shadow-[0_0_80px_-20px_var(--ring)]">
               <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
-                <img src={image} alt="" className="aspect-[16/10] w-full object-cover" />
+                <img data-slot="media" src={image} alt="" className="aspect-[16/10] w-full object-cover" />
               </div>
             </div>
           </Reveal>

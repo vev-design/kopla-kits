@@ -27,13 +27,13 @@ export function PullQuote({ id, quote, attribution }: PullQuoteProps) {
         >
           &ldquo;
         </span>
-        <blockquote className="mt-4 font-serif text-3xl leading-[1.25] font-semibold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
+        <blockquote data-slot="quote" className="mt-4 font-serif text-3xl leading-[1.25] font-semibold tracking-[-0.01em] text-balance text-foreground md:text-5xl">
           {quote}
         </blockquote>
         {attribution ? (
           <div className="mt-8 flex items-center gap-3">
             <span className="h-px w-8 bg-primary" aria-hidden />
-            <cite className="font-sans text-sm tracking-[0.18em] text-muted-foreground uppercase not-italic">
+            <cite data-slot="attribution" className="font-sans text-sm tracking-[0.18em] text-muted-foreground uppercase not-italic">
               {attribution}
             </cite>
           </div>

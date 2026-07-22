@@ -81,7 +81,7 @@ export function Stats({ id, index, eyebrow, stats }: StatsProps) {
                 <span className="font-mono text-sm font-medium text-primary">{index}</span>
               ) : null}
               {eyebrow ? (
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                <p data-slot="eyebrow" className="font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   {eyebrow}
                 </p>
               ) : null}
@@ -91,11 +91,11 @@ export function Stats({ id, index, eyebrow, stats }: StatsProps) {
         ) : null}
         <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <Reveal key={stat.label} className="flex flex-col gap-3 border-t border-foreground pt-6">
-              <span className="text-6xl font-bold leading-none tracking-[-0.03em] md:text-7xl lg:text-8xl">
+            <Reveal key={stat.label} data-slot="item" className="flex flex-col gap-3 border-t border-foreground pt-6">
+              <span data-slot="item-heading" className="text-6xl font-bold leading-none tracking-[-0.03em] md:text-7xl lg:text-8xl">
                 <StatFigure value={stat.value} />
               </span>
-              <span className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <span data-slot="item-body" className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 {stat.label}
               </span>
             </Reveal>

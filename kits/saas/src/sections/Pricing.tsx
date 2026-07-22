@@ -50,15 +50,24 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
       <div className="mx-auto w-full max-w-6xl px-6 py-24">
         <Reveal className="mb-14 flex flex-col items-center gap-4 text-center">
           {eyebrow ? (
-            <p className="text-xs font-medium tracking-[0.18em] text-primary uppercase">
+            <p
+              data-slot="eyebrow"
+              className="text-xs font-medium tracking-[0.18em] text-primary uppercase"
+            >
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-4xl">
+          <h2
+            data-slot="heading"
+            className="max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-4xl"
+          >
             {heading}
           </h2>
           {subhead ? (
-            <p className="max-w-2xl text-lg text-muted-foreground text-pretty">
+            <p
+              data-slot="subhead"
+              className="max-w-2xl text-lg text-muted-foreground text-pretty"
+            >
               {subhead}
             </p>
           ) : null}
@@ -67,21 +76,22 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
           {tiers.map((tier) => (
             <Card
               key={tier.name}
+              data-slot="item"
               variant={tier.highlighted ? 'tier-highlighted' : 'tier'}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold tracking-tight">
+                  <h3 data-slot="item-heading" className="text-lg font-semibold tracking-tight">
                     {tier.name}
                   </h3>
                   {tier.highlighted ? (
-                    <Badge variant="solid">Popular</Badge>
+                    <Badge data-slot="tag" variant="solid">Popular</Badge>
                   ) : null}
                 </div>
-                <p className="text-sm text-muted-foreground">{tier.description}</p>
+                <p data-slot="item-body" className="text-sm text-muted-foreground">{tier.description}</p>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold tracking-tight">
+                <span data-slot="price" className="text-4xl font-bold tracking-tight">
                   {tier.price}
                 </span>
                 {tier.period ? (
@@ -94,10 +104,11 @@ export function Pricing({ id, eyebrow, heading, subhead, tiers }: PricingProps) 
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5 text-sm">
                     <Check
+                      data-slot="icon"
                       className="mt-0.5 size-4 shrink-0 text-primary"
                       strokeWidth={2.5}
                     />
-                    <span className="text-foreground/90">{feature}</span>
+                    <span data-slot="feature" className="text-foreground/90">{feature}</span>
                   </li>
                 ))}
               </ul>

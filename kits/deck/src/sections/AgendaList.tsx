@@ -44,8 +44,15 @@ export function AgendaList({
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
           <div className="mb-12 md:mb-16">
-            {eyebrow ? <Eyebrow className="mb-4">{eyebrow}</Eyebrow> : null}
-            <h2 className="font-display text-5xl font-bold tracking-tight text-balance md:text-7xl">
+            {eyebrow ? (
+              <Eyebrow data-slot="eyebrow" className="mb-4">
+                {eyebrow}
+              </Eyebrow>
+            ) : null}
+            <h2
+              data-slot="heading"
+              className="font-display text-5xl font-bold tracking-tight text-balance md:text-7xl"
+            >
               {heading}
             </h2>
           </div>
@@ -54,20 +61,30 @@ export function AgendaList({
           {items.map((item, i) => (
             <div
               key={i}
+              data-slot="item"
               className={cn(
                 'group flex items-baseline gap-6 border-t border-border py-6 md:gap-12 md:py-8',
                 i === items.length - 1 && 'border-b',
               )}
             >
-              <span className="font-display text-3xl font-bold tabular-nums text-primary md:text-5xl">
+              <span
+                data-slot="number"
+                className="font-display text-3xl font-bold tabular-nums text-primary md:text-5xl"
+              >
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex flex-1 flex-col gap-1">
-                <span className="font-display text-2xl font-semibold tracking-tight md:text-4xl">
+                <span
+                  data-slot="item-heading"
+                  className="font-display text-2xl font-semibold tracking-tight md:text-4xl"
+                >
                   {item.title}
                 </span>
                 {item.detail ? (
-                  <span className="text-base text-muted-foreground md:text-lg">
+                  <span
+                    data-slot="item-body"
+                    className="text-base text-muted-foreground md:text-lg"
+                  >
                     {item.detail}
                   </span>
                 ) : null}

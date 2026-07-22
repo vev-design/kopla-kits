@@ -25,29 +25,36 @@ export interface ScheduleProps extends SectionBaseProps {
 export function Schedule({ id, heading, sessions }: ScheduleProps) {
   return (
     <section id={id ?? undefined} className="mx-auto w-full max-w-4xl px-6 py-20 md:py-28">
-      <h2 className="mb-8 font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl">
+      <h2
+        data-slot="heading"
+        className="mb-8 font-display text-4xl uppercase leading-[0.9] tracking-tight md:text-5xl"
+      >
         {heading}
       </h2>
       <ul className="flex flex-col">
         {sessions.map((s, i) => (
           <li
             key={i}
+            data-slot="item"
             className={cn(
               'flex flex-col gap-1 border-t border-border py-4 sm:flex-row sm:items-baseline sm:gap-6',
               i === sessions.length - 1 && 'border-b',
             )}
           >
-            <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground sm:w-16">
+            <span
+              data-slot="time"
+              className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground sm:w-16"
+            >
               {s.time}
             </span>
             <div className="flex flex-1 flex-col gap-0.5">
-              <span className="font-semibold">{s.title}</span>
+              <span data-slot="item-heading" className="font-semibold">{s.title}</span>
               {s.speaker ? (
-                <span className="text-sm text-muted-foreground">{s.speaker}</span>
+                <span data-slot="item-body" className="text-sm text-muted-foreground">{s.speaker}</span>
               ) : null}
             </div>
             {s.track ? (
-              <Badge tone="soft" size="tag" className="w-fit">
+              <Badge data-slot="tag" tone="soft" size="tag" className="w-fit">
                 {s.track}
               </Badge>
             ) : null}

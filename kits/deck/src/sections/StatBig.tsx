@@ -57,22 +57,33 @@ export function StatBig({
       />
       <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center">
         <Reveal>
-          {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
+          {eyebrow ? (
+            <Eyebrow data-slot="eyebrow" className="mb-8">
+              {eyebrow}
+            </Eyebrow>
+          ) : null}
         </Reveal>
         <motion.span
+          data-slot="value"
           style={{ scale, opacity }}
           className="block font-display text-[8rem] leading-[0.9] font-bold tracking-tighter text-primary tabular-nums md:text-[16rem] lg:text-[20rem]"
         >
           {value}
         </motion.span>
         <Reveal transition={{ delay: 0.1 }}>
-          <h2 className="mt-6 font-display text-3xl font-semibold tracking-tight md:text-5xl">
+          <h2
+            data-slot="heading"
+            className="mt-6 font-display text-3xl font-semibold tracking-tight md:text-5xl"
+          >
             {label}
           </h2>
         </Reveal>
         {support ? (
           <Reveal transition={{ delay: 0.16 }}>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground text-pretty md:text-xl">
+            <p
+              data-slot="body"
+              className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground text-pretty md:text-xl"
+            >
               {support}
             </p>
           </Reveal>

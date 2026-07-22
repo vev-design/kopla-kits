@@ -63,7 +63,10 @@ function HeroMarquee({ phrases }: { phrases: string[] }) {
     </div>
   );
   return (
-    <div className="w-full overflow-hidden bg-primary py-3.5 text-primary-foreground">
+    <div
+      data-slot="marquee"
+      className="w-full overflow-hidden bg-primary py-3.5 text-primary-foreground"
+    >
       <div className="flex w-max motion-safe:animate-marquee">
         {strip()}
         {strip(true)}
@@ -93,25 +96,37 @@ export function EventHero({
         <Reveal className="flex w-full flex-col gap-8 md:gap-10">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             {eyebrow ? (
-              <Badge tone="solid" size="kicker">
+              <Badge data-slot="eyebrow" tone="solid" size="kicker">
                 {eyebrow}
               </Badge>
             ) : null}
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em]">
+            <span
+              data-slot="location"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em]"
+            >
               <MapPin size={14} strokeWidth={2.5} className="text-primary" />
               {location}
             </span>
           </div>
           <div className="flex flex-col">
-            <h1 className="font-display max-w-[10ch] text-[clamp(3.5rem,12vw,10rem)] uppercase leading-[0.85] tracking-[-0.02em] text-balance">
+            <h1
+              data-slot="heading"
+              className="font-display max-w-[10ch] text-[clamp(3.5rem,12vw,10rem)] uppercase leading-[0.85] tracking-[-0.02em] text-balance"
+            >
               {title}
             </h1>
-            <p className="font-display text-[clamp(2.25rem,7.5vw,6.5rem)] uppercase leading-[0.9] tracking-[-0.02em] text-primary">
+            <p
+              data-slot="date"
+              className="font-display text-[clamp(2.25rem,7.5vw,6.5rem)] uppercase leading-[0.9] tracking-[-0.02em] text-primary"
+            >
               {date}
             </p>
           </div>
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
-            <p className="max-w-md text-lg text-muted-foreground text-pretty md:text-xl">
+            <p
+              data-slot="subhead"
+              className="max-w-md text-lg text-muted-foreground text-pretty md:text-xl"
+            >
               {tagline}
             </p>
             <div className="flex shrink-0 flex-wrap items-center gap-3">

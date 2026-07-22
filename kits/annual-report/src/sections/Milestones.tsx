@@ -43,11 +43,14 @@ export function Milestones({
       <div className="mx-auto w-full max-w-5xl px-6 py-24 md:px-12 md:py-32">
         <Reveal className="mb-16 max-w-2xl">
           {eyebrow || index ? (
-            <Badge variant="rule" index={index}>
+            <Badge data-slot="eyebrow" variant="rule" index={index}>
               {eyebrow}
             </Badge>
           ) : null}
-          <h2 className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl">
+          <h2
+            data-slot="heading"
+            className="mt-5 font-serif text-3xl font-semibold leading-tight tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
         </Reveal>
@@ -62,6 +65,7 @@ export function Milestones({
             return (
               <div
                 key={milestone.title}
+                data-slot="item"
                 className={
                   isStepped
                     ? 'relative grid pb-12 last:pb-0 md:grid-cols-2 md:gap-12'
@@ -81,13 +85,22 @@ export function Milestones({
                       : ''
                   }
                 >
-                  <span className="font-mono text-xs font-medium uppercase tracking-[0.18em] tabular-nums text-primary">
+                  <span
+                    data-slot="period"
+                    className="font-mono text-xs font-medium uppercase tracking-[0.18em] tabular-nums text-primary"
+                  >
                     {milestone.period}
                   </span>
-                  <h3 className="mt-2 font-serif text-2xl font-semibold tracking-tight md:text-3xl">
+                  <h3
+                    data-slot="item-heading"
+                    className="mt-2 font-serif text-2xl font-semibold tracking-tight md:text-3xl"
+                  >
                     {milestone.title}
                   </h3>
-                  <p className="mt-3 text-base leading-relaxed text-muted-foreground text-pretty">
+                  <p
+                    data-slot="item-body"
+                    className="mt-3 text-base leading-relaxed text-muted-foreground text-pretty"
+                  >
                     {milestone.body}
                   </p>
                 </div>

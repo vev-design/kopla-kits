@@ -49,12 +49,22 @@ export function Membership({ id, eyebrow, heading, subhead, tiers }: MembershipP
     <section id={id ?? undefined} className="w-full bg-muted/40">
       <div className="mx-auto w-full max-w-6xl px-6 py-28">
         <Reveal className="mb-16 flex flex-col items-center gap-4 text-center">
-          {eyebrow ? <Badge variant="soft">{eyebrow}</Badge> : null}
-          <h2 className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+          {eyebrow ? (
+            <Badge data-slot="eyebrow" variant="soft">
+              {eyebrow}
+            </Badge>
+          ) : null}
+          <h2
+            data-slot="heading"
+            className="max-w-2xl font-serif text-4xl font-semibold tracking-tight text-balance md:text-5xl"
+          >
             {heading}
           </h2>
           {subhead ? (
-            <p className="max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty">
+            <p
+              data-slot="subhead"
+              className="max-w-xl text-lg leading-relaxed text-muted-foreground text-pretty"
+            >
               {subhead}
             </p>
           ) : null}
@@ -63,23 +73,33 @@ export function Membership({ id, eyebrow, heading, subhead, tiers }: MembershipP
           {tiers.map((tier) => (
             <Card
               key={tier.name}
+              data-slot="item"
               variant={tier.highlighted ? 'tier-highlighted' : 'tier'}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-xl font-semibold tracking-tight">
+                  <h3
+                    data-slot="item-heading"
+                    className="font-serif text-xl font-semibold tracking-tight"
+                  >
                     {tier.name}
                   </h3>
                   {tier.highlighted ? (
                     <Badge variant="solid">Most loved</Badge>
                   ) : null}
                 </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <p
+                  data-slot="item-body"
+                  className="text-sm leading-relaxed text-muted-foreground"
+                >
                   {tier.description}
                 </p>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="font-serif text-4xl font-semibold tracking-tight">
+                <span
+                  data-slot="price"
+                  className="font-serif text-4xl font-semibold tracking-tight"
+                >
                   {tier.price}
                 </span>
                 {tier.period ? (

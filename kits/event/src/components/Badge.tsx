@@ -41,7 +41,11 @@ export interface BadgeProps extends React.ComponentProps<'span'> {
 
 export function Badge({ tone, size, className, children, ...props }: BadgeProps) {
   return (
-    <span className={cn(badgeVariants({ tone, size }), className)} {...props}>
+    <span
+      data-kopla-component="Badge"
+      className={cn(badgeVariants({ tone, size }), className)}
+      {...props}
+    >
       {children}
     </span>
   );

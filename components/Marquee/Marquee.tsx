@@ -29,6 +29,7 @@ const DURATION: Record<NonNullable<MarqueeProps['speed']>, string> = {
 export function Marquee({ items, speed = 'normal', pauseOnHover = true }: MarqueeProps) {
   return (
     <div
+      data-kopla-component="Marquee"
       className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
       role="marquee"
       aria-label={items.join(', ')}

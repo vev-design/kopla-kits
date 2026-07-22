@@ -52,6 +52,7 @@ export function ImageText({
           padding on both sides so the rule floats mid-gutter. */}
       <Reveal className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-0">
         <Figure
+          data-slot="media"
           ratio="tall"
           caption={caption}
           className={imageFirst ? 'md:order-1 md:pr-14' : 'md:order-2 md:pl-14'}
@@ -65,11 +66,11 @@ export function ImageText({
               : 'md:order-1 md:border-r md:border-border md:pr-14',
           )}
         >
-          {kicker ? <Eyebrow>{kicker}</Eyebrow> : null}
-          <h2 className="mt-4 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-4xl">
+          {kicker ? <Eyebrow data-slot="eyebrow">{kicker}</Eyebrow> : null}
+          <h2 data-slot="heading" className="mt-4 font-serif text-3xl leading-tight font-bold tracking-[-0.01em] text-balance text-foreground md:text-4xl">
             {heading}
           </h2>
-          <p className="mt-5 font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
+          <p data-slot="body" className="mt-5 font-sans text-lg leading-relaxed text-muted-foreground text-pretty">
             {body}
           </p>
         </div>
