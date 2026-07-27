@@ -30,8 +30,10 @@
 .kitcards--bare {
   background: none;
   min-height: 0;
-  /* Top padding clears the host's floating gallery title. */
-  padding: 56px 24px 40px;
+  /* Generous inset so the cards breathe inside the host canvas; the top
+     also clears the host's floating gallery title. (Betsy tuned the value
+     in devtools.) */
+  padding: 80px 80px 40px;
 }
 html:has(.kitcards--bare),
 body:has(.kitcards--bare) {
