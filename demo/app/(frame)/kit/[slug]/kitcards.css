@@ -24,6 +24,20 @@
   background-size: 22px 22px;
 }
 
+/* &bg=transparent — the embedding surface (Kopla's canvas) supplies the
+   backdrop; painting our own dots inside the iframe double-framed it. Kit
+   CSS may set a body background, hence the :has overrides. */
+.kitcards--bare {
+  background: none;
+  min-height: 0;
+  /* Top padding clears the host's floating gallery title. */
+  padding: 56px 24px 40px;
+}
+html:has(.kitcards--bare),
+body:has(.kitcards--bare) {
+  background: transparent !important;
+}
+
 .kitcards__card {
   margin: 0 0 28px;
   break-inside: avoid;

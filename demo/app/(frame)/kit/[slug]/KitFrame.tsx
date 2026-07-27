@@ -65,11 +65,16 @@ class SectionBoundary extends Component<
 export function KitFrame({ slug }: { slug: string }) {
   const [sections, setSections] = useState<LoadedSection[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 'cards' renders the labeled per-section gallery below. Resolved on the
-  // client after mount (this is a client component; the page is static).
+  // 'cards' renders the labeled per-section gallery below; '&bg=transparent'
+  // drops the view's own dot-grid so an embedding canvas (Kopla's intake)
+  // shows through instead of double-framing. Resolved on the client after
+  // mount (this is a client component; the page is static).
   const [view, setView] = useState<string | null>(null);
+  const [bareBg, setBareBg] = useState(false);
   useEffect(() => {
-    setView(new URLSearchParams(window.location.search).get('view'));
+    const params = new URLSearchParams(window.location.search);
+    setView(params.get('view'));
+    setBareBg(params.get('bg') === 'transparent');
   }, []);
 
   useEffect(() => {
@@ -99,7 +104,7 @@ export function KitFrame({ slug }: { slug: string }) {
   // route param) so /kit/<slug> stays fully static.
   if (view === 'cards') {
     return (
-      <div className="kitcards">
+      <div className={bareBg ? 'kitcards kitcards--bare' : 'kitcards'}>
         {sections.map(({ name, component, demo }, idx) => {
           const instances = Array.isArray(demo) ? demo : [demo ?? {}];
           const props = instances[0] ?? {};
