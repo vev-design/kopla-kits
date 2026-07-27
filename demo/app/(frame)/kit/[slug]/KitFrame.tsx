@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { kitModules } from '../../../../kits.gen';
+import './kitcards.css';
 
 interface LoadedSection {
   name: string;
@@ -64,6 +65,12 @@ class SectionBoundary extends Component<
 export function KitFrame({ slug }: { slug: string }) {
   const [sections, setSections] = useState<LoadedSection[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 'cards' renders the labeled per-section gallery below. Resolved on the
+  // client after mount (this is a client component; the page is static).
+  const [view, setView] = useState<string | null>(null);
+  useEffect(() => {
+    setView(new URLSearchParams(window.location.search).get('view'));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +91,39 @@ export function KitFrame({ slug }: { slug: string }) {
     return <div style={{ padding: '2rem', fontFamily: 'monospace' }}>{error}</div>;
   }
   if (!sections) return null;
+
+  // ?view=cards — every section as a labeled card on a dot grid (the shape
+  // Kopla's design-system components board uses). Kopla's DS intake embeds
+  // this view so a template preview shows WHAT THE KIT SHIPS, section by
+  // section, instead of one continuous page. Read from location (not a
+  // route param) so /kit/<slug> stays fully static.
+  if (view === 'cards') {
+    return (
+      <div className="kitcards">
+        {sections.map(({ name, component, demo }, idx) => {
+          const instances = Array.isArray(demo) ? demo : [demo ?? {}];
+          const props = instances[0] ?? {};
+          return (
+            // name alone can repeat (a shared export in two section modules).
+            <figure className="kitcards__card" key={`${name}-${idx}`}>
+              <div className="kitcards__render">
+                <SectionBoundary name={name}>
+                  {createElement(component, {
+                    id: name.toLowerCase(),
+                    ...(props as Record<string, unknown>),
+                  })}
+                </SectionBoundary>
+              </div>
+              <figcaption className="kitcards__label">
+                <span>{name}</span>
+                {instances.length > 1 && <em>{instances.length} variants</em>}
+              </figcaption>
+            </figure>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <>
