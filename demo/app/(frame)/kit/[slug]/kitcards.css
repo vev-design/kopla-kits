@@ -4,21 +4,26 @@
    this group avoids global CSS). Palette is hardcoded neutral — this chrome
    must look the same no matter which kit's tokens are loaded. */
 
+/* Multi-column masonry (not grid): grid rows size to the tallest card in
+   the row, so a short Navbar beside a tall Hero left a huge dead void.
+   Columns pack each card right under the previous one — heights can vary
+   wildly (that's the nature of sections) without holes. Order runs down
+   each column; the captions carry identity, page order lives on the plain
+   /kit/<slug> render. */
 .kitcards {
   min-height: 100vh;
   box-sizing: border-box;
   padding: 44px clamp(24px, 4vw, 72px) 72px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
-  gap: 36px;
-  align-items: start;
+  columns: 460px;
+  column-gap: 36px;
   background-color: #f1f1ec;
   background-image: radial-gradient(circle at 1px 1px, rgba(19, 19, 19, 0.08) 1px, transparent 0);
   background-size: 22px 22px;
 }
 
 .kitcards__card {
-  margin: 0;
+  margin: 0 0 36px;
+  break-inside: avoid;
   overflow: hidden;
   border-radius: 18px;
   background: #fff;
