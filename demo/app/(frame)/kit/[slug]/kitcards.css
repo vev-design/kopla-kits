@@ -30,7 +30,8 @@
 .kitcards--bare {
   background: none;
   min-height: 0;
-  padding: 20px 24px 40px;
+  /* Top padding clears the host's floating gallery title. */
+  padding: 56px 24px 40px;
 }
 html:has(.kitcards--bare),
 body:has(.kitcards--bare) {
