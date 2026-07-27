@@ -13,16 +13,19 @@
 .kitcards {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 44px clamp(24px, 4vw, 72px) 72px;
-  columns: 460px;
-  column-gap: 36px;
+  padding: 32px clamp(20px, 3vw, 48px) 56px;
+  /* A fixed TWO columns, not a width-derived count: inside Kopla's canvas
+     iframe (~800-1000 CSS px) `columns: 460px` resolved to one giant
+     column — the cards need side-by-side density at every embed size. */
+  columns: 2;
+  column-gap: 28px;
   background-color: #f1f1ec;
   background-image: radial-gradient(circle at 1px 1px, rgba(19, 19, 19, 0.08) 1px, transparent 0);
   background-size: 22px 22px;
 }
 
 .kitcards__card {
-  margin: 0 0 36px;
+  margin: 0 0 28px;
   break-inside: avoid;
   overflow: hidden;
   border-radius: 18px;
@@ -36,25 +39,26 @@
    and paint in sync); tall sections crop — the card is a preview, the plain
    /kit/<slug> page remains the full render. */
 .kitcards__render {
-  max-height: 460px;
+  max-height: 360px;
   overflow: hidden;
 }
 
 /* zoom on the CHILD, not the clipping wrapper — on the wrapper the
-   max-height itself would be scaled too (460px would clip at a visual
-   230px). */
+   max-height itself would be scaled too (360px would clip at a visual
+   180px). 0.35 lays sections out at ~3x the column width — proper
+   desktop proportions at thumbnail size. */
 .kitcards__render > * {
-  zoom: 0.5;
+  zoom: 0.35;
 }
 
 .kitcards__label {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 18px;
+  padding: 10px 14px;
   border-top: 1px solid rgba(16, 17, 26, 0.07);
   font-family: Inter, system-ui, sans-serif;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #10111a;
 }
