@@ -1,0 +1,10 @@
+{
+  "name": "Tactile Brutalism",
+  "description": "A raw, high-contrast brutalist system: near-black canvas, hard 1px borders, zero corner radius, an acid-lime accent, and a constant film-grain texture. Viewport-scaled type and a mono voice throughout.",
+  "whenToUse": "Pick for brands that want to read as engineered and confident rather than softly polished: creative-technology studios, hardware and tool makers, record labels, streetwear, experimental agencies, and brutalist-architecture or art portfolios. The chain is a complete landing narrative — hard-edged sticky navbar, an oversized viewport-scaled hero, a raw mono word ticker, a bento capability grid, an oversized scroll-scaled stat, a blockquote-style testimonial, a closing CTA, and a footer — all sharing zero-radius panels, visible hairline borders, no drop shadows, and a subtle film-grain overlay across every section. Avoid for soft/organic wellness brands, warm longform editorial reading, or corporate/finance systems that need to look safe and conventional.",
+  "tags": ["Brutalist", "Bold", "Dark", "Experimental"],
+  "featured": false,
+  "order": 110,
+  "accent": "#D7FF3A",
+  "thumbnail": "/kit-thumbnails/tactile-brutalism.svg"
+}
