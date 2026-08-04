@@ -95,6 +95,10 @@ Rules:
   - `/** Button label. 1–3 words, sentence case (e.g. "Get started"). */`
   When in doubt, err toward tighter ranges — too-long generated text breaks layouts; too-short usually doesn't.
 - For string-shaped props that aren't plain text, add a **`@kind` tag**. Supported: `@kind url`, `@kind image`, `@kind richtext`. Without one, strings render as a text field.
+- **`@kind richtext` holds HTML** and is edited in place in the preview with a real editor, so reach for it when the copy needs emphasis or a link inside a sentence — not for a whole page's structure (that's what an array of typed blocks is for, where YOUR component styles each block). The component renders the value as markup, e.g. `dangerouslySetInnerHTML`.
+  List what the editor may offer after the kind — anything you don't list, the editor cannot produce:
+  `@kind richtext bold italic link`
+  Available: `bold`, `italic`, `underline`, `strike`, `code`, `link`, `h2`, `h3`, `bulletList`, `orderedList`, `blockquote`. Omit the list to get the safe default (`bold italic link`). Only add block features (`h2`, lists, `blockquote`) when the slot is a full prose area — inside a one-paragraph slot they break the section's rhythm.
 - `?:` makes a prop **nullable** (the host lets the user clear it; your component's default kicks in). Make a prop required when there's no sensible "cleared" state.
 - Every section exports a **`<Name>Demo`** const typed by its props interface. The literal must be static — no function calls or identifiers. For sections with multiple representative variants, export `<Name>Demo: <Name>Props[]` and each entry becomes a demo instance.
 - **Re-export every section** from `src/sections/index.ts`. Only re-exported names are part of the system.

@@ -9,7 +9,8 @@
 //   src/sections/<X>.tsx
 //     JSDoc on <X>Props          → section description
 //     interface <X>Props         → section props
-//     JSDoc on each prop         → prop description ("@kind url|image|richtext" overrides)
+//     JSDoc on each prop         → prop description ("@kind url|image|richtext"
+//                                  overrides; richtext takes a feature list)
 //     export const <X>Demo       → demo entry for that section
 //
 // Authoring edits those files; this script produces design.json. Never
@@ -451,7 +452,20 @@ function unionToPropType(types, checker, kindOverride, depth = 0) {
 
 function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
   if (kindOverride && type.flags & ts.TypeFlags.StringLike) {
-    if (SPECIALIZED_STRING_KINDS.has(kindOverride)) return { kind: kindOverride };
+    // `@kind <kind> [feature ...]` — the kind, then (richtext only) which
+    // formatting the in-preview editor should offer for this field, e.g.
+    // `@kind richtext bold italic link bulletList`. Omitted means the host's
+    // safe inline-only default.
+    //
+    // Feature names are passed through UNVALIDATED on purpose. The vocabulary
+    // is owned by the host (`RichTextFeature` in @kopla/types), which already
+    // drops entries it doesn't know; re-listing it here would be a second
+    // source of truth to drift out of step. The tradeoff is that a misspelled
+    // feature is silently ignored rather than reported at build time.
+    const [kind, ...features] = kindOverride.split(/\s+/).filter(Boolean);
+    if (SPECIALIZED_STRING_KINDS.has(kind)) {
+      return kind === 'richtext' && features.length > 0 ? { kind, features } : { kind };
+    }
   }
   if (type.isStringLiteral()) return { kind: 'literal', value: type.value };
   if (type.isNumberLiteral()) return { kind: 'literal', value: type.value };
