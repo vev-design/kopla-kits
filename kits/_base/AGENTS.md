@@ -102,7 +102,7 @@ Rules:
 - `?:` makes a prop **nullable** (the host lets the user clear it; your component's default kicks in). Make a prop required when there's no sensible "cleared" state.
 - Every section exports a **`<Name>Demo`** const typed by its props interface. The literal must be static — no function calls or identifiers. For sections with multiple representative variants, export `<Name>Demo: <Name>Props[]` and each entry becomes a demo instance.
 - **Re-export every section** from `src/sections/index.ts`. Only re-exported names are part of the system.
-- If the section is **interactive** — anything that has to change in the browser — tag its `*Props` interface with **`@hydrate`**. See [Interactivity](#interactivity).
+- For anything **interactive**, reach for the platform before React state — `<details name>` for an accordion, `popover` for a menu, `scroll-snap` for a gallery — so the section publishes with no JavaScript. When it genuinely needs client JS, tag its `*Props` interface with **`@hydrate`**. See [Interactivity](#interactivity).
 
 ## How to author the README
 
@@ -240,7 +240,32 @@ Add new wrappers under `src/motion/` (and re-export from `motion/index.ts`) when
 
 ### Interactivity
 
-A published page ships as **pure HTML with no JavaScript** unless something on it is known to need the browser. That keeps static pages fast, but it means an interactive section that doesn't declare itself publishes **dead**: an accordion frozen on whichever item was open at first render, tabs that won't switch, carousel arrows that do nothing.
+A published page ships as **pure HTML with no JavaScript** unless something on it needs the browser. Two rules follow, in this order.
+
+#### 1. Reach for the platform first
+
+Most of what sections need — disclosure, exclusive accordions, modals, menus, swipeable galleries, scroll effects — the browser does natively, with better accessibility and keyboard behaviour than a hand-rolled version, and with **no JavaScript at all**. A section built that way stays static: nothing to hydrate, nothing to go wrong, nothing to download.
+
+Reach for React state only when the platform genuinely can't express the behaviour.
+
+| Behaviour | Platform |
+| --- | --- |
+| Show/hide a panel | `<details>` / `<summary>` |
+| Accordion, one panel open at a time | `<details name="group">` — the shared `name` makes it exclusive |
+| Modal, drawer, dropdown, tooltip | the `popover` attribute + `popovertarget`, or `<dialog>` |
+| Horizontal gallery / carousel | CSS `scroll-snap` (`snap-x snap-mandatory` + `snap-start`) |
+| Reveal on scroll, parallax, progress | CSS scroll-driven animations (`animation-timeline`) |
+| Reveal on hover/focus | `:hover`, `:focus-within`, `:has()` |
+| Jump between panels from a link | `:target` |
+| Video playback controls | `<video controls>` |
+
+Style the native elements with tokens like anything else — `<summary>` takes `::marker`/`[&::-webkit-details-marker]:hidden`, `<details>` takes `[&[open]]:` variants. Don't add ARIA the element already implies: `<summary>` is a disclosure button, so `aria-expanded` on it is redundant (and it makes the publish build think the section needs JS).
+
+Two caveats worth knowing: `<details>` panels are always in the DOM, so don't use one to hide something expensive; and CSS-only carousels scroll but don't auto-advance.
+
+#### 2. If it does need JS, declare it
+
+An interactive section that doesn't declare itself publishes **dead**: an accordion frozen on whichever item was open at first render, tabs that won't switch, carousel arrows that do nothing.
 
 This is easy to miss, because it looks fine everywhere except the live site. Server rendering captures the initial state, so screenshots and previews are correct — the previews mount the real React components, so they stay interactive no matter what the section declared.
 
