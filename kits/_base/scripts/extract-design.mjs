@@ -165,9 +165,10 @@ function collectSections(indexSource, checker, program) {
     }
     const description = readPropsInterfaceJSDoc(propsType, checker) ?? '';
     const props = propsTypeToSchema(propsType, checker);
-    // A section needs client JS in production (→ `hydrate: true`) if it
-    // imports an animation/interactivity lib (motion) or opts in via a
-    // `@hydrate` JSDoc tag on its Props. Otherwise it ships as static
+    // A section needs client JS in production (→ `hydrate: true`) if it opts
+    // in via a `@hydrate` JSDoc tag on its Props, or if it (or anything it
+    // imports in-workspace) uses React state/effects, a JSX event handler, or
+    // an animation lib. Otherwise it ships as static
     // HTML. The production builder reads this to decide per-page.
     const hydrate = sectionNeedsHydration(decl, propsType, checker);
     sections.push({ name: exp.name, description, props, ...(hydrate ? { hydrate: true } : {}) });
@@ -312,11 +313,35 @@ function resolvePropsTypeAtSignature(signatureNode, checker) {
   return checker.getTypeAtLocation(param);
 }
 
-/** Does this section need client JS in production? True if its source
- *  file imports an animation/interactivity lib (`motion`, `@/motion`) or
- *  its Props JSDoc carries a `@hydrate` tag. Static otherwise. */
+// Source-level evidence that a component cannot work without client JS.
+//
+// This must be GENEROUS. A false positive costs the published page one JS
+// bundle it didn't need; a false negative publishes a dead page — an
+// accordion frozen on its initial state, a carousel whose arrows do nothing
+// — and nothing catches it, because SSR captures the initial state (so the
+// page looks right) and every Kopla preview surface mounts the real
+// components client-side and never reads this flag at all. The bug is
+// visible only on the live site.
+const CLIENT_JS_SIGNALS = [
+  // Animation / interactivity libraries.
+  /from\s+['"](motion\b|motion\/|@\/motion)/,
+  // React state and effects — anything whose whole point is to change after
+  // the first paint. This is the case the motion-only heuristic missed: an
+  // ordinary `useState` accordion or tab strip imports nothing special.
+  /\buse(?:State|Reducer|Effect|LayoutEffect|SyncExternalStore|Transition|Optimistic)\s*[(<]/,
+  // A JSX event handler — `onClick={…}`, `onSubmit={…}`. Note the `={`: it
+  // matches a handler being PASSED, not an `onClick?: () => void` line in a
+  // Props interface (declaring the prop implies nothing about this file).
+  /\son[A-Z]\w*\s*=\s*\{/,
+  // Explicit client boundary.
+  /^\s*['"]use client['"]/m,
+];
+
+/** Does this component need client JS in production? True if its Props JSDoc
+ *  carries an explicit `@hydrate` tag, or if it — or anything it imports from
+ *  within the workspace — shows one of the CLIENT_JS_SIGNALS above. */
 function sectionNeedsHydration(componentDecl, propsType, checker) {
-  // Explicit opt-in via @hydrate on the Props interface.
+  // Explicit opt-in via @hydrate on the Props interface always wins.
   const symbol = propsType.aliasSymbol ?? propsType.symbol;
   for (const d of symbol?.declarations ?? []) {
     for (const tag of ts.getJSDocCommentsAndTags(d)) {
@@ -324,9 +349,43 @@ function sectionNeedsHydration(componentDecl, propsType, checker) {
       if (typeof text === 'string' && /@hydrate\b/.test(text)) return true;
     }
   }
-  // Heuristic: the component's source file imports motion → it animates.
-  const sourceText = componentDecl.getSourceFile?.().text ?? '';
-  return /from\s+['"](motion\b|motion\/|@\/motion)/.test(sourceText);
+  const sourceFile = componentDecl.getSourceFile?.();
+  if (!sourceFile) return false;
+  return fileNeedsHydration(sourceFile, checker, new Set());
+}
+
+/** CLIENT_JS_SIGNALS in this file, or transitively in any workspace file it
+ *  imports. The walk matters because interactivity increasingly lives in a
+ *  `src/components/` primitive: a section that just renders `<Accordion>` has
+ *  no hooks and no handlers of its own, so judging the section file alone
+ *  called the whole page static and shipped it dead.
+ *
+ *  Only workspace sources are followed — a `node_modules` .d.ts carries no
+ *  implementation to inspect, and the libraries that matter are already
+ *  named in CLIENT_JS_SIGNALS. `seen` guards import cycles. */
+function fileNeedsHydration(sourceFile, checker, seen) {
+  if (seen.has(sourceFile.fileName)) return false;
+  seen.add(sourceFile.fileName);
+  if (CLIENT_JS_SIGNALS.some((re) => re.test(sourceFile.text))) return true;
+
+  for (const statement of sourceFile.statements) {
+    const specifier =
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteral(statement.moduleSpecifier)
+        ? statement.moduleSpecifier
+        : null;
+    if (!specifier) continue;
+    // Resolve through the checker rather than the raw path so tsconfig `@/*`
+    // aliases and extensionless relative imports both land.
+    const moduleSymbol = checker.getSymbolAtLocation(specifier);
+    for (const decl of moduleSymbol?.declarations ?? []) {
+      if (!ts.isSourceFile(decl)) continue;
+      if (decl.fileName.includes('node_modules') || decl.isDeclarationFile) continue;
+      if (fileNeedsHydration(decl, checker, seen)) return true;
+    }
+  }
+  return false;
 }
 
 function readPropsInterfaceJSDoc(propsType, checker) {

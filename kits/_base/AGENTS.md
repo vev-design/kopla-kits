@@ -102,6 +102,7 @@ Rules:
 - `?:` makes a prop **nullable** (the host lets the user clear it; your component's default kicks in). Make a prop required when there's no sensible "cleared" state.
 - Every section exports a **`<Name>Demo`** const typed by its props interface. The literal must be static — no function calls or identifiers. For sections with multiple representative variants, export `<Name>Demo: <Name>Props[]` and each entry becomes a demo instance.
 - **Re-export every section** from `src/sections/index.ts`. Only re-exported names are part of the system.
+- If the section is **interactive** — anything that has to change in the browser — tag its `*Props` interface with **`@hydrate`**. See [Interactivity](#interactivity).
 
 ## How to author the README
 
@@ -236,6 +237,28 @@ Add new wrappers under `src/motion/` (and re-export from `motion/index.ts`) when
 - **Theme tokens, not raw values.** `bg-primary` not `bg-[#5b5bd6]`. Edit `globals.css` to change the brand.
 - **Arbitrary values are an escape hatch.** `text-[length:--type-display-size]` is fine when a token doesn't exist yet; if you reach for one twice, promote it to a token.
 - **No CSS modules, no CSS-in-JS.** A single global `globals.css` plus Tailwind utilities is the whole styling story.
+
+### Interactivity
+
+A published page ships as **pure HTML with no JavaScript** unless something on it is known to need the browser. That keeps static pages fast, but it means an interactive section that doesn't declare itself publishes **dead**: an accordion frozen on whichever item was open at first render, tabs that won't switch, carousel arrows that do nothing.
+
+This is easy to miss, because it looks fine everywhere except the live site. Server rendering captures the initial state, so screenshots and previews are correct — the previews mount the real React components, so they stay interactive no matter what the section declared.
+
+So: **tag any interactive section or component with `@hydrate`** on its `*Props` interface.
+
+```tsx
+/**
+ * Stacked question/answer list; one panel open at a time.
+ * @hydrate
+ */
+export interface AccordionProps extends SectionBaseProps {
+  items: { question: string; answer: string }[];
+}
+```
+
+The extractor also infers the flag when a file (or anything it imports in-workspace) uses `useState`/`useEffect`, passes a JSX event handler, or imports `motion` — so a normal interactive section is usually detected either way. Write the tag anyway: it's the declared contract, it survives a refactor that moves the state somewhere the inference doesn't reach, and it documents intent.
+
+Prefer **server-real content**: render the final values in HTML and let hydration take over the moving parts. A counter should render `2,400` and animate up from zero on hydration, never render `0` and depend on JS to become correct.
 
 ### Motion
 
