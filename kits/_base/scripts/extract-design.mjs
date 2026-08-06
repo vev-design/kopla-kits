@@ -313,33 +313,37 @@ function resolvePropsTypeAtSignature(signatureNode, checker) {
   return checker.getTypeAtLocation(param);
 }
 
-// Source-level evidence that a component cannot work without client JS.
-//
-// This must be GENEROUS. A false positive costs the published page one JS
-// bundle it didn't need; a false negative publishes a dead page — an
-// accordion frozen on its initial state, a carousel whose arrows do nothing
-// — and nothing catches it, because SSR captures the initial state (so the
-// page looks right) and every Kopla preview surface mounts the real
-// components client-side and never reads this flag at all. The bug is
-// visible only on the live site.
-const CLIENT_JS_SIGNALS = [
-  // Animation / interactivity libraries.
-  /from\s+['"](motion\b|motion\/|@\/motion)/,
-  // React state and effects — anything whose whole point is to change after
-  // the first paint. This is the case the motion-only heuristic missed: an
-  // ordinary `useState` accordion or tab strip imports nothing special.
-  /\buse(?:State|Reducer|Effect|LayoutEffect|SyncExternalStore|Transition|Optimistic)\s*[(<]/,
-  // A JSX event handler — `onClick={…}`, `onSubmit={…}`. Note the `={`: it
-  // matches a handler being PASSED, not an `onClick?: () => void` line in a
-  // Props interface (declaring the prop implies nothing about this file).
-  /\son[A-Z]\w*\s*=\s*\{/,
-  // Explicit client boundary.
-  /^\s*['"]use client['"]/m,
-];
+// React hooks whose whole point is to change something after the first paint.
+// A component calling one of these cannot work as static HTML.
+const STATEFUL_HOOKS = new Set([
+  'useState',
+  'useReducer',
+  'useEffect',
+  'useLayoutEffect',
+  'useSyncExternalStore',
+  'useTransition',
+  'useOptimistic',
+]);
+
+/** Animation / interactivity packages: `motion`, `motion/react`, `@/motion`. */
+function isClientLibSpecifier(text) {
+  return text === 'motion' || text.startsWith('motion/') || text.startsWith('@/motion');
+}
 
 /** Does this component need client JS in production? True if its Props JSDoc
  *  carries an explicit `@hydrate` tag, or if it — or anything it imports from
- *  within the workspace — shows one of the CLIENT_JS_SIGNALS above. */
+ *  within the workspace — shows evidence of needing the browser.
+ *
+ *  Detection is deliberately GENEROUS. A false positive costs the published
+ *  page one JS bundle it didn't need; a false negative publishes a DEAD page —
+ *  an accordion frozen on its initial state, a carousel whose arrows do
+ *  nothing — and nothing catches it, because SSR captures the initial state
+ *  (so the page looks right) and every Kopla preview surface mounts the real
+ *  components client-side and never reads this flag. Visible only live.
+ *
+ *  Note the asymmetry with the authoring guidance: sections SHOULD prefer
+ *  native primitives (`<details name>`, `popover`, scroll-snap) precisely so
+ *  this returns false and the page ships static. */
 function sectionNeedsHydration(componentDecl, propsType, checker) {
   // Explicit opt-in via @hydrate on the Props interface always wins.
   const symbol = propsType.aliasSymbol ?? propsType.symbol;
@@ -354,28 +358,86 @@ function sectionNeedsHydration(componentDecl, propsType, checker) {
   return fileNeedsHydration(sourceFile, checker, new Set());
 }
 
-/** CLIENT_JS_SIGNALS in this file, or transitively in any workspace file it
+/** Client-JS evidence in this file, or transitively in any workspace file it
  *  imports. The walk matters because interactivity increasingly lives in a
  *  `src/components/` primitive: a section that just renders `<Accordion>` has
  *  no hooks and no handlers of its own, so judging the section file alone
  *  called the whole page static and shipped it dead.
  *
  *  Only workspace sources are followed — a `node_modules` .d.ts carries no
- *  implementation to inspect, and the libraries that matter are already
- *  named in CLIENT_JS_SIGNALS. `seen` guards import cycles. */
+ *  implementation to inspect, and the packages that matter are recognised by
+ *  specifier instead. `seen` guards import cycles. */
 function fileNeedsHydration(sourceFile, checker, seen) {
   if (seen.has(sourceFile.fileName)) return false;
   seen.add(sourceFile.fileName);
-  if (CLIENT_JS_SIGNALS.some((re) => re.test(sourceFile.text))) return true;
 
-  for (const statement of sourceFile.statements) {
-    const specifier =
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteral(statement.moduleSpecifier)
-        ? statement.moduleSpecifier
-        : null;
-    if (!specifier) continue;
+  // `'use client'` as a real directive prologue, not a stray string anywhere.
+  const [first] = sourceFile.statements;
+  if (
+    first &&
+    ts.isExpressionStatement(first) &&
+    ts.isStringLiteral(first.expression) &&
+    first.expression.text === 'use client'
+  ) {
+    return true;
+  }
+
+  const imported = [];
+  let found = false;
+  const visit = (node) => {
+    if (found) return;
+
+    // An import of an animation lib, or a workspace module to recurse into.
+    // Read off the AST (not the source text) so a specifier inside a comment
+    // or an unrelated string can't trigger it.
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      if (isClientLibSpecifier(node.moduleSpecifier.text)) {
+        found = true;
+        return;
+      }
+      imported.push(node.moduleSpecifier);
+    }
+
+    // A stateful hook CALL — `useState(…)`. The callee may be bare or
+    // qualified (`React.useState`). A mere mention in a comment, a string, or
+    // a type position is not a call, so none of those match.
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const name = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.name)
+          ? callee.name.text
+          : null;
+      if (name && STATEFUL_HOOKS.has(name)) {
+        found = true;
+        return;
+      }
+    }
+
+    // A JSX event handler being PASSED — `onClick={…}`. Declaring
+    // `onClick?: () => void` in a Props interface is a PropertySignature, not
+    // a JsxAttribute, so it correctly says nothing about this file.
+    if (
+      ts.isJsxAttribute(node) &&
+      ts.isIdentifier(node.name) &&
+      /^on[A-Z]/.test(node.name.text) &&
+      node.initializer &&
+      ts.isJsxExpression(node.initializer)
+    ) {
+      found = true;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  if (found) return true;
+
+  for (const specifier of imported) {
     // Resolve through the checker rather than the raw path so tsconfig `@/*`
     // aliases and extensionless relative imports both land.
     const moduleSymbol = checker.getSymbolAtLocation(specifier);
