@@ -78,6 +78,19 @@ function main() {
   const tokens = collectTokens();
   const components = collectComponents(program, checker);
 
+  // The flat, authoritative index of every export that needs client JS —
+  // sections and components together, names only.
+  //
+  // This is what a HOST should read. The per-entry `hydrate` flags below stay
+  // for authoring/debugging visibility, but a consumer must not walk the two
+  // barrels itself: Kopla's finalize step MOVES a manifest-listed name from
+  // `sections` into `components`, flag and all, so "look it up in sections"
+  // silently lost the flag and published interactive pages as dead HTML. A
+  // list of names is invariant under that move.
+  const hydrateSections = [...sections, ...components]
+    .filter((s) => s.hydrate)
+    .map((s) => s.name);
+
   const designJson = {
     name: readmeInfo.name,
     description: readmeInfo.description,
@@ -85,14 +98,15 @@ function main() {
       name,
       description,
       props,
-      // Preserve the computed hydrate flag — hosts read
-      // design.json.sections[].hydrate to decide whether a page ships
-      // client JS. Dropping it here forced every page static, so motion
-      // sections never animated in production.
+      // Authoring-visible detail; `hydrateSections` above is the contract.
       ...(hydrate ? { hydrate: true } : {}),
     })),
     recommendedOrder: { chain, rationale: readmeInfo.compositionRationale },
     demo,
+    // Always emitted (empty array included) so a host can tell "this bundle
+    // declares its hydration needs, and none" apart from "this bundle predates
+    // the field" — the latter has to fall back to the per-entry flags.
+    hydrateSections,
     // Optional: the reusable-component catalog (Button, …) from
     // src/components/index.ts. Present only when the kit exports components, so
     // section-only kits are unchanged. Mirrors the @kopla/types
@@ -115,9 +129,14 @@ function main() {
         .map((c) => c.name)
         .join(', ')})`
     : '';
+  // Name the hydration set explicitly: it decides whether published pages ship
+  // JavaScript, and it's the one thing here with no visible symptom when wrong.
+  const hydrateNote = hydrateSections.length
+    ? `, needs client JS: ${hydrateSections.join(', ')}`
+    : ', needs client JS: none (every page publishes as static HTML)';
   console.log(
     `extract-design: ${sections.length} section${sections.length === 1 ? '' : 's'} ` +
-      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${componentNote}${tokenNote}`,
+      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${componentNote}${tokenNote}${hydrateNote}`,
   );
 }
 
