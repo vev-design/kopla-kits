@@ -51,8 +51,8 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
                 {column.heading}
               </h3>
               <ul className="flex flex-col gap-2.5">
-                {column.links.map((link) => (
-                  <li key={link.href}>
+                {column.links.map((link, i) => (
+                  <li key={`${link.label}-${i}`}>
                     <a
                       href={link.href}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"

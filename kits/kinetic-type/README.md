@@ -26,11 +26,16 @@ The chain is built to introduce the system's motion vocabulary in ascending
 order of commitment, then close it out. **Navbar** states the premise in one
 glance — the wordmark itself sits at Archivo's heaviest weight, so the
 brand's whole idea is visible before a single pixel has moved. **Hero**
-immediately makes good on that promise: the headline is not just big, its
-`font-variation-settings` weight and scale are wired directly to scroll
-progress, so the first thing a visitor does — scroll — is also the first
-thing that visibly changes the page. That is the system's core mechanic, and
-putting it first means every section after it is read against that
+immediately makes good on that promise: it pins in place with `position:
+sticky` across a scroll track taller than the viewport, and for as long as
+it holds the screen its headline's `font-variation-settings` weight,
+scale, and tracking are wired directly to scroll progress — hairline and
+loose at the start, black and tight by the time the pin releases — while a
+small monospace counter ticks the progress in the corner and the eyebrow,
+subhead, and CTAs hold back until the final stretch. The first thing a
+visitor does — scroll — is also the first thing that visibly, sustainedly
+changes the page. That is the system's core mechanic, and putting it first
+means every section after it is read against that
 expectation of movement.
 
 **Marquee** deliberately breaks the scroll-linked pattern: it idles

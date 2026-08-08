@@ -26,10 +26,15 @@ export function Marquee({ id, items, speed = 'base' }: MarqueeProps) {
   return (
     <section
       id={id ?? undefined}
-      className="w-full overflow-hidden border-y border-border bg-foreground py-6"
+      // overflow-anchor: none opts this section out of the browser's scroll
+      // anchoring — a continuously-transforming subtree can otherwise get
+      // misread as a layout-shift candidate, which some browsers "correct"
+      // for by nudging scroll position while it's in view (felt as a jump
+      // while scrolling past it).
+      className="w-full overflow-hidden border-y border-border bg-foreground py-6 [overflow-anchor:none]"
     >
       <div
-        className="flex w-max shrink-0 animate-marquee-scroll gap-10 whitespace-nowrap"
+        className="flex w-max shrink-0 animate-marquee-scroll gap-10 whitespace-nowrap will-change-transform"
         style={{ ['--marquee-duration' as string]: SPEED_DURATIONS[speed] }}
       >
         {track.map((item, index) => (
