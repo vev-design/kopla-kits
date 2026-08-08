@@ -1,0 +1,9 @@
+{
+  "name": "Kinetic Type",
+  "description": "A type-led system where bold variable type does the work imagery used to: headlines that scroll-scrub weight and scale, a marquee ticker, and mask-reveal copy.",
+  "whenToUse": "Pick this kit for product launches, campaign and drop pages, and portfolios or studios that want the page to feel alive on scroll rather than static — anywhere the brand can carry itself on typography and motion alone, with little to no photography. The look is a warm off-white ground, near-black ink, and a single loud chartreuse-lime accent, all built on Archivo, a genuinely variable-weight font that sweeps from hairline to black as the page moves. The composition is a complete landing chain: a heavy-wordmark navbar, a viewport-filling hero whose headline scrubs font weight and scale in real time as you scroll through it, an infinite marquee ticker of value props, a manifesto-style numbered feature grid, a bank of animated stat counters, a staggered mask-reveal pull-quote, a closing CTA, and a footer. It is explicitly NOT for content-dense dashboards, long-form reading, or anything wanting a calm, neutral register — reach for Editorial or Blank instead when the priority is quiet, high-density text over motion.",
+  "tags": ["Kinetic", "Motion", "Typography", "Bold"],
+  "featured": true,
+  "order": 25,
+  "accent": "#D7FF1F"
+}
