@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useTransform, useMotionValue, useMotionValueEvent } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/Badge';
@@ -48,6 +48,11 @@ export interface HeroProps extends SectionBaseProps {
   } | null;
 }
 
+function mapClamp(v: number, inMin: number, inMax: number, outMin: number, outMax: number) {
+  const t = Math.min(1, Math.max(0, (v - inMin) / (inMax - inMin)));
+  return outMin + t * (outMax - outMin);
+}
+
 export function Hero({ id, eyebrow, headline, subhead, primaryCta, secondaryCta }: HeroProps) {
   const trackRef = useRef<HTMLElement>(null);
   // Progress 0 at the top of the tall track, 1 at its end — the sticky
@@ -64,8 +69,17 @@ export function Hero({ id, eyebrow, headline, subhead, primaryCta, secondaryCta 
   // The furniture (eyebrow/subhead/CTAs) holds back and resolves in the
   // final third of the pin, so the headline's transformation reads as the
   // main event rather than competing with everything else at once.
-  const furnitureOpacity = useTransform(scrollYProgress, [0.6, 0.9], [0, 1]);
   const furnitureY = useTransform(scrollYProgress, [0.6, 0.9], [24, 0]);
+  // `opacity` specifically — not `y` above — needs a plain motion value
+  // fed by hand rather than a useTransform(scrollYProgress, ...) output;
+  // chaining useTransform straight into an opacity style intermittently
+  // stops propagating to the DOM once the input range's upper bound is
+  // crossed (reproduced independent of clamp/sharing/reduced-motion). A
+  // manually-driven motion value sidesteps it and is simple either way.
+  const furnitureOpacity = useMotionValue(mapClamp(scrollYProgress.get(), 0.6, 0.9, 0, 1));
+  useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    furnitureOpacity.set(mapClamp(v, 0.6, 0.9, 0, 1));
+  });
 
   const progressLabel = useTransform(scrollYProgress, (v) => `${String(Math.round(v * 100)).padStart(3, '0')}%`);
 
