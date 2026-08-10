@@ -82,7 +82,12 @@ export function Hero({ id, eyebrow, headline, subhead, primaryCta, secondaryCta 
           </motion.div>
           <motion.h1
             style={{ fontVariationSettings, scale, letterSpacing }}
-            className="origin-left text-[12vw] leading-none text-balance"
+            // clamp(), not a bare vw value — 12vw alone keeps scaling past
+            // the 90rem content column on ultrawide monitors (12vw of a
+            // 3440px display is ~410px, several times wider than the line
+            // it has to wrap inside), so the max bound ties the ceiling to
+            // the column width instead of the raw viewport.
+            className="origin-left text-[clamp(2.75rem,12vw,9rem)] leading-none text-balance"
           >
             {headline}
           </motion.h1>
