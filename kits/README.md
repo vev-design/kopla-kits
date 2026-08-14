@@ -57,7 +57,8 @@ The **slug** is the folder name (`blank`, `saas`, …) — not a field in
 Each kit must build on its own — `{ _base + kit }` has to pass
 `npm run build` (tsc + esbuild + Tailwind + design.json). The blank kit is
 the reference for the contract; see `_base/AGENTS.md` for the section
-authoring rules.
+authoring rules. See `TRENDS.md` for notes on current visual/product
+directions worth considering when authoring or refreshing a kit.
 
 ## Tokens & schemes
 
