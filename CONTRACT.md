@@ -40,6 +40,28 @@ version and upgrade deliberately.
 - Imports: `@/components/ui/*`, `@/motion`, `@/lib/utils`, `@/types`
   from `_base`; npm deps only via `_base/package.json`.
 
+### Which exports need client JS
+
+`design.json.hydrateSections` is a flat array of the export names — sections
+and components together — that cannot work as static HTML. **It is the
+contract for hosts**: a consumer decides whether a page ships JavaScript by
+testing its section names against this list, and must not walk
+`sections[].hydrate` / `components[].hydrate` itself. Those per-entry flags
+remain for authoring visibility, but a host that re-shuffles the two barrels
+(some lift named exports from `sections` into `components` when they publish)
+will lose them; a list of names survives that untouched.
+
+The array is always present, empty included, so a host can distinguish "this
+system declares its hydration needs, and there are none" from "this bundle
+predates the field".
+
+An export lands in the list when it carries an `@hydrate` JSDoc tag on its
+Props, or when `extract-design.mjs` finds evidence in its AST — a stateful
+React hook call, a JSX event handler, an animation-lib import — in the file or
+anything it imports in-workspace. Sections built on native primitives
+(`<details name>`, `popover`, CSS scroll-snap) stay out of the list, which is
+the outcome to aim for: no JS to ship and no flag to get wrong.
+
 ## Variants & blocks
 
 Two graded ways a section offers controlled variation. Both live in the

@@ -102,6 +102,7 @@ Rules:
 - `?:` makes a prop **nullable** (the host lets the user clear it; your component's default kicks in). Make a prop required when there's no sensible "cleared" state.
 - Every section exports a **`<Name>Demo`** const typed by its props interface. The literal must be static — no function calls or identifiers. For sections with multiple representative variants, export `<Name>Demo: <Name>Props[]` and each entry becomes a demo instance.
 - **Re-export every section** from `src/sections/index.ts`. Only re-exported names are part of the system.
+- For anything **interactive**, reach for the platform before React state — `<details name>` for an accordion, `popover` for a menu, `scroll-snap` for a gallery — so the section publishes with no JavaScript. When it genuinely needs client JS, tag its `*Props` interface with **`@hydrate`**. See [Interactivity](#interactivity).
 
 ## How to author the README
 
@@ -236,6 +237,53 @@ Add new wrappers under `src/motion/` (and re-export from `motion/index.ts`) when
 - **Theme tokens, not raw values.** `bg-primary` not `bg-[#5b5bd6]`. Edit `globals.css` to change the brand.
 - **Arbitrary values are an escape hatch.** `text-[length:--type-display-size]` is fine when a token doesn't exist yet; if you reach for one twice, promote it to a token.
 - **No CSS modules, no CSS-in-JS.** A single global `globals.css` plus Tailwind utilities is the whole styling story.
+
+### Interactivity
+
+A published page ships as **pure HTML with no JavaScript** unless something on it needs the browser. Two rules follow, in this order.
+
+#### 1. Reach for the platform first
+
+Most of what sections need — disclosure, exclusive accordions, modals, menus, swipeable galleries, scroll effects — the browser does natively, with better accessibility and keyboard behaviour than a hand-rolled version, and with **no JavaScript at all**. A section built that way stays static: nothing to hydrate, nothing to go wrong, nothing to download.
+
+Reach for React state only when the platform genuinely can't express the behaviour.
+
+| Behaviour | Platform |
+| --- | --- |
+| Show/hide a panel | `<details>` / `<summary>` |
+| Accordion, one panel open at a time | `<details name="group">` — the shared `name` makes it exclusive |
+| Modal, drawer, dropdown, tooltip | the `popover` attribute + `popovertarget`, or `<dialog>` |
+| Horizontal gallery / carousel | CSS `scroll-snap` (`snap-x snap-mandatory` + `snap-start`) |
+| Reveal on scroll, parallax, progress | CSS scroll-driven animations (`animation-timeline`) |
+| Reveal on hover/focus | `:hover`, `:focus-within`, `:has()` |
+| Jump between panels from a link | `:target` |
+| Video playback controls | `<video controls>` |
+
+Style the native elements with tokens like anything else — `<summary>` takes `::marker`/`[&::-webkit-details-marker]:hidden`, `<details>` takes `[&[open]]:` variants. Don't add ARIA the element already implies: `<summary>` is a disclosure button that reports its own expanded state, so `aria-expanded` on it is redundant — and keeping it truthful means tracking `open` in React state, which turns a static section into one that ships JS.
+
+Two caveats worth knowing: `<details>` panels are always in the DOM, so don't use one to hide something expensive; and CSS-only carousels scroll but don't auto-advance.
+
+#### 2. If it does need JS, declare it
+
+An interactive section that doesn't declare itself publishes **dead**: an accordion frozen on whichever item was open at first render, tabs that won't switch, carousel arrows that do nothing.
+
+This is easy to miss, because it looks fine everywhere except the live site. Server rendering captures the initial state, so screenshots and previews are correct — the previews mount the real React components, so they stay interactive no matter what the section declared.
+
+So: **tag any interactive section or component with `@hydrate`** on its `*Props` interface.
+
+```tsx
+/**
+ * Stacked question/answer list; one panel open at a time.
+ * @hydrate
+ */
+export interface AccordionProps extends SectionBaseProps {
+  items: { question: string; answer: string }[];
+}
+```
+
+The extractor also infers the flag when a file (or anything it imports in-workspace) uses `useState`/`useEffect`, passes a JSX event handler, or imports `motion` — so a normal interactive section is usually detected either way. Write the tag anyway: it's the declared contract, it survives a refactor that moves the state somewhere the inference doesn't reach, and it documents intent.
+
+Prefer **server-real content**: render the final values in HTML and let hydration take over the moving parts. A counter should render `2,400` and animate up from zero on hydration, never render `0` and depend on JS to become correct.
 
 ### Motion
 

@@ -78,6 +78,19 @@ function main() {
   const tokens = collectTokens();
   const components = collectComponents(program, checker);
 
+  // The flat, authoritative index of every export that needs client JS —
+  // sections and components together, names only.
+  //
+  // This is what a HOST should read. The per-entry `hydrate` flags below stay
+  // for authoring/debugging visibility, but a consumer must not walk the two
+  // barrels itself: a publish step that MOVES a named export from `sections`
+  // into `components`, flag and all, makes "look it up in sections" lose the
+  // flag — and a lost flag publishes an interactive page as dead HTML. A list
+  // of names is invariant under that move.
+  const hydrateSections = [...sections, ...components]
+    .filter((s) => s.hydrate)
+    .map((s) => s.name);
+
   const designJson = {
     name: readmeInfo.name,
     description: readmeInfo.description,
@@ -85,14 +98,15 @@ function main() {
       name,
       description,
       props,
-      // Preserve the computed hydrate flag — hosts read
-      // design.json.sections[].hydrate to decide whether a page ships
-      // client JS. Dropping it here forced every page static, so motion
-      // sections never animated in production.
+      // Authoring-visible detail; `hydrateSections` above is the contract.
       ...(hydrate ? { hydrate: true } : {}),
     })),
     recommendedOrder: { chain, rationale: readmeInfo.compositionRationale },
     demo,
+    // Always emitted (empty array included) so a host can tell "this bundle
+    // declares its hydration needs, and none" apart from "this bundle predates
+    // the field" — the latter has to fall back to the per-entry flags.
+    hydrateSections,
     // Optional: the reusable-component catalog (Button, …) from
     // src/components/index.ts. Present only when the kit exports components, so
     // section-only kits are unchanged. Mirrors the @kopla/types
@@ -115,9 +129,14 @@ function main() {
         .map((c) => c.name)
         .join(', ')})`
     : '';
+  // Name the hydration set explicitly: it decides whether published pages ship
+  // JavaScript, and it's the one thing here with no visible symptom when wrong.
+  const hydrateNote = hydrateSections.length
+    ? `, needs client JS: ${hydrateSections.join(', ')}`
+    : ', needs client JS: none (every page publishes as static HTML)';
   console.log(
     `extract-design: ${sections.length} section${sections.length === 1 ? '' : 's'} ` +
-      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${componentNote}${tokenNote}`,
+      `(${sections.map((s) => s.name).join(', ')}), ${demo.length} demo entr${demo.length === 1 ? 'y' : 'ies'}${componentNote}${tokenNote}${hydrateNote}`,
   );
 }
 
@@ -165,9 +184,10 @@ function collectSections(indexSource, checker, program) {
     }
     const description = readPropsInterfaceJSDoc(propsType, checker) ?? '';
     const props = propsTypeToSchema(propsType, checker);
-    // A section needs client JS in production (→ `hydrate: true`) if it
-    // imports an animation/interactivity lib (motion) or opts in via a
-    // `@hydrate` JSDoc tag on its Props. Otherwise it ships as static
+    // A section needs client JS in production (→ `hydrate: true`) if it opts
+    // in via a `@hydrate` JSDoc tag on its Props, or if it (or anything it
+    // imports in-workspace) uses React state/effects, a JSX event handler, or
+    // an animation lib. Otherwise it ships as static
     // HTML. The production builder reads this to decide per-page.
     const hydrate = sectionNeedsHydration(decl, propsType, checker);
     sections.push({ name: exp.name, description, props, ...(hydrate ? { hydrate: true } : {}) });
@@ -312,11 +332,39 @@ function resolvePropsTypeAtSignature(signatureNode, checker) {
   return checker.getTypeAtLocation(param);
 }
 
-/** Does this section need client JS in production? True if its source
- *  file imports an animation/interactivity lib (`motion`, `@/motion`) or
- *  its Props JSDoc carries a `@hydrate` tag. Static otherwise. */
+// React hooks whose whole point is to change something after the first paint.
+// A component calling one of these cannot work as static HTML.
+const STATEFUL_HOOKS = new Set([
+  'useState',
+  'useReducer',
+  'useEffect',
+  'useLayoutEffect',
+  'useSyncExternalStore',
+  'useTransition',
+  'useOptimistic',
+]);
+
+/** Animation / interactivity packages: `motion`, `motion/react`, `@/motion`. */
+function isClientLibSpecifier(text) {
+  return text === 'motion' || text.startsWith('motion/') || text.startsWith('@/motion');
+}
+
+/** Does this component need client JS in production? True if its Props JSDoc
+ *  carries an explicit `@hydrate` tag, or if it — or anything it imports from
+ *  within the workspace — shows evidence of needing the browser.
+ *
+ *  Detection is deliberately GENEROUS. A false positive costs the published
+ *  page one JS bundle it didn't need; a false negative publishes a DEAD page —
+ *  an accordion frozen on its initial state, a carousel whose arrows do
+ *  nothing — and nothing catches it, because SSR captures the initial state
+ *  (so the page looks right) and preview surfaces typically mount the real
+ *  components client-side and never read this flag. Visible only live.
+ *
+ *  Note the asymmetry with the authoring guidance: sections SHOULD prefer
+ *  native primitives (`<details name>`, `popover`, scroll-snap) precisely so
+ *  this returns false and the page ships static. */
 function sectionNeedsHydration(componentDecl, propsType, checker) {
-  // Explicit opt-in via @hydrate on the Props interface.
+  // Explicit opt-in via @hydrate on the Props interface always wins.
   const symbol = propsType.aliasSymbol ?? propsType.symbol;
   for (const d of symbol?.declarations ?? []) {
     for (const tag of ts.getJSDocCommentsAndTags(d)) {
@@ -324,9 +372,101 @@ function sectionNeedsHydration(componentDecl, propsType, checker) {
       if (typeof text === 'string' && /@hydrate\b/.test(text)) return true;
     }
   }
-  // Heuristic: the component's source file imports motion → it animates.
-  const sourceText = componentDecl.getSourceFile?.().text ?? '';
-  return /from\s+['"](motion\b|motion\/|@\/motion)/.test(sourceText);
+  const sourceFile = componentDecl.getSourceFile?.();
+  if (!sourceFile) return false;
+  return fileNeedsHydration(sourceFile, checker, new Set());
+}
+
+/** Client-JS evidence in this file, or transitively in any workspace file it
+ *  imports. The walk matters because interactivity increasingly lives in a
+ *  `src/components/` primitive: a section that just renders `<Accordion>` has
+ *  no hooks and no handlers of its own, so judging the section file alone
+ *  called the whole page static and shipped it dead.
+ *
+ *  Only workspace sources are followed — a `node_modules` .d.ts carries no
+ *  implementation to inspect, and the packages that matter are recognised by
+ *  specifier instead. `seen` guards import cycles. */
+function fileNeedsHydration(sourceFile, checker, seen) {
+  if (seen.has(sourceFile.fileName)) return false;
+  seen.add(sourceFile.fileName);
+
+  // `'use client'` as a real directive prologue, not a stray string anywhere.
+  const [first] = sourceFile.statements;
+  if (
+    first &&
+    ts.isExpressionStatement(first) &&
+    ts.isStringLiteral(first.expression) &&
+    first.expression.text === 'use client'
+  ) {
+    return true;
+  }
+
+  const imported = [];
+  let found = false;
+  const visit = (node) => {
+    if (found) return;
+
+    // An import of an animation lib, or a workspace module to recurse into.
+    // Read off the AST (not the source text) so a specifier inside a comment
+    // or an unrelated string can't trigger it.
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      if (isClientLibSpecifier(node.moduleSpecifier.text)) {
+        found = true;
+        return;
+      }
+      imported.push(node.moduleSpecifier);
+    }
+
+    // A stateful hook CALL — `useState(…)`. The callee may be bare or
+    // qualified (`React.useState`). A mere mention in a comment, a string, or
+    // a type position is not a call, so none of those match.
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const name = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.name)
+          ? callee.name.text
+          : null;
+      if (name && STATEFUL_HOOKS.has(name)) {
+        found = true;
+        return;
+      }
+    }
+
+    // A JSX event handler being PASSED — `onClick={…}`. Declaring
+    // `onClick?: () => void` in a Props interface is a PropertySignature, not
+    // a JsxAttribute, so it correctly says nothing about this file.
+    if (
+      ts.isJsxAttribute(node) &&
+      ts.isIdentifier(node.name) &&
+      /^on[A-Z]/.test(node.name.text) &&
+      node.initializer &&
+      ts.isJsxExpression(node.initializer)
+    ) {
+      found = true;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  if (found) return true;
+
+  for (const specifier of imported) {
+    // Resolve through the checker rather than the raw path so tsconfig `@/*`
+    // aliases and extensionless relative imports both land.
+    const moduleSymbol = checker.getSymbolAtLocation(specifier);
+    for (const decl of moduleSymbol?.declarations ?? []) {
+      if (!ts.isSourceFile(decl)) continue;
+      if (decl.fileName.includes('node_modules') || decl.isDeclarationFile) continue;
+      if (fileNeedsHydration(decl, checker, seen)) return true;
+    }
+  }
+  return false;
 }
 
 function readPropsInterfaceJSDoc(propsType, checker) {
