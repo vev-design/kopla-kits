@@ -83,10 +83,10 @@ function main() {
   //
   // This is what a HOST should read. The per-entry `hydrate` flags below stay
   // for authoring/debugging visibility, but a consumer must not walk the two
-  // barrels itself: Kopla's finalize step MOVES a manifest-listed name from
-  // `sections` into `components`, flag and all, so "look it up in sections"
-  // silently lost the flag and published interactive pages as dead HTML. A
-  // list of names is invariant under that move.
+  // barrels itself: a publish step that MOVES a named export from `sections`
+  // into `components`, flag and all, makes "look it up in sections" lose the
+  // flag — and a lost flag publishes an interactive page as dead HTML. A list
+  // of names is invariant under that move.
   const hydrateSections = [...sections, ...components]
     .filter((s) => s.hydrate)
     .map((s) => s.name);
@@ -357,8 +357,8 @@ function isClientLibSpecifier(text) {
  *  page one JS bundle it didn't need; a false negative publishes a DEAD page —
  *  an accordion frozen on its initial state, a carousel whose arrows do
  *  nothing — and nothing catches it, because SSR captures the initial state
- *  (so the page looks right) and every Kopla preview surface mounts the real
- *  components client-side and never reads this flag. Visible only live.
+ *  (so the page looks right) and preview surfaces typically mount the real
+ *  components client-side and never read this flag. Visible only live.
  *
  *  Note the asymmetry with the authoring guidance: sections SHOULD prefer
  *  native primitives (`<details name>`, `popover`, scroll-snap) precisely so

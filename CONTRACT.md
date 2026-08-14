@@ -48,8 +48,8 @@ contract for hosts**: a consumer decides whether a page ships JavaScript by
 testing its section names against this list, and must not walk
 `sections[].hydrate` / `components[].hydrate` itself. Those per-entry flags
 remain for authoring visibility, but a host that re-shuffles the two barrels
-(Kopla's publish step lifts manifest-listed names from `sections` into
-`components`) will lose them; a list of names survives that untouched.
+(some lift named exports from `sections` into `components` when they publish)
+will lose them; a list of names survives that untouched.
 
 The array is always present, empty included, so a host can distinguish "this
 system declares its hydration needs, and there are none" from "this bundle
