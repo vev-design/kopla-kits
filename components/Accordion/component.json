@@ -1,0 +1,8 @@
+{
+  "name": "Accordion",
+  "description": "A stacked disclosure list where each panel expands in place, optionally one at a time.",
+  "whenToUse": "FAQs, pricing detail, spec tables, 'how it works' steps — anywhere the user asks for an accordion, a collapsible list, expandable Q&A, or a show/hide list. USE THIS INSTEAD OF WRITING ONE WITH useState: it is built on native <details>, so it publishes with ZERO JavaScript, keeps keyboard and screen-reader behaviour for free, and works with JS disabled. Set `exclusive` for one-panel-at-a-time. NOT for tabbed content shown side by side (that needs a real tab strip), and not for hiding anything expensive — <details> panels are always in the DOM.",
+  "tags": ["disclosure", "faq", "css-only", "no-js"],
+  "hydrate": false,
+  "vendor": []
+}

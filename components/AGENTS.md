@@ -1,11 +1,27 @@
 # Using a catalog component
 
 This directory is the **advanced-components catalog**: prebuilt,
-token-themed components (scroll-driven storytelling, animated counters,
-marquees, …) — proven implementations of behavior that is easy to get
-wrong. They are **copy-in** components, shadcn-style: the source is
+token-themed components — proven implementations of behavior that is easy
+to get wrong. They are **copy-in** components, shadcn-style: the source is
 copied into a workspace and forks from there; the catalog is not an npm
 dependency.
+
+It spans two tiers, and `component.json.hydrate` is which one:
+
+- **`hydrate: false` — the platform tier.** Interactivity the browser
+  already does: `Accordion` on `<details name>`, `Drawer` and `Dialog` on
+  the popover API, `Carousel` on CSS scroll-snap, `Marquee` on a CSS
+  animation. These publish with **zero JavaScript** and keep the keyboard
+  and screen-reader behavior for free. **Reach here first** — a section
+  built from these stays static, so there is no hydration flag to get
+  wrong and nothing to ship.
+- **`hydrate: true` — the JS tier.** Behavior the platform genuinely
+  can't express: `Scrollytelling`, `CountUp`. Worth the bundle when the
+  request needs them; not worth it for a disclosure list.
+
+A tier-two component makes every page using it ship the design system's
+hydration bundle, so prefer tier one whenever it delivers the behavior
+that was actually asked for.
 
 Each component is a folder:
 
