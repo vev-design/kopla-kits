@@ -1,0 +1,8 @@
+{
+  "name": "Carousel",
+  "description": "A horizontally scrollable strip of cards that snaps to each slide, with optional arrow links.",
+  "whenToUse": "Testimonial strips, product or menu galleries, case-study rails, logo-plus-quote rows — when the user asks for a carousel, slider, swipeable row or horizontal scroller. USE THIS INSTEAD OF A JS SLIDER: it is CSS scroll-snap, so it publishes with ZERO JavaScript and keeps native drag, wheel, trackpad and keyboard scrolling plus mobile momentum. It SCROLLS BUT DOES NOT AUTO-ADVANCE — an autoplaying carousel needs a timer, so if the request genuinely requires autoplay, write it as a section with the @hydrate tag instead. NOT for a full-bleed hero slideshow, and not for content that must all be visible at once (use a grid).",
+  "tags": ["carousel", "gallery", "scroll-snap", "no-js"],
+  "hydrate": false,
+  "vendor": []
+}

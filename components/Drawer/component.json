@@ -1,0 +1,8 @@
+{
+  "name": "Drawer",
+  "description": "A slide-in panel with its own trigger button — mobile navigation, filters, a cart — built on the native popover API.",
+  "whenToUse": "Mobile navigation menus, filter panels, side carts: anywhere the user asks for a hamburger menu, a slide-out, an off-canvas panel or a drawer. USE THIS INSTEAD OF useState PLUS AN OUTSIDE-CLICK LISTENER: the native popover gives top-layer stacking, click-outside and Escape dismissal, focus handling and a backdrop with ZERO JavaScript, so the section publishes static and still works with JS disabled. Give each drawer on a page a unique `id`. NOT for a centred modal dialog (use Dialog) and NOT for content that should always be visible on desktop — render a normal nav at wider breakpoints and this only on small screens.",
+  "tags": ["navigation", "overlay", "popover", "no-js"],
+  "hydrate": false,
+  "vendor": []
+}

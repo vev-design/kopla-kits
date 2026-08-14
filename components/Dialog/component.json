@@ -1,0 +1,8 @@
+{
+  "name": "Dialog",
+  "description": "A centred modal panel with its own trigger button, backdrop and Escape-to-close, built on the native popover API.",
+  "whenToUse": "Booking prompts, detail panels, terms and shipping copy, short sign-up asks — when the user wants a modal, popup, lightbox or 'read more' overlay. USE THIS INSTEAD OF useState PLUS A FOCUS TRAP: the native popover supplies top-layer stacking, the backdrop, click-outside and Escape dismissal with ZERO JavaScript, so the section publishes static. Built on `popover` rather than <dialog> on purpose — <dialog> only goes modal via showModal(), a script call, so it never opens on a page with no JS. Give each dialog on a page a unique `id`. NOT for a side panel or mobile nav (use Drawer), and NOT for a form that must post and show validation — that needs a real page or a hydrated section.",
+  "tags": ["modal", "overlay", "popover", "no-js"],
+  "hydrate": false,
+  "vendor": []
+}
