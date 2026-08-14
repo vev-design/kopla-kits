@@ -259,7 +259,7 @@ Reach for React state only when the platform genuinely can't express the behavio
 | Jump between panels from a link | `:target` |
 | Video playback controls | `<video controls>` |
 
-Style the native elements with tokens like anything else — `<summary>` takes `::marker`/`[&::-webkit-details-marker]:hidden`, `<details>` takes `[&[open]]:` variants. Don't add ARIA the element already implies: `<summary>` is a disclosure button, so `aria-expanded` on it is redundant (and it makes the publish build think the section needs JS).
+Style the native elements with tokens like anything else — `<summary>` takes `::marker`/`[&::-webkit-details-marker]:hidden`, `<details>` takes `[&[open]]:` variants. Don't add ARIA the element already implies: `<summary>` is a disclosure button that reports its own expanded state, so `aria-expanded` on it is redundant — and keeping it truthful means tracking `open` in React state, which turns a static section into one that ships JS.
 
 Two caveats worth knowing: `<details>` panels are always in the DOM, so don't use one to hide something expensive; and CSS-only carousels scroll but don't auto-advance.
 
