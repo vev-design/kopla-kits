@@ -1,0 +1,9 @@
+{
+  "name": "Liquid Glass",
+  "description": "A translucent, light-reactive glass system for 2026: frosted GlassCard surfaces with specular highlights and gradient edges float over a vivid violet-cyan-magenta gradient canvas. Built for product launches and premium, futuristic marketing pages.",
+  "whenToUse": "Pick Liquid Glass for anything that wants to feel premium, futuristic, and depth-forward: product launches, flagship app marketing, hardware and device reveals, spatial-computing and AI product pitches, and any page selling 'the next generation' of something. The chain is a complete conversion narrative built almost entirely from one primitive — GlassCard — so translucent, blurred, specular-highlighted panels of varying intensity carry every surface: a sticky glass navbar, a hero with a floating glass stat panel, a glass stat row, a bento capability grid of stacked glass tiles, a glass-paneled testimonial, glass pricing tiers with one tinted and lifted, a closing CTA panel over an intensified glow, and a glass-topped footer. The vivid violet-cyan-magenta gradient canvas is load-bearing: the glass effect only reads with a colorful backdrop to blur and refract, so this system should never be dropped onto a plain white or black page, and should not be re-themed to a neutral background. Avoid Liquid Glass for longform editorial or reading-heavy content (translucent surfaces fight legibility over many paragraphs), printed or exported reports, and dense, accessibility-critical data UIs — tables, dashboards, forms — where guaranteed contrast matters more than atmosphere; reach for Editorial, Finance, or Blank instead in those cases.",
+  "tags": ["Glass", "Translucent", "Product", "Futuristic"],
+  "featured": true,
+  "order": 110,
+  "accent": "#00C3F3"
+}
