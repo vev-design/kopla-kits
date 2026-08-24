@@ -81,8 +81,8 @@ export interface ScrollStackProps {
   peek?: number;
   /** `pile` only: px each card further back is inset on each side, which is what
    *  makes the pile look like it recedes. Default 16. 0 for a flush stack.
-   *  (`shuffle` draws depth with the stepped rims alone — a scale taper would
-   *  shrink each rim's own tap target below 44px.) */
+   *  (`shuffle` draws depth by zooming the cards behind out a step at a time,
+   *  with each rim's tap target compensated so it never shrinks under 44px.) */
   inset?: number;
   /** `shuffle` only: how much scroll sends one card to the back, in
    *  viewport-heights. Default 0.75 — under half feels twitchy, over 1.5 feels
@@ -131,8 +131,8 @@ function safeId(value: string): string {
  * at the lowest point of the pull, and rides back up behind the stack into the
  * deepest slot; every other card climbs one slot. A card's
  * slot after `j` segments is `(i - j + n) % n`, and each slot `s` sits
- * `s * peek` px higher — full width at every depth, because each rim is also
- * a tap target that must not shrink.
+ * `s * peek` px higher, zoomed out a step at a time for depth — with the rim
+ * links' heights overshooting the scale so no tap target drops under 44px.
  *
  * The ungated rules at the top ARE the pile — they are what a reader gets when
  * the gated block does not apply, and the gated block resets exactly the
@@ -150,11 +150,23 @@ function shuffleCss(
   const L = 100 / segments;
   const rim = segments * peek;
   const pct = (v: number) => `${Math.min(100, Math.max(0, v)).toFixed(3)}%`;
-  // No scale taper on the slots, and the reason is the tap target: each rim IS
-  // a `peek`-tall link, and a rim inside a scale(0.84) wrapper is a 37px
-  // target — under the 44px contract by exactly the amount of decoration.
-  // Depth reads from the stepped offsets and the card borders instead.
-  const pose = (s: number) => `translateY(${-s * peek}px)`;
+  // The zoom-out per slot that draws the depth, floored at 0.84 so a deep stack
+  // tapers and then holds instead of dwindling. Scaling is from the TOP edge
+  // (transform-origin below), which is what keeps the geometry honest: tops
+  // don't move, so the visible rim strips stay a full `peek` tall at every
+  // depth — only the widths recede.
+  const scaleAt = (s: number) => Math.max(1 - 0.04 * s, 0.84);
+  const pose = (s: number) =>
+    `translateY(${-s * peek}px) scale(${scaleAt(s).toFixed(3)})`;
+  // The tap-target ledger for that zoom. Each rim IS a link, and a link inside
+  // a scaled wrapper shrinks with it — the shared 44px spec rejected exactly
+  // this taper once (645×37 on the five-card case). So the link's CSS height
+  // carries a computed overshoot: at the deepest slot its SCALED rect is still
+  // a hair over the full strip (1.02×), and at shallower slots the extra spill
+  // lands under the wrapper of the card in front — a positioned box hit-tests
+  // its whole area regardless of paint, so the spill is occluded everywhere
+  // except the front card, where it reaches roughly 2-21% of peek below the strip.
+  const linkHeight = Math.ceil((peek * 1.02) / scaleAt(count - 1));
 
   const fallback = [
     `#${rootId} > [data-shuffle-pin] { display: contents; }`,
@@ -243,7 +255,7 @@ function shuffleCss(
     // visible when the card is behind, so "click the header you can see" is the
     // whole interaction. It rides the card's own animated wrapper, which is what
     // keeps the hit area on the rim wherever the rim currently is.
-    `#${rootId} [data-shuffle-link] { display: block; position: absolute; inset-inline: 0; top: 0; height: ${peek}px; }`,
+    `#${rootId} [data-shuffle-link] { display: block; position: absolute; inset-inline: 0; top: 0; height: ${linkHeight}px; }`,
     // Global on purpose, and gated twice: fragment jumps animate the scroll —
     // which PLAYS the shuffle scrub in between — only where scroll-driven
     // animations exist at all, and never for reduced-motion readers (this whole
