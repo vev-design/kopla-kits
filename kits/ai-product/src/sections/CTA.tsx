@@ -40,7 +40,7 @@ export function CTA({ id, headline, body, primaryCta, secondaryCta }: CTAProps) 
     <section id={id ?? undefined} className="w-full bg-background">
       <div className="mx-auto w-full max-w-6xl px-6 py-12">
         <Reveal>
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="relative overflow-clip rounded-2xl border border-border bg-card">
             {/* Faint grid. */}
             <div
               aria-hidden

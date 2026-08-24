@@ -344,9 +344,18 @@ const STATEFUL_HOOKS = new Set([
   'useOptimistic',
 ]);
 
-/** Animation / interactivity packages: `motion`, `motion/react`, `@/motion`. */
+/** JS animation packages. The substrate's own wrappers (`@/motion`) are NOT
+ *  on this list: they are pure CSS (scroll-driven animations, see
+ *  `src/motion/motion.css`), so importing them says nothing about needing
+ *  client JS. Only a real animation library — one that drives the DOM from
+ *  JavaScript — pulls a section into the hydration set. */
 function isClientLibSpecifier(text) {
-  return text === 'motion' || text.startsWith('motion/') || text.startsWith('@/motion');
+  return (
+    text === 'motion' ||
+    text.startsWith('motion/') ||
+    text === 'framer-motion' ||
+    text.startsWith('framer-motion/')
+  );
 }
 
 /** Does this component need client JS in production? True if its Props JSDoc

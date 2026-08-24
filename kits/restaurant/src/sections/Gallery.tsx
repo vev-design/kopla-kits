@@ -63,7 +63,7 @@ export function Gallery({
                 variant === 'mosaic' && i % 5 === 0 && 'md:col-span-2 md:row-span-2',
               )}
             >
-            <figure className="group relative h-full overflow-hidden rounded-xl border border-border">
+            <figure className="group relative h-full overflow-clip rounded-xl border border-border">
               <img
                 src={image.src}
                 alt={image.caption ?? ''}

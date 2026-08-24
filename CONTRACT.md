@@ -37,7 +37,7 @@ version and upgrade deliberately.
   realistic demo content — the demo site renders sections from it.
 - JSDoc on props is load-bearing: `extract-design.mjs` turns it into
   `design.json`, the machine-readable API surface of the kit.
-- Imports: `@/components/ui/*`, `@/motion`, `@/lib/utils`, `@/types`
+- Imports: `@/components/ui/*`, `@/motion`, `@/lib/*`, `@/types`
   from `_base`; npm deps only via `_base/package.json`.
 
 ### Which exports need client JS

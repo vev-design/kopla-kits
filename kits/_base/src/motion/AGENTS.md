@@ -1,25 +1,29 @@
 # Motion wrappers
 
-Composable wrapper components powered by [Motion](https://motion.dev) (npm `motion`, imports from `motion/react`) that add animation behaviour to any child element. Motion is always applied by wrapping — never baked into base components.
+Composable wrapper components that add animation behaviour to any child element, backed entirely by CSS scroll-driven animations in `motion.css` — no JavaScript animation library. Motion is always applied by wrapping — never baked into base components.
+
+Because the wrappers are pure CSS, they carry **no hydration cost**: a section using them still publishes as static HTML. The animations are progressive enhancement — browsers without `animation-timeline` support, and users with reduced motion, see the content in its fully-visible resting state.
 
 ## Wrappers
 
-| Wrapper      | Trigger        | Effect                                                  |
-|--------------|----------------|---------------------------------------------------------|
-| `Reveal`     | Scroll enter   | Fades from `opacity: 0` + `y: 16` to rest (0.56s, ease-default) |
-| `Stagger`    | Scroll enter   | Orchestrates children with `staggerChildren` (60ms default) |
-| `Hover`      | Mouse hover    | Lifts `y: -2` with spring physics, scales on tap        |
+| Wrapper      | Trigger        | Effect                                                        |
+|--------------|----------------|---------------------------------------------------------------|
+| `Reveal`     | Scroll enter   | Fades from `opacity: 0` + `translate: 0 16px` to rest, scrubbed by the element's own viewport entry |
+| `Stagger`    | Scroll enter   | Same fade-rise, each child shifted a beat further into the scroll (60–80ms-equivalent default) |
+| `Hover`      | Mouse hover    | Lifts `translate: 0 -2px`, scales down on press               |
 
 ## Conventions
 
-- Every wrapper renders a `motion.div`.
-- `Reveal` and `Hover` accept `HTMLMotionProps<'div'>` — pass any Motion or HTML prop, including Tailwind `className`.
-- Shared duration / easing values live in `constants.ts`. Update them when the spec's motion timing changes.
-- All scroll-triggered wrappers use `viewport={{ once: true }}` — they animate in once and stay.
+- Every wrapper renders a plain `div` carrying a class from `motion.css` (`kit-reveal`, `kit-hover`) — pass any HTML prop, including Tailwind `className`.
+- `Reveal` takes `delay` (seconds) to hold an element back behind a sibling; `Stagger` derives the same per-child delay from `step`.
+- Durations, easings, keyframes, and animation ranges live in `motion.css`. Update them there when the spec's motion timing changes.
+- Every animation's resting/fallback state is the fully-visible layout. Never author a state that needs JS or animation support to become visible.
+- `animation-timeline: view()` reads the nearest ancestor **scroll container**, and `overflow: hidden` creates one that never scrolls — which freezes the animation on its opening (invisible) frame. Crop with `overflow-clip`, never `overflow-hidden`, anywhere a reveal can sit inside.
 
 ## Adding a new wrapper
 
-1. Create `<Name>.tsx` in this folder. Import `motion` and `HTMLMotionProps` from `motion/react`.
-2. Accept `HTMLMotionProps<'div'>` when the wrapper maps directly to a single motion element.
-3. Reuse values from `constants.ts` for durations and easings.
-4. Re-export from `index.ts`.
+1. Add the class + `@keyframes` to `motion.css`, inside the `@media (prefers-reduced-motion: no-preference)` / `@supports (animation-timeline: view())` guards.
+2. Create `<Name>.tsx` in this folder rendering a plain `div` with the class; accept `ComponentPropsWithoutRef<'div'>` when the wrapper maps directly to a single element.
+3. Re-export from `index.ts`.
+
+Number rollups are the one motion pattern that genuinely needs JS — use `useCountUp()` from `@/lib/count-up` (not this folder) and tag the section `@hydrate`.

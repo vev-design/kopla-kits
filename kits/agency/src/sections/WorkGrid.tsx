@@ -85,7 +85,7 @@ export function WorkGrid({
               href={project.href}
               className="group flex flex-col gap-5"
             >
-              <div className="relative overflow-hidden rounded-sm border border-border">
+              <div className="relative overflow-clip rounded-sm border border-border">
                 <img
                   src={project.image}
                   alt=""

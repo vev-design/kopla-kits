@@ -87,7 +87,7 @@ export function Hero({
       {image ? (
         <div className="mx-auto w-full max-w-6xl px-6 pb-24">
           <Reveal>
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-primary/10">
+            <div className="overflow-clip rounded-xl border border-border bg-card shadow-2xl shadow-primary/10">
               <img
                 src={image}
                 alt=""

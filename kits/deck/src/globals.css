@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./motion/motion.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -96,5 +97,45 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+  }
+}
+
+/* Slide motion, scroll-driven CSS only — browsers without support (or
+   reduced-motion users) see the resting state. */
+
+/* ImageFull: the full-bleed background drifts slower than the scroll for
+   depth. The ±8% stays inside the wrapper's scale-125 overflow. */
+@keyframes deck-image-parallax {
+  from {
+    translate: 0 -8%;
+  }
+  to {
+    translate: 0 8%;
+  }
+}
+/* StatBig: the hero figure grows and fades up as the slide enters. The
+   slide root carries the timeline so the centered span tracks the whole
+   slide's entry, not its own. */
+@keyframes deck-stat-in {
+  from {
+    scale: 0.78;
+    opacity: 0.2;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .deck-image-parallax {
+      animation: deck-image-parallax linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+    .deck-stat-track {
+      view-timeline: --deck-stat block;
+    }
+    .deck-stat-value {
+      animation: deck-stat-in linear both;
+      animation-timeline: --deck-stat;
+      animation-range: entry;
+    }
   }
 }

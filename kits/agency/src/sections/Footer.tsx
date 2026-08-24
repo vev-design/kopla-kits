@@ -67,7 +67,7 @@ export function Footer({ id, logo, blurb, columns, legal }: FooterProps) {
             {legal}
           </p>
         ) : null}
-        <div className="mt-10 overflow-hidden">
+        <div className="mt-10 overflow-clip">
           <span className="block translate-y-[0.14em] text-[clamp(4rem,14vw,13rem)] font-bold uppercase leading-none tracking-[-0.05em] whitespace-nowrap">
             {logo}
           </span>

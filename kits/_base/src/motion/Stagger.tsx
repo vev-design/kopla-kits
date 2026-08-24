@@ -1,8 +1,6 @@
-import { Children, type ReactNode } from 'react';
-import { motion, type HTMLMotionProps } from 'motion/react';
-import { DURATIONS, EASES } from './constants';
+import { Children, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from 'react';
 
-interface StaggerProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
+interface StaggerProps extends Omit<ComponentPropsWithoutRef<'div'>, 'children'> {
   children: ReactNode;
   /** Delay between each child's entrance (seconds). */
   step?: number;
@@ -10,7 +8,9 @@ interface StaggerProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
 
 /**
  * Sequentially reveal children — same fade-rise as Reveal but applied
- * one child at a time. Wrap a list of cards, items, etc.
+ * one child at a time, each resolving a beat further into the scroll.
+ * Wrap a list of cards, items, etc. Pure CSS (`motion.css`); the
+ * container and per-child wrappers are plain divs.
  *
  *   <Stagger>
  *     <Card />
@@ -20,31 +20,16 @@ interface StaggerProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
 export function Stagger({ children, step = 0.08, ...rest }: StaggerProps) {
   const items = Children.toArray(children);
   return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-10% 0px' }}
-      variants={{
-        hidden: {},
-        visible: { transition: { staggerChildren: step } },
-      }}
-      {...rest}
-    >
+    <div {...rest}>
       {items.map((child, i) => (
-        <motion.div
+        <div
           key={i}
-          variants={{
-            hidden: { opacity: 0, y: 16 },
-            visible: {
-              opacity: 1,
-              y: 0,
-              transition: { duration: DURATIONS.enter, ease: EASES.default },
-            },
-          }}
+          className="kit-reveal"
+          style={i ? ({ '--kit-enter-delay': i * step } as CSSProperties) : undefined}
         >
           {child}
-        </motion.div>
+        </div>
       ))}
-    </motion.div>
+    </div>
   );
 }

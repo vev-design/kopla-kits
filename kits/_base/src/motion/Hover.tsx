@@ -1,21 +1,17 @@
-import { motion, type HTMLMotionProps } from 'motion/react';
-import { DURATIONS, EASES } from './constants';
+import type { ComponentPropsWithoutRef } from 'react';
+import { cn } from '@/lib/utils';
 
 /**
  * Subtle lift on hover, press scale on tap. Wrap interactive content
  * — cards, links, buttons that need extra polish beyond their base
- * hover. Pure motion, no visual styling of its own.
+ * hover. Pure CSS (`motion.css`), no visual styling of its own.
  *
  *   <Hover><Card>…</Card></Hover>
  */
-export function Hover({ children, ...rest }: HTMLMotionProps<'div'>) {
+export function Hover({ className, children, ...rest }: ComponentPropsWithoutRef<'div'>) {
   return (
-    <motion.div
-      whileHover={{ y: -2, transition: { duration: DURATIONS.fast, ease: EASES.out } }}
-      whileTap={{ scale: 0.98, transition: { duration: DURATIONS.instant, ease: EASES.in } }}
-      {...rest}
-    >
+    <div className={cn('kit-hover', className)} {...rest}>
       {children}
-    </motion.div>
+    </div>
   );
 }

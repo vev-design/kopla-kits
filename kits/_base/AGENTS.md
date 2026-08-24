@@ -153,7 +153,6 @@ server. The host runtime imports the built library and renders pages from a
   Tailwind through `@theme inline { ... }`.
 - **shadcn/ui** for the primitive component layer. Components are copied into the repo under `src/components/ui/` via the `shadcn` CLI — they are your code, edit them freely.
 - **Radix UI** primitives (pulled in as needed by shadcn components).
-- **Motion** ([motion.dev](https://motion.dev), npm `motion`) for animation. Import from `motion/react`.
 - **lucide-react** for icons.
 - **bun** as package manager and script runner.
 - Path alias **`@/*`** resolves to `src/*` (configured in `tsconfig.json`).
@@ -173,6 +172,7 @@ src/
 
   lib/
     utils.ts             — `cn()` helper (clsx + tailwind-merge)
+    count-up.ts          — `useCountUp()` — rAF number rollup (client JS)
 
   components/
     index.ts             — Barrel export for primitives
@@ -184,9 +184,9 @@ src/
     Hero.tsx             — Demo section; replace / add more
     index.ts             — Barrel; every section must be re-exported here
 
-  motion/                — Animation wrappers (see motion/AGENTS.md)
+  motion/                — CSS motion wrappers (see motion/AGENTS.md)
     index.ts             — Barrel export
-    constants.ts         — Shared duration / ease values
+    motion.css           — Keyframes + scroll-driven animation classes
 ```
 
 ## Working with the starter kit
@@ -212,15 +212,16 @@ All design decisions live as CSS custom properties on `:root` inside `globals.cs
 
 ### Motion — `src/motion/`
 
-Animation wrappers that compose around components and sections. Motion is never baked into base components — it is always applied by wrapping: `<Reveal><Card /></Reveal>`. The starter ships `Reveal`, `Stagger`, and `Hover`. Reach for [Motion](https://motion.dev)'s `useScroll` / `useTransform` / `whileInView` / `motion.div` primitives directly when you need:
+Motion wrappers that compose around components and sections, backed entirely by **CSS scroll-driven animations** (`motion/motion.css`) — no JavaScript animation library. Motion is never baked into base components — it is always applied by wrapping: `<Reveal><Card /></Reveal>`. Because the wrappers are pure CSS, using them does NOT make a section need hydration: the resting state is fully visible, and browsers without support (or reduced-motion users) simply see the content in place. The starter ships `Reveal`, `Stagger`, and `Hover`. For scroll effects beyond them, reach for the same CSS primitives directly:
 
-- **Parallax** — `useScroll({ target: ref })` + `useTransform(scrollYProgress, [0, 1], ['0%', '-20%'])` on `motion.div`'s `y`.
-- **Sticky / pinned scenes** — `position: sticky; top: 0` on a wrapper, with scroll-linked transforms on the children.
-- **Scroll-linked scale / opacity** — same `useScroll` + `useTransform` pattern, applied to `scale` or `opacity`.
-- **Counter / number rollups** — `useMotionValue` + `animate()` triggered by `whileInView`.
-- **Staggered reveals** — `Stagger` for the simple case; raw `motion` variants when children need different choreography.
+- **Parallax / scroll-linked scale & opacity** — `@keyframes` + `animation-timeline: view()` with an `animation-range` (`entry`, `cover`, `exit`), guarded by `@supports (animation-timeline: view())` and `@media (prefers-reduced-motion: no-preference)`, with the resting state as the visible fallback. Put kit-specific keyframes in `src/globals.css`.
+- **Sticky / pinned scenes** — `position: sticky; top: 0` on a wrapper inside a tall track; drive the children with a named `view-timeline` on the track, or a small rAF scroll handler when CSS can't express it (that section is then `@hydrate`).
+- **Counter / number rollups** — `useCountUp()` from `@/lib/count-up` (client JS — tag the section `@hydrate`).
+- **Staggered reveals** — `Stagger` for the simple case; per-element `Reveal delay={…}` when siblings need different beats.
 
-Add new wrappers under `src/motion/` (and re-export from `motion/index.ts`) when a scroll pattern is reused across sections. See `src/motion/AGENTS.md` for the wrapper conventions.
+One sharp edge: `animation-timeline: view()` reads the nearest ancestor **scroll container**, and `overflow: hidden` creates one that never scrolls — freezing the animation on its first frame. Crop with **`overflow-clip`, never `overflow-hidden`**, anywhere a reveal can sit inside.
+
+Add new wrappers under `src/motion/` (class + keyframes in `motion.css`, component re-exported from `motion/index.ts`) when a scroll pattern is reused across sections. See `src/motion/AGENTS.md` for the wrapper conventions.
 
 ## Conventions
 
@@ -281,15 +282,15 @@ export interface AccordionProps extends SectionBaseProps {
 }
 ```
 
-The extractor also infers the flag when a file (or anything it imports in-workspace) uses `useState`/`useEffect`, passes a JSX event handler, or imports `motion` — so a normal interactive section is usually detected either way. Write the tag anyway: it's the declared contract, it survives a refactor that moves the state somewhere the inference doesn't reach, and it documents intent.
+The extractor also infers the flag when a file (or anything it imports in-workspace) uses `useState`/`useEffect`, passes a JSX event handler, or imports a JS animation library — so a normal interactive section is usually detected either way. The `@/motion` wrappers are pure CSS and deliberately NOT a signal: wrapping content in `Reveal`/`Stagger`/`Hover` keeps a section static. Write the tag anyway: it's the declared contract, it survives a refactor that moves the state somewhere the inference doesn't reach, and it documents intent.
 
 Prefer **server-real content**: render the final values in HTML and let hydration take over the moving parts. A counter should render `2,400` and animate up from zero on hydration, never render `0` and depend on JS to become correct.
 
 ### Motion
 
 - **Separation** — `src/components/` never imports from `src/motion/`. The two directories are independent.
-- **Shared constants** — all wrappers import timing and easing values from `motion/constants.ts`.
-- **Motion only** — wrappers import from `motion/react`, render `motion.div`, and accept `HTMLMotionProps<'div'>`.
+- **CSS only** — wrappers render plain `div`s carrying classes from `motion/motion.css`; timing and easing live in that file. No JS animation libraries (`motion`, `framer-motion`, gsap …) — importing one pulls the section into the hydration set and ships a bundle static pages don't need.
+- **Visible at rest** — every animation's resting/fallback state must be the fully-visible layout. Never author a state that depends on JS or on animation support to become visible.
 
 ### General
 

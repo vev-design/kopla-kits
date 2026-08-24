@@ -1,5 +1,3 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
 import { Eyebrow } from '@/components';
 import { SlideChrome, type SlideProgress } from '@/components/SlideChrome';
@@ -35,20 +33,10 @@ export function StatBig({
   progress,
   footer,
 }: StatBigProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'center center'],
-  });
-  // Scroll-scaled hero number: grows and fades up as the section enters.
-  const scale = useTransform(scrollYProgress, [0, 1], [0.78, 1]);
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [0.2, 1]);
-
   return (
     <section
       id={id ?? undefined}
-      ref={ref}
-      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-6 py-24 text-center md:px-16"
+      className="deck-stat-track relative flex min-h-screen w-full flex-col items-center justify-center overflow-clip bg-background px-6 py-24 text-center md:px-16"
     >
       <SlideChrome progress={progress} footer={footer} />
       <div
@@ -59,19 +47,16 @@ export function StatBig({
         <Reveal>
           {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
         </Reveal>
-        <motion.span
-          style={{ scale, opacity }}
-          className="block font-display text-[8rem] leading-[0.9] font-bold tracking-tighter text-primary tabular-nums md:text-[16rem] lg:text-[20rem]"
-        >
+        <span className="deck-stat-value block font-display text-[8rem] leading-[0.9] font-bold tracking-tighter text-primary tabular-nums md:text-[16rem] lg:text-[20rem]">
           {value}
-        </motion.span>
-        <Reveal transition={{ delay: 0.1 }}>
+        </span>
+        <Reveal delay={0.1}>
           <h2 className="mt-6 font-display text-3xl font-semibold tracking-tight md:text-5xl">
             {label}
           </h2>
         </Reveal>
         {support ? (
-          <Reveal transition={{ delay: 0.16 }}>
+          <Reveal delay={0.16}>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground text-pretty md:text-xl">
               {support}
             </p>
