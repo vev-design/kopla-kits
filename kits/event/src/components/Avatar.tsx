@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-const avatarFrame = cva('aspect-square w-full overflow-hidden bg-secondary', {
+const avatarFrame = cva('aspect-square w-full overflow-clip bg-secondary', {
   variants: {
     /** Corner rounding of the frame. `rounded` is the soft-square headshot. */
     radius: {

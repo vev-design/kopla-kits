@@ -96,3 +96,21 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Cover background parallax — the image drifts down at ~18% of its own
+   height as the cover scrolls off the top. Scroll-driven CSS only: no
+   support (or reduced motion) just means a still image. */
+@keyframes ar-cover-parallax {
+  to {
+    translate: 0 18%;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .ar-cover-parallax {
+      animation: ar-cover-parallax linear both;
+      animation-timeline: view();
+      animation-range: exit;
+    }
+  }
+}

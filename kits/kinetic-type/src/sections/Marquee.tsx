@@ -31,7 +31,7 @@ export function Marquee({ id, items, speed = 'base' }: MarqueeProps) {
       // misread as a layout-shift candidate, which some browsers "correct"
       // for by nudging scroll position while it's in view (felt as a jump
       // while scrolling past it).
-      className="w-full overflow-hidden border-y border-border bg-foreground py-6 [overflow-anchor:none]"
+      className="w-full overflow-clip border-y border-border bg-foreground py-6 [overflow-anchor:none]"
     >
       <div
         className="flex w-max shrink-0 animate-marquee-scroll gap-10 whitespace-nowrap will-change-transform"

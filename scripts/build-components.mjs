@@ -151,6 +151,20 @@ const HOOKS = [
 const CLIENT_ONLY_IMPORTS = [{ pkg: 'lucide-react', why: 'every icon renders through a "use client" Icon' }];
 
 /**
+ * Packages that no longer exist in the workspace at all. `tsc` would fail the
+ * build anyway — this exists to fail it with the reason and the replacement
+ * instead of a module-not-found trace.
+ */
+const REMOVED_IMPORTS = [
+  {
+    pattern: /from\s+['"]motion(?:\/|['"])/,
+    message:
+      'imports the motion library, which left the substrate when entrance animation went ' +
+      'CSS scroll-driven (#30) — use the motion.css classes via @/motion, or @/lib/count-up',
+  },
+];
+
+/**
  * A component claiming `hydrate: false` must not reach for a hook.
  *
  * This is the check with the widest blast radius in the whole catalog, because
@@ -210,9 +224,15 @@ for (const name of names) {
     problems.push(`${name}: no ${name}.tsx`);
     continue;
   }
+  const source = await readFile(file, 'utf8');
   if (manifest.hydrate === false) {
-    problems.push(...checkStatic(name, await readFile(file, 'utf8')));
+    problems.push(...checkStatic(name, source));
   }
+  source.split('\n').forEach((line, i) => {
+    for (const { pattern, message } of REMOVED_IMPORTS) {
+      if (pattern.test(line)) problems.push(`${name}:${i + 1} ${message}`);
+    }
+  });
 }
 if (problems.length > 0) {
   console.error(`build-components: ${problems.length} contract problem(s)\n`);

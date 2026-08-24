@@ -41,7 +41,7 @@ export function Story({
       <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2 md:gap-16 md:py-32">
         <Reveal
           className={cn(
-            'overflow-hidden rounded-xl border border-border',
+            'overflow-clip rounded-xl border border-border',
             variant === 'image-right' ? 'md:order-2' : 'md:order-1',
           )}
         >

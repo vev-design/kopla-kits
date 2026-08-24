@@ -3,8 +3,7 @@
 // count once on first view. Inherits color/size from its parent — style it
 // like text at the call site (e.g. text-5xl font-semibold text-primary).
 
-import { useEffect, useRef, useState } from 'react';
-import { animate, useInView } from 'motion/react';
+import { useCountUp } from '@/lib/count-up';
 
 /**
  * An inline animated number for stat/metric beats. Counts 0 → value the
@@ -35,26 +34,12 @@ function format(value: number, decimals: number): string {
 }
 
 export function CountUp({ value, prefix, suffix, decimals = 0, duration = 1.6 }: CountUpProps) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-10% 0px' });
-  const [display, setDisplay] = useState(() => format(value, decimals));
-  const played = useRef(false);
-
-  useEffect(() => {
-    if (!inView || played.current) return;
-    played.current = true;
-    const controls = animate(0, value, {
-      duration,
-      ease: 'easeOut',
-      onUpdate: (v) => setDisplay(format(v, decimals)),
-    });
-    return () => controls.stop();
-  }, [inView, value, decimals, duration]);
+  const { ref, value: current } = useCountUp<HTMLSpanElement>(value, duration);
 
   return (
     <span ref={ref} className="tabular-nums">
       {prefix}
-      {display}
+      {format(current, decimals)}
       {suffix}
     </span>
   );

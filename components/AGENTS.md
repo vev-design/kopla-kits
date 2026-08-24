@@ -85,11 +85,15 @@ Same contract as a kit's component catalog (CONTRACT.md "Components"),
 plus the catalog-specific rules:
 
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
-  react, `motion/react`, `lucide-react`, `@/lib/utils`, `@/motion`,
+  react, `lucide-react`, `@/lib/utils`, `@/lib/count-up`, `@/motion`,
   `@/components/*` — everything a workspace already has, because they are
-  `_base` dependencies. No new npm dependencies: a third-party lib rides
-  in `vendor/` as a pinned, pre-bundled ESM file, recorded in
-  `component.json.vendor` (`{ pkg, version, license }` per entry).
+  `_base` dependencies. NOT `motion/react`: the motion library left the
+  substrate when entrance animation went CSS scroll-driven (see
+  `_base/src/motion/motion.css`); animate with those classes, or
+  `@/lib/count-up` for a counted figure. No new npm dependencies: a
+  third-party lib rides in `vendor/` as a pinned, pre-bundled ESM file,
+  recorded in `component.json.vendor` (`{ pkg, version, license }` per
+  entry).
 - **Token-themed**: style with token-backed utilities (`bg-muted`,
   `text-primary`, `border`, `rounded-*`) so the component re-skins with
   every system.

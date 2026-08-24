@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { animate, useInView } from 'motion/react';
 import { Reveal } from '@/motion';
+import { useCountUp } from '@/lib/count-up';
 import { Badge } from '@/components/Badge';
 import type { SectionBaseProps } from '@/types';
 
@@ -48,32 +47,17 @@ function parseValue(value: string) {
 }
 
 function CountUp({ value }: { value: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-12% 0px' });
   const { prefix, num, suffix, decimals, grouped } = parseValue(value);
-  const [display, setDisplay] = useState('0');
-
-  useEffect(() => {
-    if (!inView) return;
-    const controls = animate(0, num, {
-      duration: 1.5,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) =>
-        setDisplay(
-          latest.toLocaleString('en-US', {
-            minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals,
-            useGrouping: grouped,
-          }),
-        ),
-    });
-    return () => controls.stop();
-  }, [inView, num, decimals, grouped]);
+  const { ref, value: current } = useCountUp<HTMLSpanElement>(num, 1.5);
 
   return (
     <span ref={ref} className="tabular-nums">
       {prefix}
-      {display}
+      {current.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+        useGrouping: grouped,
+      })}
       {suffix}
     </span>
   );

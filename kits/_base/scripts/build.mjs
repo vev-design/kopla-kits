@@ -95,14 +95,15 @@ if (!result.success) {
 
 // Tailwind v4 CLI compiles the theme + scans src/ for used utilities. Its
 // native oxide binary ships as a prebuilt optional dependency (no postinstall
-// script), so `bun install` resolves it cleanly.
+// script), so `bun install` resolves it cleanly. The entry is src/index.css
+// (base-owned: kit globals.css + _base motion.css), not globals.css itself.
 execFileSync(
   'bun',
   [
     'x',
     '@tailwindcss/cli',
     '-i',
-    resolve(ROOT, 'src/globals.css'),
+    resolve(ROOT, 'src/index.css'),
     '-o',
     resolve(ROOT, 'dist/theme.css'),
     '--minify',

@@ -24,6 +24,14 @@ collisions. The tree is packed into the published artifact by
 `scripts/pack-kits.mjs`. See `../CONTRACT.md` for the full consumer
 contract.
 
+Animation is **CSS-only**: `_base/src/motion/motion.css` holds the
+scroll-driven animations behind the `Reveal`/`Stagger`/`Hover` wrappers, and
+the workspace CSS build pairs it with the kit's `globals.css` automatically
+(via the base-owned entry `_base/src/index.css`) — kits import nothing.
+There is no JS animation library — that's what lets sections publish as
+static HTML. Kit-specific keyframes (e.g. a cover parallax) live in that
+kit's `globals.css`.
+
 ## kit.json
 
 ```jsonc

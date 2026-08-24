@@ -91,7 +91,7 @@ export function Philosophy({
         <Reveal
           className={cn(variant === 'image-left' ? 'md:order-1' : 'md:order-2')}
         >
-          <div className="mx-auto w-full max-w-md overflow-hidden rounded-t-full rounded-b-xl md:max-w-none">
+          <div className="mx-auto w-full max-w-md overflow-clip rounded-t-full rounded-b-xl md:max-w-none">
             <img
               src={image}
               alt=""

@@ -47,7 +47,7 @@ export function ClosingCTA({
   return (
     <section
       id={id ?? undefined}
-      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-6 py-24 text-center md:px-16"
+      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-clip bg-background px-6 py-24 text-center md:px-16"
     >
       <SlideChrome progress={progress} footer={footer} />
       <div
@@ -58,20 +58,20 @@ export function ClosingCTA({
         <Reveal>
           {eyebrow ? <Eyebrow className="mb-8">{eyebrow}</Eyebrow> : null}
         </Reveal>
-        <Reveal transition={{ delay: 0.06 }}>
+        <Reveal delay={0.06}>
           <h2 className="font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance md:text-8xl">
             {statement}
           </h2>
         </Reveal>
         {body ? (
-          <Reveal transition={{ delay: 0.12 }}>
+          <Reveal delay={0.12}>
             <p className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl">
               {body}
             </p>
           </Reveal>
         ) : null}
         {cta ? (
-          <Reveal transition={{ delay: 0.18 }}>
+          <Reveal delay={0.18}>
             <div className="mt-12">
               <Button asChild size="lg" className="px-8 text-base">
                 <a href={cta.href}>{cta.label}</a>
@@ -80,7 +80,7 @@ export function ClosingCTA({
           </Reveal>
         ) : null}
         {contact ? (
-          <Reveal transition={{ delay: 0.24 }}>
+          <Reveal delay={0.24}>
             <p className="mt-10 font-mono text-sm tracking-wide text-muted-foreground md:text-base">
               {contact}
             </p>

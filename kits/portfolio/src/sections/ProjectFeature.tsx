@@ -79,7 +79,7 @@ export function ProjectFeature({
             </Button>
           ) : null}
         </div>
-        <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary">
+        <div className="aspect-[4/3] w-full overflow-clip rounded-xl bg-secondary">
           <img src={image} alt={title} className="size-full object-cover" />
         </div>
       </Reveal>
