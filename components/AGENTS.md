@@ -43,7 +43,7 @@ Same contract as a kit's component catalog (CONTRACT.md "Components"),
 plus the catalog-specific rules:
 
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
-  react, `motion/react`, `@/lib/utils`, `@/motion`, `@/components/*` —
+  react, `@/lib/utils`, `@/lib/count-up`, `@/motion`, `@/components/*` —
   everything a workspace already has. No new npm dependencies: a
   third-party lib rides in `vendor/` as a pinned, pre-bundled ESM file,
   recorded in `component.json.vendor`

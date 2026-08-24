@@ -5,7 +5,8 @@
    reduced motion. No JavaScript is involved — sections that animate
    with these classes still publish as static HTML.
 
-   Every kit's `globals.css` imports this file. */
+   Wired into the theme build by `src/index.css` (the base-owned
+   Tailwind entry) — kits don't import this file themselves. */
 
 @keyframes kit-reveal {
   from {

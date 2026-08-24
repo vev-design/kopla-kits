@@ -166,6 +166,8 @@ components.json          — shadcn CLI configuration
 src/
   index.ts               — Library entry; re-exports every section. The
                            public API surface — DO NOT add page/render code.
+  index.css              — Tailwind entry for the CSS build: kit globals.css
+                           + motion/motion.css. Base-owned; don't edit.
   globals.css            — Tailwind import, theme tokens, base layer
   types.ts               — SectionBaseProps (the `id` contract sections extend)
   globals.d.ts           — *.css ambient declarations

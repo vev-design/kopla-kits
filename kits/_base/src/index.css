@@ -1,0 +1,8 @@
+/* Tailwind entry for the workspace CSS build (scripts/build.mjs compiles
+   THIS file, not globals.css, into dist/theme.css). Base-owned so every
+   kit gets the substrate CSS without having to carry an import: the
+   kit's globals.css stays a pure theme/token file, and the motion CSS
+   rides in from _base. Don't author styles here — theme belongs in
+   globals.css, motion in motion/motion.css. */
+@import "./globals.css";
+@import "./motion/motion.css";
