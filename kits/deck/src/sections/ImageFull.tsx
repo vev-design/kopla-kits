@@ -54,7 +54,7 @@ export function ImageFull({
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/10"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/10"
       />
       <SlideChrome progress={progress} footer={footer} />
       <div

@@ -91,7 +91,10 @@ export function WorkGrid({
                   alt=""
                   className="aspect-[4/3] w-full object-cover grayscale transition-all duration-500 group-hover:scale-[1.03] group-hover:grayscale-0"
                 />
-                <span className="absolute inset-0 bg-primary opacity-0 mix-blend-multiply transition-opacity duration-500 group-hover:opacity-100" />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-primary opacity-0 mix-blend-multiply transition-opacity duration-500 group-hover:opacity-100"
+                />
               </div>
               <div className="flex items-start justify-between gap-4 border-t border-border pt-4">
                 <div className="flex flex-col gap-1.5">

@@ -16,9 +16,16 @@ jobs:
 
   # Contract check: every kit must build the way consumers materialize
   # it — { _base ∪ kit } → bun install → bun run build (gen:design,
-  # tsc, Bun.build, tailwind). Green here ≈ builds for every consumer.
+  # check:media, tsc, Bun.build, tailwind). Green here ≈ builds for every
+  # consumer.
+  #
+  # KOPLA_MEDIA_STRICT promotes check-media-editable's warnings to errors. It is
+  # a warning in a consumer's design turn (see that script) — but this repo owns
+  # the shipped kits, and a hero image nobody can click is a bug here.
   kits:
     runs-on: ubuntu-latest
+    env:
+      KOPLA_MEDIA_STRICT: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
