@@ -6,9 +6,12 @@
 //              stacking is what scrolling does to the layout.
 //   shuffle  — the stack is already formed, every card's header visible as a rim
 //              above the front card, and the whole thing pins while scrolling
-//              SCRUBS the front card away to the back — one card per scroll
-//              segment. Scroll up and the shuffle runs backwards, because a
-//              scrubbed animation is bidirectional by nature.
+//              PULLS the front card down off the stack — the direction the
+//              reader is scrolling, so the scroll reads as the hand doing the
+//              pulling — and tucks it up underneath into the deepest rim. One
+//              card per scroll segment; scroll up and the shuffle runs
+//              backwards, because a scrubbed animation is bidirectional by
+//              nature.
 //
 // The shuffle is CSS scroll-driven animation, the substrate's own mechanism
 // (see _base/src/motion/motion.css): the root carries a named `view-timeline`,
@@ -123,11 +126,12 @@ function safeId(value: string): string {
  * itself, computed from props on the server.
  *
  * Layout math: with `n` cards there are `n-1` scroll segments. During segment
- * `j`, card `j` (the front) scrubs out sideways, teleports to the deepest slot
- * while it is fully transparent, and fades back in; every other card climbs one
- * slot. A card's slot after `j` segments is `(i - j + n) % n`, and each slot
- * `s` sits `s * peek` px higher, scaled from its top edge so the header rim
- * keeps its full height while the sides taper.
+ * `j`, card `j` (the front) is pulled down off the pinned box's bottom edge,
+ * swaps to the back z while fully clipped off-screen, and rides back up behind
+ * the stack into the deepest slot; every other card climbs one slot. A card's
+ * slot after `j` segments is `(i - j + n) % n`, and each slot `s` sits
+ * `s * peek` px higher, scaled from its top edge so the header rim keeps its
+ * full height while the sides taper.
  *
  * The ungated rules at the top ARE the pile — they are what a reader gets when
  * the gated block does not apply, and the gated block resets exactly the
@@ -167,12 +171,16 @@ function shuffleCss(
       stops.push(`${pct(j * L)} { transform: ${pose(s)}; z-index: ${count - s}; opacity: 1; }`);
     }
     if (i < segments) {
-      // The throw, scrubbed: out sideways while still on top, then the jump to
-      // the deepest slot happens between two fully-transparent stops — an
-      // invisible teleport instead of a visible slide back across the stack.
+      // The pull, scrubbed: the front card is dragged DOWN off the stack — the
+      // same direction the reader is scrolling, so the scroll reads as the hand
+      // doing the pulling — until it has fully cleared the pinned box's bottom
+      // edge (110% of its own height, plus a grabbed-edge lean). The z handoff
+      // to the back happens there, while the card is entirely clipped off-screen,
+      // and the second half of the segment slides it back UP behind the stack
+      // into the deepest rim: pulled from the top, tucked under to the bottom.
       stops.push(
-        `${pct((i + 0.42) * L)} { transform: translateX(112%) rotate(5deg); z-index: ${count}; opacity: 0; }`,
-        `${pct((i + 0.5) * L)} { transform: ${pose(count - 1)}; z-index: 1; opacity: 0; }`,
+        `${pct((i + 0.45) * L)} { transform: translateY(110%) rotate(3deg); z-index: ${count}; opacity: 1; }`,
+        `${pct((i + 0.5) * L)} { transform: translateY(110%) rotate(3deg); z-index: 1; opacity: 1; }`,
       );
     }
     return `@keyframes ${rootId}-k${i} {\n${stops.map((s) => `  ${s}`).join('\n')}\n}`;
@@ -185,10 +193,13 @@ function shuffleCss(
     // where the root fully covers the viewport, which is exactly when the pin
     // inside it is stuck — the scrub maps 1:1 onto the pinned time.
     `#${rootId} { height: ${100 + segments * perCard * 100}vh; height: ${100 + segments * perCard * 100}svh; view-timeline-name: --${rootId}; }`,
-    // `overflow-x: clip` (never `hidden`, which would make a scroll container
-    // and freeze every view() timeline inside — the motion.css gotcha) so the
-    // flying card cannot widen the page.
-    `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow-x: clip; }`,
+    // `overflow: clip` (never `hidden`, which would make a scroll container and
+    // freeze every view() timeline inside — the motion.css gotcha). The clip is
+    // what sells the pull: the pin is exactly a viewport tall, so a card pulled
+    // past its bottom edge slides off the bottom of the SCREEN — and a
+    // transformed card outside the box cannot leak into the page's scrollable
+    // overflow either.
+    `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }`,
     `#${rootId} [data-slot="scroll-stack-item"] { position: absolute; left: 0; right: 0; top: ${rim}px; bottom: 0; margin: 0; overflow: hidden; transform-origin: top center; animation: 1s linear both; animation-timeline: --${rootId}; animation-range: contain 0% 100%; }`,
     ...Array.from(
       { length: count },

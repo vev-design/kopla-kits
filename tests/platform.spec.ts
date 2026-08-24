@@ -252,18 +252,29 @@ test.describe('ScrollStack shuffle', () => {
       .toBe('3,2,1');
   });
 
-  test('mid-segment, the front card is visibly mid-throw', async ({ page }) => {
+  test('mid-segment, the front card is visibly mid-pull', async ({ page }) => {
     await page.setViewportSize({ width: 800, height: 800 });
     await page.goto(`/component/ScrollStack?case=${CASE()}&theme=blank`);
-    // Partway into the first segment the front card is fading out sideways —
-    // the state a time-based animation never shows and a scrubbed one holds.
-    await page.mouse.wheel(0, 250);
+    // Partway into the first segment the front card has been dragged DOWN —
+    // the same direction the reader is scrolling, which is what makes the
+    // scroll read as the hand doing the pulling. It stays fully opaque the
+    // whole way: a pulled card is a real card, not a fade.
+    await page.mouse.wheel(0, 150);
     await expect
-      .poll(async () => (await cards(page))[0]!.op)
-      .toBeLessThan(0.7);
-    // And it is still the front while mid-flight: the z handoff happens inside
-    // the invisible window, never while the card can be seen.
-    expect((await cards(page))[0]!.z).toBe(3);
+      .poll(async () => {
+        const t = await page
+          .locator('[data-slot="scroll-stack-item"]')
+          .first()
+          .evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).f);
+        return t;
+      })
+      .toBeGreaterThan(60);
+    const front = (await cards(page))[0]!;
+    // Still the front, still fully visible: the z handoff to the back happens
+    // only once the card has cleared the pinned box's bottom edge, where the
+    // clip has already taken it off-screen.
+    expect(front.z).toBe(3);
+    expect(front.op).toBe(1);
   });
 
   test('falls back to the pile under reduced motion, with every card reachable', async ({
