@@ -1,0 +1,294 @@
+/* Component lab chrome. Plain CSS, on the gallery's own tokens (gallery.css) —
+   the Tailwind pipeline belongs to the kits, and the thing under test renders in
+   an iframe, so nothing here can reach it. That isolation is the point: if the
+   lab could style the component, the lab would be lying to you.
+
+   Two layout rules carry weight:
+     - the viewport is sized in px and never scaled. A transform would let the
+       component think it is 1440 wide while occupying 700, and every media
+       query would answer the wrong question.
+     - the viewport is allowed to overflow its column rather than shrink. Seeing
+       "1440 doesn't fit on my screen" is honest; silently rescaling is not. */
+
+.lab {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 32px 28px 56px;
+}
+
+@media (max-width: 900px) {
+  .lab {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── the component list ─────────────────────────────────────────── */
+
+.lab__list h1 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+}
+
+.lab__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lab__list button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t);
+}
+
+.lab__list button:hover {
+  background: var(--card-hover);
+  border-color: var(--border-strong);
+}
+
+.lab__list button.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.lab__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* A component declaring `hydrate: true` is the one whose "scripts off" render
+   you have to look at, so the list says which those are up front. */
+.lab__badge {
+  align-self: center;
+  font: 600 10px/1 'JetBrains Mono', monospace;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: var(--chip);
+  color: var(--fg-muted);
+}
+
+.lab__desc {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--fg-muted);
+}
+
+.lab__empty {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+}
+
+/* ── controls ───────────────────────────────────────────────────── */
+
+.lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.lab__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lab__group button {
+  font: 600 12px/1 'JetBrains Mono', monospace;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--t), color var(--t);
+}
+
+.lab__group button.is-active {
+  background: var(--btn-bg);
+  border-color: var(--btn-bg);
+  color: var(--btn-fg);
+}
+
+.lab__drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+}
+
+.lab__drag input {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+.lab__drag output {
+  font: 500 11.5px/1 'JetBrains Mono', monospace;
+  color: var(--fg-muted);
+  min-width: 48px;
+}
+
+.lab__field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.lab__field select {
+  font: 500 12px/1 inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  max-width: 200px;
+}
+
+.lab__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.lab__toggle input {
+  accent-color: var(--accent);
+}
+
+.lab__srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ── notes ──────────────────────────────────────────────────────── */
+
+/* Reserved for the two states the lab cannot make simultaneously true, and for
+   telling you that a degraded render is expected rather than broken. Muted, not
+   alarming — neither is an error. */
+.lab__note {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-soft);
+  border-radius: var(--radius-sm);
+  background: var(--chip);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
+.lab__note code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg);
+}
+
+/* ── the stage ──────────────────────────────────────────────────── */
+
+.lab__stage {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(0deg, var(--chip), var(--chip)),
+    repeating-conic-gradient(var(--bg) 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  overflow-x: auto;
+}
+
+.lab__viewport {
+  /* Never a transform: the frame must BE the width it claims, or media queries
+     answer for a viewport that doesn't exist. */
+  flex: none;
+  margin: 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.lab__viewport iframe {
+  display: block;
+  width: 100%;
+  height: 78vh;
+  min-height: 460px;
+  border: 0;
+}
+
+/* ── meta ──────────────────────────────────────────────────────── */
+
+.lab__meta {
+  margin-top: 16px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+.lab__meta strong {
+  color: var(--fg);
+}
+
+.lab__implements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.lab__implements li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px 4px 4px;
+  border-radius: 999px;
+  background: var(--chip);
+}
+
+.lab__implements code {
+  font: 500 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--fg);
+}
+
+/* The props that select the behaviour, quieter than the token itself: the token
+   is the answer, the props are how this component gives it. */
+.lab__implements span {
+  font: 400 11px/1 'JetBrains Mono', monospace;
+  color: var(--fg-muted);
+}

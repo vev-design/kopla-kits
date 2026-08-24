@@ -1,0 +1,15 @@
+{
+  "name": "CardStack",
+  "description": "A deck of cards where the cards fully cover each other and the top one is sent to the back by a click or a swipe, so the deck cycles forever.",
+  "whenToUse": "Designs that draw cards STACKED on top of each other as a deck the reader shuffles — a click or a drag sends the top card to the back. Pass the authored cards as children so the design's own card markup is kept; `items` is a data fallback for previews. NOT for cards that PILE UP as the page scrolls, each keeping a header strip visible (that is ScrollStack, and it needs no JavaScript), not for a row of cards that all fit (that is a grid), and not for a horizontal gallery with arrows (that is Carousel).",
+  "tags": ["cards", "deck", "interactive", "gesture"],
+  "hydrate": true,
+  "implements": [
+    {
+      "token": "card-stack",
+      "props": {},
+      "note": "Set advanceOn from how the design says the deck is driven. The scroll-pinned pile is a different answer and a different component — see ScrollStack, which ships no JavaScript."
+    }
+  ],
+  "vendor": []
+}

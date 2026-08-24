@@ -1,0 +1,15 @@
+{
+  "name": "Tabs",
+  "description": "A strip of labels over one panel area, switched with :target — so each tab is a deep-linkable URL and nothing needs JavaScript.",
+  "whenToUse": "Designs that show a ROW of labels with one panel visible below them, where the reader picks a view rather than working through a sequence. `look='underline'` for labels over a rule, `look='pill'` for a segmented control. Pass the panels as children to keep the design's own markup. This ships NO JavaScript, so a section using it needs no `@hydrate`, and each tab is a URL another page can link straight to. Two costs to know: every tab click adds a browser history entry, and because `aria-current` cannot be set from CSS the active label carries no programmatic selected state — activating the link moves the reader to the panel instead. NOT for rows the reader expands in place (that is Accordion), and not for more than about six tabs (a row of labels stops being scannable, and a phone runs out of width).",
+  "tags": ["tabs", "panels", "no-js", "platform"],
+  "hydrate": false,
+  "implements": [
+    {
+      "token": "tabs",
+      "props": { "look": "underline" },
+      "note": "Set look: 'pill' when the design draws the strip as a segmented control. Nothing here needs @hydrate — `:target` plus one generated CSS rule per tab is the whole mechanism."
+    }
+  ],
+  "vendor": []
+}

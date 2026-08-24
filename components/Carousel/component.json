@@ -1,0 +1,20 @@
+{
+  "name": "Carousel",
+  "description": "A horizontal gallery of slides on a scroll-snap track — swipeable and keyboard-scrollable with no JavaScript — with arrows, dots and optional auto-advance layered on top.",
+  "whenToUse": "Designs that show a ROW of slides one or a few at a time, scrolled sideways. Two shapes, and they are different answers rather than a detail to infer: `controls='arrows'` (or `'both'`) for a gallery the reader drives; `autoAdvanceMs` for one that advances on a timer — and that number comes from the design's own prototype timing, never from a guess. Pass the slides as children to keep the design's own markup; `items` is a data fallback for previews. NOT for a row of cards that all fit at once (that is a grid), not for cards drawn on top of each other (that is CardStack), and not for a sequence the reader has to complete in order (that is StepFlow).",
+  "tags": ["gallery", "slides", "scroll-snap", "interactive"],
+  "hydrate": true,
+  "implements": [
+    {
+      "token": "carousel-arrows",
+      "props": { "controls": "both" },
+      "note": "The track scrolls and snaps with no JavaScript; the arrows and dots are what need it."
+    },
+    {
+      "token": "carousel-auto",
+      "props": { "controls": "dots" },
+      "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT delay. Never invent an interval — omitting it is correct when the design does not specify one. Auto-advance stops under prefers-reduced-motion and always ships a pause control."
+    }
+  ],
+  "vendor": []
+}

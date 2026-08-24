@@ -16,12 +16,15 @@
     "build-kit": "node scripts/build-kit.mjs",
     "build-components": "node scripts/build-components.mjs",
     "ci": "node scripts/pack-kits.mjs && node scripts/build-kit.mjs --all && node scripts/build-components.mjs",
-    "prepublishOnly": "node scripts/pack-kits.mjs"
+    "prepublishOnly": "node scripts/pack-kits.mjs",
+    "pretest:components": "node demo/scripts/gen-components.mjs",
+    "test:components": "playwright test"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@radix-ui/react-slot": "^1.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

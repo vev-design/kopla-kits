@@ -1,0 +1,15 @@
+{
+  "name": "Modal",
+  "description": "A dialog opened by its own trigger, built on the native `popover` attribute: top layer, backdrop, light dismiss, Escape and focus return, with no JavaScript.",
+  "whenToUse": "Designs where a control opens a panel over the page — a detail view, a form, a policy, an enlarged image. This ships NO JavaScript, so a section using it needs no `@hydrate`, and it gets the top layer for free: a hand-rolled modal inside a section with `overflow: hidden` or a transformed ancestor is clipped, and the usual fix is a portal, which is client JS. One limit to know: `popover` does not TRAP focus — tabbing past the last control inside continues into the page behind. A true trap needs `<dialog>.showModal()`, which means a script and a runtime on the page; if a design genuinely requires it, this component is the wrong one. NOT for content that should be readable in place (that is Accordion), and not for a menu or tooltip, which want a popover anchored to their trigger rather than a centred dialog.",
+  "tags": ["dialog", "overlay", "no-js", "platform"],
+  "hydrate": false,
+  "implements": [
+    {
+      "token": "modal",
+      "props": { "size": "md" },
+      "note": "Set triggerLook and size from the design. Nothing here needs @hydrate — `popover` plus `popovertarget` is the whole mechanism, including focus return."
+    }
+  ],
+  "vendor": []
+}

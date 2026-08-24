@@ -19,6 +19,6 @@
       "@/*": ["../kits/_base/src/*"]
     }
   },
-  "include": ["next-env.d.ts", "app", "kits.gen", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "app", "kits.gen", "components.gen", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

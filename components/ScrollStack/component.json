@@ -1,0 +1,15 @@
+{
+  "name": "ScrollStack",
+  "description": "Cards drawn as a pile that pins under one another as the page scrolls, each keeping a header strip visible and the ones behind inset so the set reads as receding. `position: sticky` at stepped offsets — no JavaScript at all.",
+  "whenToUse": "Designs where numbered sections or cards PILE UP as the reader scrolls, each keeping its header visible once the next one covers it. Pass the authored cards as children so the design's own card markup is kept; `items` is a data fallback for previews, and each card needs whatever should stay visible inside its first `peek` px. This ships NO JavaScript, so a section using it needs no `@hydrate`. NOT for a deck the reader shuffles by clicking or swiping (that is CardStack), not for a row of cards that all fit (that is a grid), and not for a horizontal gallery (that is Carousel). Do not add a clipping ancestor — `overflow` on a parent breaks `position: sticky`, which is the whole effect.",
+  "tags": ["cards", "scroll", "sticky", "no-js", "platform"],
+  "hydrate": false,
+  "implements": [
+    {
+      "token": "scroll-stack",
+      "props": {},
+      "note": "Set peek to the height of whatever the design keeps visible on a covered card, and inset to 0 for a flush pile. Nothing here needs @hydrate — stepped `position: sticky` is the whole mechanism."
+    }
+  ],
+  "vendor": []
+}

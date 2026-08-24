@@ -1,0 +1,25 @@
+{
+  // Scoped to tests/ on purpose — Playwright resolves the tsconfig nearest the
+  // spec, so this teaches only the test runner how to resolve `@/…` without
+  // putting a tsconfig at the repo root where build-kit.mjs and the demo each
+  // already own their own.
+  //
+  // The specs import the lab's generated registry to enumerate showcase cases,
+  // and that registry statically imports the catalog components, which import
+  // `@/lib/utils` — the alias every materialized workspace resolves to _base.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["../kits/_base/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "../demo/components.gen/**/*.ts", "../demo/components.gen/**/*.tsx"]
+}
