@@ -277,6 +277,28 @@ test.describe('ScrollStack shuffle', () => {
     expect(front.op).toBe(1);
   });
 
+  test('clicking a header rim scrolls to that card, and the scrub follows', async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 800 });
+    await page.goto(`/component/ScrollStack?case=${CASE()}&theme=blank`);
+
+    // The rim of the deepest card is a real fragment link; clicking it scrolls
+    // the page to that card's segment boundary — and because the scrub is
+    // DERIVED from scroll position, the shuffle plays itself on the way and
+    // cannot land out of sync: the position and the animation are one number.
+    await page.locator('[data-shuffle-link]').nth(2).click();
+    await expect.poll(() => page.evaluate(() => Math.round(scrollY))).toBe(1200);
+    await expect
+      .poll(async () => (await cards(page)).map((c) => c.z).join())
+      .toBe('2,1,3');
+
+    // And back: the first card's rim returns the page to the top boundary.
+    await page.locator('[data-shuffle-link]').nth(0).click();
+    await expect.poll(() => page.evaluate(() => Math.round(scrollY))).toBe(0);
+    await expect
+      .poll(async () => (await cards(page)).map((c) => c.z).join())
+      .toBe('3,2,1');
+  });
+
   test('falls back to the pile under reduced motion, with every card reachable', async ({
     browser,
     baseURL,
@@ -308,6 +330,15 @@ test.describe('ScrollStack shuffle', () => {
     for (const heading of ['Discover', 'Design', 'Deliver']) {
       expect(state.text).toContain(heading);
     }
+
+    // The jump links are a shuffle affordance and the pile has no segments to
+    // jump to — in the fallback they must be gone, not dangling dead anchors.
+    const linksVisible = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-shuffle-link]')].filter(
+        (el) => getComputedStyle(el).display !== 'none',
+      ).length,
+    );
+    expect(linksVisible).toBe(0);
     await context.close();
   });
 });

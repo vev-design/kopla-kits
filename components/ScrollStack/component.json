@@ -13,7 +13,7 @@
     {
       "token": "scroll-shuffle",
       "props": { "mode": "shuffle" },
-      "note": "perCard sets the scroll length per shuffle in viewport-heights (default 0.75). Still no @hydrate: the scrub is a CSS scroll-driven animation, degrading to the pile under prefers-reduced-motion or without support. Cards are clipped to the pinned box — keep card content under a screen tall."
+      "note": "perCard sets the scroll length per shuffle in viewport-heights (default 0.75). Still no @hydrate: the scrub is a CSS scroll-driven animation, degrading to the pile under prefers-reduced-motion or without support. Each header rim is a fragment link that scrolls to its card (playing the shuffle on the way), so keep the top `peek` px of a card free of its own interactive content; each jump adds a history entry, like any anchor. Cards are clipped to the pinned box — keep card content under a screen tall."
     }
   ],
   "vendor": []

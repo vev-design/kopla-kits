@@ -81,7 +81,8 @@ export interface ScrollStackProps {
   peek?: number;
   /** `pile` only: px each card further back is inset on each side, which is what
    *  makes the pile look like it recedes. Default 16. 0 for a flush stack.
-   *  (`shuffle` draws depth with a scale taper instead.) */
+   *  (`shuffle` draws depth with the stepped rims alone — a scale taper would
+   *  shrink each rim's own tap target below 44px.) */
   inset?: number;
   /** `shuffle` only: how much scroll sends one card to the back, in
    *  viewport-heights. Default 0.75 — under half feels twitchy, over 1.5 feels
@@ -130,8 +131,8 @@ function safeId(value: string): string {
  * at the lowest point of the pull, and rides back up behind the stack into the
  * deepest slot; every other card climbs one slot. A card's
  * slot after `j` segments is `(i - j + n) % n`, and each slot `s` sits
- * `s * peek` px higher, scaled from its top edge so the header rim keeps its
- * full height while the sides taper.
+ * `s * peek` px higher — full width at every depth, because each rim is also
+ * a tap target that must not shrink.
  *
  * The ungated rules at the top ARE the pile — they are what a reader gets when
  * the gated block does not apply, and the gated block resets exactly the
@@ -149,11 +150,18 @@ function shuffleCss(
   const L = 100 / segments;
   const rim = segments * peek;
   const pct = (v: number) => `${Math.min(100, Math.max(0, v)).toFixed(3)}%`;
-  const pose = (s: number) =>
-    `translateY(${-s * peek}px) scale(${(1 - s * 0.04).toFixed(3)})`;
+  // No scale taper on the slots, and the reason is the tap target: each rim IS
+  // a `peek`-tall link, and a rim inside a scale(0.84) wrapper is a 37px
+  // target — under the 44px contract by exactly the amount of decoration.
+  // Depth reads from the stepped offsets and the card borders instead.
+  const pose = (s: number) => `translateY(${-s * peek}px)`;
 
   const fallback = [
     `#${rootId} > [data-shuffle-pin] { display: contents; }`,
+    // The jump affordance is a SHUFFLE affordance: in the pile fallback every
+    // card is already on the page in order, so the links and their anchors
+    // simply don't exist there.
+    `#${rootId} [data-shuffle-jump], #${rootId} [data-shuffle-link] { display: none; }`,
     ...Array.from({ length: count }, (_, i) =>
       [
         `#${rootId} .${rootId}-c${i} { position: sticky;`,
@@ -202,11 +210,46 @@ function shuffleCss(
     // transform pushes past the pin's edges is cut there rather than leaking
     // into the page's scrollable overflow.
     `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }`,
-    `#${rootId} [data-slot="scroll-stack-item"] { position: absolute; left: 0; right: 0; top: ${rim}px; bottom: 0; margin: 0; overflow: hidden; transform-origin: top center; animation: 1s linear both; animation-timeline: --${rootId}; animation-range: contain 0% 100%; }`,
+    // `animation-range: contain` — the bare keyword, deliberately. The longhand
+    // `contain 0% 100%` READS as the same thing and is not: in the shorthand a
+    // bare percentage does not inherit the preceding range name, so `100%` means
+    // 100% of the WHOLE timeline (the cover range) — the scrub then ends ~40%
+    // early, every boundary lands one segment behind the scroll, and the final
+    // card can never reach the front. Start and end were silently measured
+    // against different ranges, and nothing warns.
+    `#${rootId} [data-slot="scroll-stack-item"] { position: absolute; left: 0; right: 0; top: ${rim}px; bottom: 0; margin: 0; overflow: hidden; transform-origin: top center; animation: 1s linear both; animation-timeline: --${rootId}; animation-range: contain; }`,
     ...Array.from(
       { length: count },
       (_, i) => `#${rootId} .${rootId}-c${i} { animation-name: ${rootId}-k${i}; }`,
     ),
+    // Click-to-jump, the platform's way. Each card's header rim is a fragment
+    // link to an invisible anchor parked at that card's segment boundary inside
+    // the tall root — navigating there puts the root's view progress exactly at
+    // the boundary where that card is front. The scrub is DERIVED from scroll
+    // position, so the jump cannot desync from the animation: they are the same
+    // number.
+    // `display: block` here is load-bearing, not styling: the fallback hides
+    // these anchors unconditionally, and a display:none element has NO BOX —
+    // and a fragment navigation to a boxless target scrolls nowhere at all.
+    // The links worked and the destinations didn't exist; this is the line
+    // that makes them exist.
+    `#${rootId} > [data-shuffle-jump] { display: block; position: absolute; }`,
+    ...Array.from(
+      { length: count },
+      (_, i) =>
+        `#${rootId} > [data-shuffle-jump]:nth-of-type(${i + 1}) { top: ${(i * perCard * 100).toFixed(2)}vh; top: ${(i * perCard * 100).toFixed(2)}svh; }`,
+    ),
+    // The link overlays the card's top `peek` px — exactly the strip that stays
+    // visible when the card is behind, so "click the header you can see" is the
+    // whole interaction. It rides the card's own animated wrapper, which is what
+    // keeps the hit area on the rim wherever the rim currently is.
+    `#${rootId} [data-shuffle-link] { display: block; position: absolute; inset-inline: 0; top: 0; height: ${peek}px; }`,
+    // Global on purpose, and gated twice: fragment jumps animate the scroll —
+    // which PLAYS the shuffle scrub in between — only where scroll-driven
+    // animations exist at all, and never for reduced-motion readers (this whole
+    // block sits inside that media query). The one page-wide side effect this
+    // catalog ships, stated rather than hidden.
+    'html { scroll-behavior: smooth; }',
     ...frames,
     '}',
     '}',
@@ -290,6 +333,13 @@ export function ScrollStack({
       // clips instead.
       <div id={rootId} data-slot="scroll-stack" data-mode="shuffle" className={cn('relative', className)}>
         <style>{shuffleCss(rootId, count, peek, inset, perCard)}</style>
+        {/* The jump targets: zero-size, parked at each segment boundary by the
+            generated CSS. In the root and NOT the pin — the pin is sticky, and a
+            fragment target that moves with the scroll is a target the browser
+            can never settle on. */}
+        {cards.map((_, i) => (
+          <div key={i} id={`${rootId}-jump-${i + 1}`} data-shuffle-jump="" aria-hidden />
+        ))}
         <div data-shuffle-pin="">
           {cards.map((card, i) => (
             <div
@@ -299,6 +349,16 @@ export function ScrollStack({
               className={cn(`${rootId}-c${i}`, 'rounded-xl', cardClassName)}
             >
               {card}
+              {/* A real link, so the keyboard and the focus ring are the
+                  platform's. It covers the header strip — the part of a buried
+                  card you can see is the part you can click. Keep that strip
+                  free of the card's own interactive content in shuffle mode. */}
+              <a
+                data-shuffle-link=""
+                href={`#${rootId}-jump-${i + 1}`}
+                aria-label={`Go to ${items?.[i]?.title ?? `card ${i + 1}`}`}
+                className="rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              />
             </div>
           ))}
         </div>
