@@ -6,17 +6,17 @@
 //              stacking is what scrolling does to the layout.
 //   shuffle  — the stack is already formed, every card's header visible as a rim
 //              above the front card, and the whole thing pins while scrolling
-//              PULLS the front card down off the stack — the direction the
-//              reader is scrolling, so the scroll reads as the hand doing the
-//              pulling — and tucks it up underneath into the deepest rim. One
-//              card per scroll segment; scroll up and the shuffle runs
-//              backwards, because a scrubbed animation is bidirectional by
-//              nature.
+//              PULLS the front card partway down off the stack — the direction
+//              the reader is scrolling, so the scroll reads as the hand doing
+//              the pulling — where it slips under and rides back up into the
+//              deepest rim. One card per scroll segment; scroll up and the
+//              shuffle runs backwards, because a scrubbed animation is
+//              bidirectional by nature.
 //
 // The shuffle is CSS scroll-driven animation, the substrate's own mechanism
 // (see _base/src/motion/motion.css): the root carries a named `view-timeline`,
 // each card gets machine-generated keyframes covering its whole journey —
-// front, fly out, re-enter at the back, climb one slot per segment — and the
+// front, pulled down, tucked under, climb one slot per segment — and the
 // scrubbing is the browser's. No state, no effects, no hooks, nothing to
 // hydrate; it works identically on a page that never loads JavaScript.
 //
@@ -126,9 +126,9 @@ function safeId(value: string): string {
  * itself, computed from props on the server.
  *
  * Layout math: with `n` cards there are `n-1` scroll segments. During segment
- * `j`, card `j` (the front) is pulled down off the pinned box's bottom edge,
- * swaps to the back z while fully clipped off-screen, and rides back up behind
- * the stack into the deepest slot; every other card climbs one slot. A card's
+ * `j`, card `j` (the front) is pulled partway down past the stack, slips under
+ * at the lowest point of the pull, and rides back up behind the stack into the
+ * deepest slot; every other card climbs one slot. A card's
  * slot after `j` segments is `(i - j + n) % n`, and each slot `s` sits
  * `s * peek` px higher, scaled from its top edge so the header rim keeps its
  * full height while the sides taper.
@@ -171,16 +171,20 @@ function shuffleCss(
       stops.push(`${pct(j * L)} { transform: ${pose(s)}; z-index: ${count - s}; opacity: 1; }`);
     }
     if (i < segments) {
-      // The pull, scrubbed: the front card is dragged DOWN off the stack — the
+      // The pull, scrubbed: the front card is dragged DOWN past the stack — the
       // same direction the reader is scrolling, so the scroll reads as the hand
-      // doing the pulling — until it has fully cleared the pinned box's bottom
-      // edge (110% of its own height, plus a grabbed-edge lean). The z handoff
-      // to the back happens there, while the card is entirely clipped off-screen,
-      // and the second half of the segment slides it back UP behind the stack
-      // into the deepest rim: pulled from the top, tucked under to the bottom.
+      // doing the pulling — but only PARTWAY, about half its own box, not off
+      // the screen. At the lowest point it slips under: a tight dissolve
+      // (~10% of the segment, a blink at normal scroll speed) hides the z
+      // handoff — which would otherwise pop wherever the pulled card still
+      // overlaps the incoming front, and how much they overlap depends on
+      // content no stylesheet can know — then it re-emerges behind the stack
+      // and rides up into the deepest rim. Pulled from the top, tucked under.
       stops.push(
-        `${pct((i + 0.45) * L)} { transform: translateY(110%) rotate(3deg); z-index: ${count}; opacity: 1; }`,
-        `${pct((i + 0.5) * L)} { transform: translateY(110%) rotate(3deg); z-index: 1; opacity: 1; }`,
+        `${pct((i + 0.4) * L)} { transform: translateY(48%) rotate(2.5deg); z-index: ${count}; opacity: 1; }`,
+        `${pct((i + 0.46) * L)} { transform: translateY(56%) rotate(2.5deg); z-index: ${count}; opacity: 0; }`,
+        `${pct((i + 0.5) * L)} { transform: translateY(56%) rotate(2.5deg); z-index: 1; opacity: 0; }`,
+        `${pct((i + 0.56) * L)} { transform: translateY(48%) scale(0.98); z-index: 1; opacity: 1; }`,
       );
     }
     return `@keyframes ${rootId}-k${i} {\n${stops.map((s) => `  ${s}`).join('\n')}\n}`;
@@ -194,11 +198,9 @@ function shuffleCss(
     // inside it is stuck — the scrub maps 1:1 onto the pinned time.
     `#${rootId} { height: ${100 + segments * perCard * 100}vh; height: ${100 + segments * perCard * 100}svh; view-timeline-name: --${rootId}; }`,
     // `overflow: clip` (never `hidden`, which would make a scroll container and
-    // freeze every view() timeline inside — the motion.css gotcha). The clip is
-    // what sells the pull: the pin is exactly a viewport tall, so a card pulled
-    // past its bottom edge slides off the bottom of the SCREEN — and a
-    // transformed card outside the box cannot leak into the page's scrollable
-    // overflow either.
+    // freeze every view() timeline inside — the motion.css gotcha): whatever a
+    // transform pushes past the pin's edges is cut there rather than leaking
+    // into the page's scrollable overflow.
     `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }`,
     `#${rootId} [data-slot="scroll-stack-item"] { position: absolute; left: 0; right: 0; top: ${rim}px; bottom: 0; margin: 0; overflow: hidden; transform-origin: top center; animation: 1s linear both; animation-timeline: --${rootId}; animation-range: contain 0% 100%; }`,
     ...Array.from(
