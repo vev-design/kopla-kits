@@ -1,27 +1,39 @@
-// A pile of cards that pins as the page scrolls: each card keeps a strip visible
-// at the top, and the ones behind sit progressively inset so the set reads as
-// receding into the page.
+// Cards stacked with their headers showing, driven by the page's scroll. Two
+// modes, both zero JavaScript:
 //
-// `position: sticky` at stepped offsets is the entire mechanism. That is a
-// LAYOUT, not a script — so this component has no state, no effects, no hooks and
-// nothing to hydrate, and it does exactly the same thing on a page that never
-// loads any JavaScript.
+//   pile     — cards sit in document order and PIN under one another as the page
+//              scrolls past them: `position: sticky` at stepped offsets, and the
+//              stacking is what scrolling does to the layout.
+//   shuffle  — the stack is already formed, every card's header visible as a rim
+//              above the front card, and the whole thing pins while scrolling
+//              SCRUBS the front card away to the back — one card per scroll
+//              segment. Scroll up and the shuffle runs backwards, because a
+//              scrubbed animation is bidirectional by nature.
 //
-// It used to be `CardStack`'s `layout="peek"`. Splitting it out was a production
-// fix, not tidying: hydration is inferred per FILE, so sharing a file with the
-// deck's `useState` meant every page using this pile was marked `@hydrate` and
-// shipped a drag threshold, a keyboard map and a live region it would never run.
-// The two share almost no code — that they read as one component with a `layout`
-// prop was a naming coincidence, and the shared file cost every consumer bytes.
+// The shuffle is CSS scroll-driven animation, the substrate's own mechanism
+// (see _base/src/motion/motion.css): the root carries a named `view-timeline`,
+// each card gets machine-generated keyframes covering its whole journey —
+// front, fly out, re-enter at the back, climb one slot per segment — and the
+// scrubbing is the browser's. No state, no effects, no hooks, nothing to
+// hydrate; it works identically on a page that never loads JavaScript.
 //
-// Nothing here is interactive, and the markup says so: no group role, no tab
-// stop, no live region, no `inert`. Every card is fully readable at once, in
-// document order. The stacking is what SCROLLING does to it.
+// The degrade is the other mode, on purpose. All shuffle CSS sits behind
+// `@supports (animation-timeline: view())` AND `prefers-reduced-motion:
+// no-preference`; the ungated rules ARE the pile. A browser without
+// scroll-driven animations, or a reader who asked for less motion, gets the
+// pinned pile — every card still fully readable in document order — rather
+// than a stack whose buried cards can never be reached. A degrade that loses
+// CONTENT would fail this catalog's contract; a degrade to the sibling
+// behaviour loses only flourish.
+//
+// Nothing here is interactive in either mode, and the markup says so: no group
+// role, no tab stop, no live region, no `inert`. The shuffle is what SCROLLING
+// does to the stack.
 
 import { Children, isValidElement, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-/** One card, when the pile is driven by data rather than authored markup. */
+/** One card, when the stack is driven by data rather than authored markup. */
 export interface ScrollStackItem {
   /** Card heading. Shown twice — once in the strip that stays visible when the
    *  card is behind, once in the body. 2–8 words. */
@@ -35,12 +47,13 @@ export interface ScrollStackItem {
 }
 
 /**
- * Cards drawn as a pile that pins under one another as the page scrolls, each
- * keeping a header strip visible. Pure CSS: no JavaScript, no hydration.
+ * Cards stacked with their headers visible, driven by the page's scroll — as a
+ * pile that forms while you scroll past it, or a formed stack that shuffles its
+ * front card to the back as you scroll. Pure CSS: no JavaScript, no hydration.
  *
  * Pass the authored cards as `children` to keep the design's own markup — this
  * component positions them and never draws them. `items` is a data fallback so
- * the pile can be previewed, since a showcase must be static literals.
+ * the stack can be previewed, since a showcase must be static literals.
  */
 export interface ScrollStackProps {
   /** The authored cards, one node each. Takes precedence over `items`. Each one
@@ -48,12 +61,30 @@ export interface ScrollStackProps {
   children?: ReactNode;
   /** Data cards, used when there are no children. 2–8 entries. */
   items?: ScrollStackItem[];
+  /**
+   * How scrolling drives the stack.
+   *
+   * `pile` — cards pin under one another as the page scrolls past them; the
+   *   stack FORMS as you go. Cards stay in document flow at their natural
+   *   heights.
+   * `shuffle` — the stack is already formed with every header visible, pinned
+   *   for `perCard` viewport-heights per card while scroll scrubs the front
+   *   card to the back. Falls back to `pile` under `prefers-reduced-motion`
+   *   and in browsers without CSS scroll-driven animations. Cards are clipped
+   *   to the pinned box, so keep a card's content under a screen tall.
+   */
+  mode?: 'pile' | 'shuffle';
   /** Px of each card left showing above the next. Default 56 — one header row. */
   peek?: number;
-  /** Px each card further back is inset on each side, which is what makes the
-   *  pile look like it recedes. Default 16. 0 for a flush stack. */
+  /** `pile` only: px each card further back is inset on each side, which is what
+   *  makes the pile look like it recedes. Default 16. 0 for a flush stack.
+   *  (`shuffle` draws depth with a scale taper instead.) */
   inset?: number;
-  /** Classes for the pile's own box — constrain the measure here. */
+  /** `shuffle` only: how much scroll sends one card to the back, in
+   *  viewport-heights. Default 0.75 — under half feels twitchy, over 1.5 feels
+   *  stuck. */
+  perCard?: number;
+  /** Classes for the stack's own box — constrain the measure here. */
   className?: string;
   /** Classes for each card's positioning wrapper. */
   cardClassName?: string;
@@ -74,6 +105,101 @@ function contentId(parts: string[]): string {
     hash = (Math.imul(hash, 31) + char.charCodeAt(0)) | 0;
   }
   return Math.abs(hash).toString(36);
+}
+
+/**
+ * An author's `id` as something a CSS selector and a timeline name can carry.
+ * A CSS identifier cannot start with a digit, and one invalid selector drops a
+ * whole generated rule — same rule and same reason as Tabs.
+ */
+function safeId(value: string): string {
+  const cleaned = value.replace(/[^A-Za-z0-9_-]/g, '-');
+  return /^[A-Za-z_]/.test(cleaned) ? cleaned : `stack-${cleaned}`;
+}
+
+/**
+ * The shuffle, as one generated stylesheet — the same move Tabs makes: a
+ * component that needs CSS the utility layer cannot express ships that CSS with
+ * itself, computed from props on the server.
+ *
+ * Layout math: with `n` cards there are `n-1` scroll segments. During segment
+ * `j`, card `j` (the front) scrubs out sideways, teleports to the deepest slot
+ * while it is fully transparent, and fades back in; every other card climbs one
+ * slot. A card's slot after `j` segments is `(i - j + n) % n`, and each slot
+ * `s` sits `s * peek` px higher, scaled from its top edge so the header rim
+ * keeps its full height while the sides taper.
+ *
+ * The ungated rules at the top ARE the pile — they are what a reader gets when
+ * the gated block does not apply, and the gated block resets exactly the
+ * properties the pile set (margins, tops, position). Order matters: the gated
+ * block comes last, so on ties it wins.
+ */
+function shuffleCss(
+  rootId: string,
+  count: number,
+  peek: number,
+  inset: number,
+  perCard: number,
+): string {
+  const segments = count - 1;
+  const L = 100 / segments;
+  const rim = segments * peek;
+  const pct = (v: number) => `${Math.min(100, Math.max(0, v)).toFixed(3)}%`;
+  const pose = (s: number) =>
+    `translateY(${-s * peek}px) scale(${(1 - s * 0.04).toFixed(3)})`;
+
+  const fallback = [
+    `#${rootId} > [data-shuffle-pin] { display: contents; }`,
+    ...Array.from({ length: count }, (_, i) =>
+      [
+        `#${rootId} .${rootId}-c${i} { position: sticky;`,
+        `top: ${i * peek}px; z-index: ${i + 1};`,
+        `margin-inline: ${(count - 1 - i) * inset}px;`,
+        `margin-bottom: ${i === count - 1 ? 0 : peek}px; }`,
+      ].join(' '),
+    ),
+  ];
+
+  const frames = Array.from({ length: count }, (_, i) => {
+    const stops: string[] = [];
+    for (let j = 0; j <= segments; j += 1) {
+      const s = (i - j + count) % count;
+      stops.push(`${pct(j * L)} { transform: ${pose(s)}; z-index: ${count - s}; opacity: 1; }`);
+    }
+    if (i < segments) {
+      // The throw, scrubbed: out sideways while still on top, then the jump to
+      // the deepest slot happens between two fully-transparent stops — an
+      // invisible teleport instead of a visible slide back across the stack.
+      stops.push(
+        `${pct((i + 0.42) * L)} { transform: translateX(112%) rotate(5deg); z-index: ${count}; opacity: 0; }`,
+        `${pct((i + 0.5) * L)} { transform: ${pose(count - 1)}; z-index: 1; opacity: 0; }`,
+      );
+    }
+    return `@keyframes ${rootId}-k${i} {\n${stops.map((s) => `  ${s}`).join('\n')}\n}`;
+  });
+
+  const gated = [
+    '@media (prefers-reduced-motion: no-preference) {',
+    '@supports (animation-timeline: view()) {',
+    // The tall root IS the timeline: `contain 0% 100%` spans exactly the stretch
+    // where the root fully covers the viewport, which is exactly when the pin
+    // inside it is stuck — the scrub maps 1:1 onto the pinned time.
+    `#${rootId} { height: ${100 + segments * perCard * 100}vh; height: ${100 + segments * perCard * 100}svh; view-timeline-name: --${rootId}; }`,
+    // `overflow-x: clip` (never `hidden`, which would make a scroll container
+    // and freeze every view() timeline inside — the motion.css gotcha) so the
+    // flying card cannot widen the page.
+    `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow-x: clip; }`,
+    `#${rootId} [data-slot="scroll-stack-item"] { position: absolute; left: 0; right: 0; top: ${rim}px; bottom: 0; margin: 0; overflow: hidden; transform-origin: top center; animation: 1s linear both; animation-timeline: --${rootId}; animation-range: contain 0% 100%; }`,
+    ...Array.from(
+      { length: count },
+      (_, i) => `#${rootId} .${rootId}-c${i} { animation-name: ${rootId}-k${i}; }`,
+    ),
+    ...frames,
+    '}',
+    '}',
+  ];
+
+  return [...fallback, ...gated].join('\n');
 }
 
 /**
@@ -117,15 +243,17 @@ function PileCard({ item, n }: { item: ScrollStackItem; n: number }) {
 export function ScrollStack({
   children,
   items,
+  mode = 'pile',
   peek = 56,
   inset = 16,
+  perCard = 0.75,
   className,
   cardClassName,
   id,
 }: ScrollStackProps) {
   // Authored children win. `Children.toArray` drops nullish entries and keys the
   // rest, so a section mapping over its own data with a conditional doesn't leave
-  // a hole in the pile.
+  // a hole in the stack.
   const authored = Children.toArray(children).filter(
     (c) => isValidElement(c) || typeof c === 'string',
   );
@@ -136,7 +264,34 @@ export function ScrollStack({
   const count = cards.length;
   if (count === 0) return null;
 
-  const rootId = id ?? `scroll-stack-${contentId((items ?? []).map((item) => item.title))}`;
+  const rootId = id
+    ? safeId(id)
+    : `scroll-stack-${contentId((items ?? []).map((item) => item.title))}`;
+
+  // A one-card shuffle has nothing to shuffle (and its segment math divides by
+  // zero) — it is a pile of one either way.
+  if (mode === 'shuffle' && count > 1) {
+    return (
+      // No overflow on the ROOT: an ancestor scroll container is what freezes a
+      // view() timeline, and the root is the timeline's subject. The pin inside
+      // clips instead.
+      <div id={rootId} data-slot="scroll-stack" data-mode="shuffle" className={cn('relative', className)}>
+        <style>{shuffleCss(rootId, count, peek, inset, perCard)}</style>
+        <div data-shuffle-pin="">
+          {cards.map((card, i) => (
+            <div
+              key={i}
+              id={`${rootId}-card-${i + 1}`}
+              data-slot="scroll-stack-item"
+              className={cn(`${rootId}-c${i}`, 'rounded-xl', cardClassName)}
+            >
+              {card}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     // `data-slot`, following the idiom the _base primitives already use: a stable
@@ -146,7 +301,7 @@ export function ScrollStack({
     // Note the root deliberately has NO `overflow-x-clip`. A clipping ancestor is
     // the classic way to break `position: sticky`, and sticky is the whole
     // component. There is no rotation here to need clipping.
-    <div data-slot="scroll-stack" className={cn('relative', className)}>
+    <div id={rootId} data-slot="scroll-stack" data-mode="pile" className={cn('relative', className)}>
       {cards.map((card, i) => {
         const behind = count - 1 - i;
         return (
@@ -181,8 +336,8 @@ export function ScrollStack({
 
 export const ScrollStackShowcase = [
   {
-    // The shape this was designed for: numbered narrative sections that pin under
-    // one another as the page scrolls.
+    // The shape the pile was designed for: numbered narrative sections that pin
+    // under one another as the page scrolls.
     label: 'Pinned narrative',
     props: {
       className: 'max-w-3xl',
@@ -206,9 +361,9 @@ export const ScrollStackShowcase = [
     },
   },
   {
-    // Both axes plus the count that stresses them: `peek: 40, inset: 0` is the
-    // flush variant, and six cards is where the stacked sticky offsets add up far
-    // enough to push the last card's pin down the viewport.
+    // Both pile axes plus the count that stresses them: `peek: 40, inset: 0` is
+    // the flush variant, and six cards is where the stacked sticky offsets add up
+    // far enough to push the last card's pin down the viewport.
     label: 'Flush, six cards',
     props: {
       className: 'max-w-3xl',
@@ -230,6 +385,61 @@ export const ScrollStackShowcase = [
     label: 'Two cards, overlong heading, no body',
     props: {
       className: 'max-w-3xl',
+      items: [
+        {
+          title:
+            'A deliberately overlong card heading that has to wrap onto several lines without pushing the strip out of the card',
+        },
+        { title: 'Short one' },
+      ],
+    },
+  },
+  {
+    // The formed stack: every header visible as a rim, scroll scrubs the front
+    // card to the back. Scroll up and it shuffles backwards.
+    label: 'Shuffle — three cards',
+    props: {
+      mode: 'shuffle',
+      className: 'max-w-2xl',
+      items: [
+        {
+          kicker: 'Discover',
+          title: 'Discover',
+          body: 'What the audit turns up, and what it means for the system you already have.',
+        },
+        {
+          kicker: 'Design',
+          title: 'Design',
+          body: 'The system, decided once — tokens, type and components in one place.',
+        },
+        {
+          kicker: 'Deliver',
+          title: 'Deliver',
+          body: 'Published to your own domain, measured in your own analytics.',
+        },
+      ],
+    },
+  },
+  {
+    label: 'Shuffle — five cards, tight strip',
+    props: {
+      mode: 'shuffle',
+      className: 'max-w-2xl',
+      peek: 44,
+      items: [
+        { title: 'Stage one', body: 'One leg of the route, with a hut at the end of it.' },
+        { title: 'Stage two', body: 'One leg of the route, with a hut at the end of it.' },
+        { title: 'Stage three', body: 'One leg of the route, with a hut at the end of it.' },
+        { title: 'Stage four', body: 'One leg of the route, with a hut at the end of it.' },
+        { title: 'Stage five', body: 'One leg of the route, with a hut at the end of it.' },
+      ],
+    },
+  },
+  {
+    label: 'Shuffle — two cards, overlong heading, no body',
+    props: {
+      mode: 'shuffle',
+      className: 'max-w-2xl',
       items: [
         {
           title:

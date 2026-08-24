@@ -200,3 +200,103 @@ test.describe('ScrollStack', () => {
     expect(boxes.every((b) => Number.parseFloat(b.inline) === 0)).toBe(true);
   });
 });
+
+test.describe('ScrollStack shuffle', () => {
+  // The scrubbed variant: the stack is formed, every header a rim, and SCROLL
+  // sends the front card to the back — a CSS scroll-driven animation, which is
+  // why these tests run in this file: the whole claim is that no script is
+  // involved, and every page here has JavaScript disabled.
+  const CASE = () => caseIndex('ScrollStack', 'Shuffle — three cards');
+
+  /** Computed z/opacity/position per card, front-detection material. */
+  async function cards(page: Page) {
+    return page.evaluate(() =>
+      [...document.querySelectorAll('[data-slot="scroll-stack-item"]')].map((el) => {
+        const s = getComputedStyle(el);
+        return { z: Number(s.zIndex), op: Number(s.opacity), pos: s.position };
+      }),
+    );
+  }
+
+  test('pins tall, shows every header at rest, and scrubs the front card back as the page scrolls', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 800, height: 800 });
+    await page.goto(`/component/ScrollStack?case=${CASE()}&theme=blank`);
+
+    // The scroll budget is real layout: 100svh of pin plus perCard-viewports per
+    // shuffle, so a 3-card stack at the 0.75 default is ~2.5 viewports tall.
+    const rootHeight = await page.evaluate(
+      () => document.querySelector('[data-mode="shuffle"]')!.getBoundingClientRect().height,
+    );
+    expect(rootHeight).toBeGreaterThan(1600);
+
+    // At rest the whole stack is drawn: card 1 on top, everything opaque, all
+    // absolute in the pinned box.
+    const rest = await cards(page);
+    expect(rest.map((c) => c.z)).toEqual([3, 2, 1]);
+    expect(rest.every((c) => c.op > 0.99 && c.pos === 'absolute')).toBe(true);
+
+    // One segment of scroll sends card 1 to the back — z-order is the truth of
+    // who is front, and it is driven by the scrubbed keyframes alone.
+    await page.mouse.wheel(0, 700);
+    await expect
+      .poll(async () => (await cards(page)).map((c) => c.z).join())
+      .toBe('1,3,2');
+
+    // A scrubbed animation is bidirectional by nature: scroll back, and the
+    // shuffle reverses without a line of code making it so.
+    await page.mouse.wheel(0, -700);
+    await expect
+      .poll(async () => (await cards(page)).map((c) => c.z).join())
+      .toBe('3,2,1');
+  });
+
+  test('mid-segment, the front card is visibly mid-throw', async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 800 });
+    await page.goto(`/component/ScrollStack?case=${CASE()}&theme=blank`);
+    // Partway into the first segment the front card is fading out sideways —
+    // the state a time-based animation never shows and a scrubbed one holds.
+    await page.mouse.wheel(0, 250);
+    await expect
+      .poll(async () => (await cards(page))[0]!.op)
+      .toBeLessThan(0.7);
+    // And it is still the front while mid-flight: the z handoff happens inside
+    // the invisible window, never while the card can be seen.
+    expect((await cards(page))[0]!.z).toBe(3);
+  });
+
+  test('falls back to the pile under reduced motion, with every card reachable', async ({
+    browser,
+    baseURL,
+  }) => {
+    // The degrade is the sibling behaviour, not a stack whose buried cards can
+    // never be reached: reduced-motion readers (and browsers without
+    // scroll-driven animations, which share the same rules) get the pinned pile.
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      reducedMotion: 'reduce',
+    });
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 800, height: 800 });
+    await page.goto(`${baseURL}/component/ScrollStack?case=${CASE()}&theme=blank`);
+
+    const state = await page.evaluate(() => {
+      const root = document.querySelector('[data-mode="shuffle"]')!;
+      return {
+        rootHeight: root.getBoundingClientRect().height,
+        positions: [...document.querySelectorAll('[data-slot="scroll-stack-item"]')].map(
+          (el) => getComputedStyle(el).position,
+        ),
+        text: (root as HTMLElement).innerText,
+      };
+    });
+    // Pile layout: sticky cards, natural height — no viewport-multiple pin.
+    expect(state.positions).toEqual(['sticky', 'sticky', 'sticky']);
+    expect(state.rootHeight).toBeLessThan(1600);
+    for (const heading of ['Discover', 'Design', 'Deliver']) {
+      expect(state.text).toContain(heading);
+    }
+    await context.close();
+  });
+});
