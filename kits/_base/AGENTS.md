@@ -197,7 +197,7 @@ Treat the shipped shadcn/ui primitives and Tailwind v4 theme as a head start, no
 - **Add primitives** with `bun run ui:add <name>` (alias for `bun x shadcn@latest add`). The CLI writes to `src/components/ui/<name>.tsx`, installs Radix deps, and uses the `cn()` helper. Full registry at <https://ui.shadcn.com/docs/components>. Don't hand-roll a primitive that exists in the registry.
 - **Modify** generated primitives in place when the spec needs variants or behavior shadcn defaults don't cover. They're your code now.
 - **Delete** primitives no section in this system uses.
-- **Install** any third-party npm package the spec calls for — chart libraries, date pickers, form helpers, image utilities, animation extras. `bun add <pkg>` and import normally. Prefer maintained, popular packages; the bundle ships as a single ESM module so tree-shaking matters.
+- **Install** any third-party npm package the spec calls for — chart libraries, date pickers, form helpers, image utilities. `bun add <pkg>` and import normally. Prefer maintained, popular packages; the bundle ships as a single ESM module so tree-shaking matters. The exception is JS animation libraries (`motion`, `framer-motion`, gsap …) — animation is CSS here (see [Motion](#motion--srcmotion)), and importing one pulls sections into the hydration set.
 - **Compose** sections using shadcn primitives, Tailwind utilities, and motion wrappers. Use `cn()` from `@/lib/utils` to merge classes — never concatenate by hand.
 
 ### `src/index.ts` — the library entry

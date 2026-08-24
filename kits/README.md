@@ -24,6 +24,12 @@ collisions. The tree is packed into the published artifact by
 `scripts/pack-kits.mjs`. See `../CONTRACT.md` for the full consumer
 contract.
 
+Animation is **CSS-only**: `_base/src/motion/motion.css` holds the
+scroll-driven animations behind the `Reveal`/`Stagger`/`Hover` wrappers, and
+every kit's `src/globals.css` must `@import "./motion/motion.css"` (copy the
+line from `blank`) or the wrappers render without their effects. There is no
+JS animation library — that's what lets sections publish as static HTML.
+
 ## kit.json
 
 ```jsonc
@@ -47,9 +53,10 @@ The **slug** is the folder name (`blank`, `saas`, …) — not a field in
 ## Managing kits
 
 - **Add**: copy a kit folder, rename it (the new slug), edit `kit.json`,
-  author `src/globals.css` + `src/sections/`. The demo picks it up on the
-  next `pnpm --filter @kopla/kits-demo dev`; consumers pick it up on the
-  next published version.
+  author `src/globals.css` + `src/sections/` (keep the
+  `@import "./motion/motion.css"` line in `globals.css`). The demo picks it
+  up on the next `pnpm --filter @kopla/kits-demo dev`; consumers pick it up
+  on the next published version.
 - **Remove**: delete the folder. (`blank` can never be removed — it's the
   consumers' fallback kit.)
 - **Feature / order**: edit `featured` / `order` in `kit.json`.
