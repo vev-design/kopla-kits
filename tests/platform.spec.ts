@@ -185,6 +185,26 @@ test.describe('ScrollStack', () => {
     }
   });
 
+  test('finishes forming with its own scroll room, even with nothing below it', async ({ page }) => {
+    // Sticky travel ends with the root's own content, so before the tail
+    // spacer existed the pile could only complete if the page happened to
+    // continue below the section — as the final section (or alone in this
+    // frame) the scroll ran out before the last card reached its slot.
+    await page.setViewportSize({ width: 800, height: 800 });
+    await open(page, 'ScrollStack', 'Pinned narrative');
+    await page.evaluate(() =>
+      scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }),
+    );
+    const tops = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-slot="scroll-stack-item"]')].map((el) =>
+        Math.round(el.getBoundingClientRect().top),
+      ),
+    );
+    // The finished pile: every card pinned at its stepped slot, LAST one
+    // included — that card is the one that could never arrive before.
+    expect(tops).toEqual([0, 56, 112]);
+  });
+
   test('honours a flush pile', async ({ page }) => {
     await open(page, 'ScrollStack', 'Flush, six cards');
     const boxes = await page.evaluate(() =>
@@ -324,12 +344,22 @@ test.describe('ScrollStack shuffle', () => {
         text: (root as HTMLElement).innerText,
       };
     });
-    // Pile layout: sticky cards, natural height — no viewport-multiple pin.
+    // Pile layout: sticky cards — and the pile COMPLETES, which is the claim
+    // that matters. (This used to assert a height ceiling as a proxy for "not
+    // the pinned shuffle"; the pile's own scroll tail legitimately outgrew it.)
     expect(state.positions).toEqual(['sticky', 'sticky', 'sticky']);
-    expect(state.rootHeight).toBeLessThan(1600);
     for (const heading of ['Discover', 'Design', 'Deliver']) {
       expect(state.text).toContain(heading);
     }
+    await page.evaluate(() =>
+      scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }),
+    );
+    const tops = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-slot="scroll-stack-item"]')].map((el) =>
+        Math.round(el.getBoundingClientRect().top),
+      ),
+    );
+    expect(tops).toEqual([0, 56, 112]);
 
     // The jump links are a shuffle affordance and the pile has no segments to
     // jump to — in the fallback they must be gone, not dangling dead anchors.

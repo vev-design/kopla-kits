@@ -69,7 +69,8 @@ export interface ScrollStackProps {
    *
    * `pile` — cards pin under one another as the page scrolls past them; the
    *   stack FORMS as you go. Cards stay in document flow at their natural
-   *   heights.
+   *   heights, and the pile reserves its own scroll room after the last card,
+   *   so it finishes forming even as the final section on a page.
    * `shuffle` — the stack is already formed with every header visible, pinned
    *   for `perCard` viewport-heights per card while scroll scrubs the front
    *   card to the back. Falls back to `pile` under `prefers-reduced-motion`
@@ -174,6 +175,9 @@ function shuffleCss(
     // card is already on the page in order, so the links and their anchors
     // simply don't exist there.
     `#${rootId} [data-shuffle-jump], #${rootId} [data-shuffle-link] { display: none; }`,
+    // The fallback pile's completion room (see the pile-mode JSX for the why);
+    // floored by the same "a card is at least its strip" bound.
+    `#${rootId} [data-pile-tail] { height: max(0px, calc(100vh - ${count * peek}px)); height: max(0px, calc(100svh - ${count * peek}px)); }`,
     ...Array.from({ length: count }, (_, i) =>
       [
         `#${rootId} .${rootId}-c${i} { position: sticky;`,
@@ -222,6 +226,7 @@ function shuffleCss(
     // transform pushes past the pin's edges is cut there rather than leaking
     // into the page's scrollable overflow.
     `#${rootId} > [data-shuffle-pin] { display: block; position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }`,
+    `#${rootId} [data-pile-tail] { display: none; }`,
     // `animation-range: contain` — the bare keyword, deliberately. The longhand
     // `contain 0% 100%` READS as the same thing and is not: in the shorthand a
     // bare percentage does not inherit the preceding range name, so `100%` means
@@ -373,6 +378,10 @@ export function ScrollStack({
               />
             </div>
           ))}
+          {/* The fallback pile's scroll tail — same budget, same reason as pile
+              mode. The shuffle block hides it: the shuffle's root height IS its
+              scroll budget, and already includes the final boundary. */}
+          <div data-pile-tail="" aria-hidden />
         </div>
       </div>
     );
@@ -415,6 +424,19 @@ export function ScrollStack({
           </div>
         );
       })}
+      {/* The scroll budget the pile needs to FINISH. Sticky travel ends with the
+          root's own content, so without this the last card only reaches its slot
+          if the page happens to continue below the section — as the final
+          section (or alone in the lab) the scroll runs out first and the pile
+          can never complete. Sized from the one height this component knows: a
+          card is at least its own `peek` strip tall, so `100svh - n*peek` always
+          suffices; a taller last card just holds the finished pile pinned for
+          the difference before releasing. A real element rather than
+          padding/margin because sticky travel is bounded by the CONTENT box,
+          and a last-child bottom margin collapses out of the root. */}
+      {count > 1 ? (
+        <div aria-hidden style={{ height: `max(0px, calc(100svh - ${count * peek}px))` }} />
+      ) : null}
     </div>
   );
 }
