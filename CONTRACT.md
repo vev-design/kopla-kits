@@ -20,6 +20,29 @@ version and upgrade deliberately.
   artifact is a JSON bundle, not an npm-packed file tree — `npm pack`
   strips `.gitignore`.
 
+## The toolchain travels; the design source does not
+
+A consumer materializes a workspace once and keeps it — its sections, its
+components, its `globals.css` are the customer's copy, and picking a kit is a
+DETACH: nothing in this repo is ever pushed over them again. What a consumer
+does refresh from the pinned ref is the build tooling (`scripts/build.mjs`,
+`scripts/extract-design.mjs`), so a bug fixed here reaches systems that were
+seeded months ago.
+
+That asymmetry is a rule for authors of `scripts/`: **a change to the build
+tooling must work against a workspace materialized at an OLDER ref.** Read what
+is on disk rather than what the current `_base` would have put there. The
+Tailwind entry is the worked example — v1.6.0 moved it from `src/globals.css`
+to `src/index.css`, so `build.mjs` compiles `index.css` when it exists and
+`globals.css` when it doesn't, and an old workspace keeps the exact sheet it
+had.
+
+The hydration walk already satisfies this by construction, and it is the shape
+to copy: `extract-design.mjs` does not hardcode whether `@/motion` needs client
+JS, it FOLLOWS the import and reads the wrappers on disk. So a workspace on the
+old JS wrappers is still correctly hydrated by today's extractor, and one on the
+CSS wrappers publishes static. Detect, don't assert.
+
 ## Required kit files
 
 | File | Purpose |
