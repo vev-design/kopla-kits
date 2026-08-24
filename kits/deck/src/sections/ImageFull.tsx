@@ -1,5 +1,3 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from '@/components';
@@ -42,26 +40,17 @@ export function ImageFull({
   progress,
   footer,
 }: ImageFullProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  });
-  // Parallax: the image drifts slower than the scroll for depth.
-  const y = useTransform(scrollYProgress, [0, 1], ['-8%', '8%']);
-
   return (
     <section
       id={id ?? undefined}
-      ref={ref}
-      className="relative flex min-h-screen w-full overflow-hidden bg-background"
+      className="relative flex min-h-screen w-full overflow-clip bg-background"
     >
-      <motion.div
+      <div
         aria-hidden
-        style={{ y, backgroundImage: `url(${image})` }}
+        style={{ backgroundImage: `url(${image})` }}
         // scale-125 → 12.5% overflow per edge, exceeding the ±8% parallax
         // drift so the background never exposes an edge gap.
-        className="absolute inset-0 scale-125 bg-cover bg-center"
+        className="deck-image-parallax absolute inset-0 scale-125 bg-cover bg-center"
       />
       <div
         aria-hidden
@@ -81,13 +70,13 @@ export function ImageFull({
           <Reveal>
             {eyebrow ? <Eyebrow className="mb-5">{eyebrow}</Eyebrow> : null}
           </Reveal>
-          <Reveal transition={{ delay: 0.06 }}>
+          <Reveal delay={0.06}>
             <h2 className="font-display text-4xl font-bold tracking-tight text-balance md:text-7xl">
               {heading}
             </h2>
           </Reveal>
           {caption ? (
-            <Reveal transition={{ delay: 0.12 }}>
+            <Reveal delay={0.12}>
               <p
                 className={cn(
                   'mt-6 max-w-xl text-lg leading-relaxed text-foreground/80 text-pretty md:text-xl',

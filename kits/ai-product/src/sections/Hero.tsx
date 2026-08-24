@@ -83,7 +83,7 @@ export function Hero({
 }: HeroProps) {
   const hasVisual = Boolean(terminal || image);
   return (
-    <section id={id ?? undefined} className="relative w-full overflow-hidden bg-background">
+    <section id={id ?? undefined} className="relative w-full overflow-clip bg-background">
       {/* Faint grid, masked to fade at the edges. */}
       <div
         aria-hidden
@@ -128,7 +128,7 @@ export function Hero({
         {terminal ? (
           <Reveal>
             <div className="rounded-xl bg-gradient-to-b from-ring/40 to-border p-px shadow-[0_0_80px_-20px_var(--ring)]">
-              <div className="overflow-hidden rounded-xl bg-card">
+              <div className="overflow-clip rounded-xl bg-card">
                 <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                   <span className="size-2.5 rounded-full bg-muted-foreground/30" aria-hidden />
                   <span className="size-2.5 rounded-full bg-muted-foreground/30" aria-hidden />
@@ -154,7 +154,7 @@ export function Hero({
         ) : image ? (
           <Reveal>
             <div className="rounded-xl bg-gradient-to-b from-ring/40 to-border p-px shadow-[0_0_80px_-20px_var(--ring)]">
-              <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
+              <div className="overflow-clip rounded-xl border border-border/50 bg-card">
                 <img src={image} alt="" className="aspect-[16/10] w-full object-cover" />
               </div>
             </div>

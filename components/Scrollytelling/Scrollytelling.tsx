@@ -1,10 +1,10 @@
 // Scroll-driven story. Steps scroll past a pinned visual panel that
 // switches as each step crosses the middle of the viewport. Token-themed
 // (bg-muted, text-primary, border) so it re-skins with the system; needs
-// nothing beyond _base (react + motion).
+// nothing beyond _base (react + the tw-animate-css utilities every
+// workspace theme already imports).
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useInView } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /** One story step. */
@@ -50,15 +50,15 @@ export function Scrollytelling({ variant = 'panel-right', steps }: Scrollytellin
       </div>
 
       <div className="sticky top-[20vh] hidden h-[60vh] lg:block">
-        <motion.div
+        {/* Keyed remount per step: the tw-animate-css enter utilities play
+            once on mount, giving the panel its fade/zoom switch without a
+            JS animation library. */}
+        <div
           key={active}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="h-full"
+          className="h-full duration-300 ease-out animate-in fade-in zoom-in-95 motion-reduce:animate-none"
         >
           <StepVisual step={current} index={active} total={steps.length} />
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -78,10 +78,18 @@ function Step({
   const ref = useRef<HTMLDivElement>(null);
   // A narrow band around the viewport's middle: the step whose content sits
   // in that band is the active one.
-  const inView = useInView(ref, { margin: '-45% 0px -45% 0px' });
   useEffect(() => {
-    if (inView) onEnter(index);
-  }, [inView, index, onEnter]);
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) onEnter(index);
+      },
+      { rootMargin: '-45% 0px -45% 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [index, onEnter]);
 
   return (
     <div
@@ -105,7 +113,7 @@ function Step({
 
 function StepVisual({ step, index, total }: { step: ScrollStep; index: number; total: number }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border bg-muted">
+    <div className="relative h-full w-full overflow-clip rounded-xl border bg-muted">
       {step.image ? (
         <img src={step.image} alt={step.title} className="h-full w-full object-cover" />
       ) : (

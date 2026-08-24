@@ -142,7 +142,7 @@ export function FeatureGrid({ id, eyebrow, heading, subhead, features }: Feature
                 {feature.image ? (
                   <div
                     className={cn(
-                      'mt-auto overflow-hidden rounded-lg border border-border',
+                      'mt-auto overflow-clip rounded-lg border border-border',
                       isAnchor && 'min-h-40 flex-1',
                     )}
                   >

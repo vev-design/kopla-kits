@@ -1,5 +1,3 @@
-import { motion, useScroll, useTransform } from 'motion/react';
-import { useRef } from 'react';
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import type { SectionBaseProps } from '@/types';
@@ -39,12 +37,6 @@ export function Cover({
   image,
   variant = 'image',
 }: CoverProps) {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start'],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
   const onNavy = variant === 'image';
   const showImage = onNavy && image;
   // The giant numeral is the digits only — "FY 2025" mastheads in full but
@@ -54,19 +46,17 @@ export function Cover({
   return (
     <section
       id={id ?? undefined}
-      ref={ref}
       className={cn(
-        'relative flex min-h-screen w-full flex-col overflow-hidden',
+        'relative flex min-h-screen w-full flex-col overflow-clip',
         onNavy ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground',
       )}
     >
       {showImage ? (
         <>
-          <motion.img
+          <img
             src={image}
             alt=""
-            style={{ y }}
-            className="pointer-events-none absolute inset-0 h-[118%] w-full object-cover opacity-35"
+            className="ar-cover-parallax pointer-events-none absolute inset-0 h-[118%] w-full object-cover opacity-35"
           />
           <div
             aria-hidden
@@ -105,7 +95,7 @@ export function Cover({
 
         {/* The signature: an enormous serif year numeral filling the page. */}
         <div className="flex flex-1 flex-col justify-center pt-8">
-          <Reveal transition={{ delay: 0.05 }}>
+          <Reveal delay={0.05}>
             <span
               aria-hidden
               className={cn(
@@ -120,7 +110,7 @@ export function Cover({
             </span>
           </Reveal>
 
-          <Reveal transition={{ delay: 0.1 }}>
+          <Reveal delay={0.1}>
             <h1 className="relative -mt-8 max-w-3xl font-serif text-5xl font-semibold leading-[0.98] tracking-tight text-balance md:-mt-16 md:text-7xl">
               {title}
             </h1>
@@ -128,7 +118,7 @@ export function Cover({
         </div>
 
         {/* Folio line — tagline against the year, closed by a hairline. */}
-        <Reveal transition={{ delay: 0.16 }}>
+        <Reveal delay={0.16}>
           <div
             className={cn(
               'mt-12 flex items-end justify-between gap-8 border-t pt-6',

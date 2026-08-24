@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { animate, useInView } from 'motion/react';
 import { Reveal } from '@/motion';
+import { useCountUp } from '@/lib/count-up';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -26,25 +25,11 @@ export interface StatShowcaseProps extends SectionBaseProps {
 }
 
 function CountUpFigure({ value, suffix }: { value: number; suffix?: string | null }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-10% 0px' });
-  const [display, setDisplay] = useState('0');
-  const played = useRef(false);
-
-  useEffect(() => {
-    if (!inView || played.current) return;
-    played.current = true;
-    const controls = animate(0, value, {
-      duration: 1.6,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) => setDisplay(Math.round(latest).toLocaleString('en-US')),
-    });
-    return () => controls.stop();
-  }, [inView, value]);
+  const { ref, value: current } = useCountUp<HTMLSpanElement>(value, 1.6);
 
   return (
     <span ref={ref} className="tabular-nums">
-      {display}
+      {Math.round(current).toLocaleString('en-US')}
       {suffix}
     </span>
   );

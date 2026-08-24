@@ -55,12 +55,12 @@ export function QuoteSlide({
             &ldquo;
           </span>
         </Reveal>
-        <Reveal transition={{ delay: 0.08 }}>
+        <Reveal delay={0.08}>
           <blockquote className="mt-2 font-display text-3xl leading-tight font-medium tracking-tight text-balance md:text-5xl lg:text-6xl">
             {quote}
           </blockquote>
         </Reveal>
-        <Reveal transition={{ delay: 0.16 }}>
+        <Reveal delay={0.16}>
           <footer
             className={cn(
               'mt-12 flex flex-col gap-1',

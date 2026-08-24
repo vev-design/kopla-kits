@@ -58,7 +58,7 @@ export function SegmentBreakdown({
           ) : null}
         </Reveal>
 
-        <Stagger className="flex flex-col gap-px overflow-hidden rounded-lg border border-border bg-border">
+        <Stagger className="flex flex-col gap-px overflow-clip rounded-lg border border-border bg-border">
           {segments.map((segment) => (
             <Card
               key={segment.name}
@@ -75,7 +75,7 @@ export function SegmentBreakdown({
               </div>
 
               <div className="mt-4 flex flex-col gap-2 md:mt-0">
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-accent">
+                <div className="h-2.5 w-full overflow-clip rounded-full bg-accent">
                   <div
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.max(0, Math.min(100, segment.share))}%` }}

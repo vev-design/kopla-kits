@@ -39,7 +39,7 @@ function ChartFrame({
 }) {
   return (
     <figure className="flex flex-col gap-4">
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card">
+      <div className="aspect-[4/3] w-full overflow-clip rounded-lg border border-border bg-card">
         <MediaBlock media={chart} />
       </div>
       <figcaption className="font-mono text-xs uppercase tracking-[0.16em] tabular-nums text-muted-foreground">

@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { animate, useInView } from 'motion/react';
 import { Reveal } from '@/motion';
+import { useCountUp } from '@/lib/count-up';
 import type { SectionBaseProps } from '@/types';
 
 /**
@@ -40,31 +39,16 @@ function parseValue(value: string) {
 }
 
 function StatFigure({ value }: { value: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-10% 0px' });
   const { prefix, num, suffix, decimals } = parseValue(value);
-  const [display, setDisplay] = useState('0');
-
-  useEffect(() => {
-    if (!inView) return;
-    const controls = animate(0, num, {
-      duration: 1.4,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) =>
-        setDisplay(
-          latest.toLocaleString('en-US', {
-            minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals,
-          }),
-        ),
-    });
-    return () => controls.stop();
-  }, [inView, num, decimals]);
+  const { ref, value: current } = useCountUp<HTMLSpanElement>(num, 1.4);
 
   return (
     <span ref={ref} className="tabular-nums">
       {prefix}
-      {display}
+      {current.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })}
       {suffix}
     </span>
   );

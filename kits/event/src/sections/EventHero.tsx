@@ -63,7 +63,7 @@ function HeroMarquee({ phrases }: { phrases: string[] }) {
     </div>
   );
   return (
-    <div className="w-full overflow-hidden bg-primary py-3.5 text-primary-foreground">
+    <div className="w-full overflow-clip bg-primary py-3.5 text-primary-foreground">
       <div className="flex w-max motion-safe:animate-marquee">
         {strip()}
         {strip(true)}
@@ -87,7 +87,7 @@ export function EventHero({
   return (
     <section
       id={id ?? undefined}
-      className="relative flex min-h-svh w-full flex-col overflow-hidden"
+      className="relative flex min-h-svh w-full flex-col overflow-clip"
     >
       <div className="flex w-full flex-1 flex-col justify-center px-6 pt-24 pb-14 md:px-12 lg:px-16">
         <Reveal className="flex w-full flex-col gap-8 md:gap-10">

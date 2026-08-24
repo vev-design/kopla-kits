@@ -1,0 +1,64 @@
+/* CSS behind the motion wrappers in this folder (see AGENTS.md).
+   Everything here is progressive enhancement: the resting state is the
+   fully-visible layout, and animation only engages when the browser
+   supports scroll-driven animations AND the user hasn't asked for
+   reduced motion. No JavaScript is involved — sections that animate
+   with these classes still publish as static HTML.
+
+   Wired into the theme build by `src/index.css` (the base-owned
+   Tailwind entry) — kits don't import this file themselves. */
+
+@keyframes kit-reveal {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .kit-reveal {
+      /* Scrubbed by scroll rather than played on a clock: the fade-rise
+         tracks the element's own entry into the viewport, and content
+         already on screen at load just sits at its resting state.
+         `--kit-enter-delay` (seconds — kept for parity with the old
+         time-based API) shifts the range so a delayed sibling resolves a
+         beat further into the scroll. The range end is capped at 24vh so
+         tall blocks don't crawl in over their whole height.
+
+         Gotcha: `view()` reads the nearest ancestor SCROLL CONTAINER, and
+         `overflow: hidden` creates one that never scrolls — which would
+         freeze the animation at its first frame and leave the content
+         invisible. Sections therefore crop with `overflow-clip`, never
+         `overflow-hidden`. */
+      animation: kit-reveal cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-timeline: view();
+      animation-range-start: entry calc(var(--kit-enter-delay, 0) * 80vh);
+      animation-range-end: entry calc(min(40%, 24vh) + var(--kit-enter-delay, 0) * 80vh);
+    }
+  }
+}
+
+/* Subtle lift on hover, press scale on tap — the Hover wrapper. Uses the
+   `translate` / `scale` properties (not `transform`) so it composes with
+   any transform utilities on the same element. */
+.kit-hover {
+  transition:
+    translate 0.14s cubic-bezier(0, 0, 0.2, 1),
+    scale 0.08s cubic-bezier(0.4, 0, 1, 1);
+}
+.kit-hover:hover {
+  translate: 0 -2px;
+}
+.kit-hover:active {
+  scale: 0.98;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kit-hover,
+  .kit-hover:hover,
+  .kit-hover:active {
+    transition: none;
+    translate: none;
+    scale: none;
+  }
+}

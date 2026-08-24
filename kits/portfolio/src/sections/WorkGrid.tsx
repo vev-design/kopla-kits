@@ -46,7 +46,7 @@ export function WorkGrid({ id, heading, items, columns = 'two' }: WorkGridProps)
       >
         {items.map((item, i) => (
           <a key={i} href={item.href ?? undefined} className="group block">
-            <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-secondary">
+            <div className="aspect-[4/3] w-full overflow-clip rounded-lg bg-secondary">
               <img
                 src={item.image}
                 alt={item.title}

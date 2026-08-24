@@ -54,7 +54,7 @@ export function Reservation({
   return (
     <section
       id={id ?? undefined}
-      className="relative flex w-full items-center justify-center overflow-hidden"
+      className="relative flex w-full items-center justify-center overflow-clip"
     >
       <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
       <div className="absolute inset-0 bg-background/80" />

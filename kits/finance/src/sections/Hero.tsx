@@ -108,7 +108,7 @@ export function Hero({
           </div>
         </Reveal>
         <Reveal>
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-clip rounded-xl border border-border bg-card shadow-sm">
             {panel ? (
               <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
                 <div className="flex flex-col gap-1">

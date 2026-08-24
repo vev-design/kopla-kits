@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-const figureMedia = cva('w-full overflow-hidden rounded-md bg-muted', {
+const figureMedia = cva('w-full overflow-clip rounded-md bg-muted', {
   variants: {
     /** Aspect ratio of the media frame. */
     ratio: {

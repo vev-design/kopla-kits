@@ -38,7 +38,7 @@ export function TitleSlide({
   return (
     <section
       id={id ?? undefined}
-      className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden bg-background px-6 py-24 md:px-16"
+      className="relative flex min-h-screen w-full flex-col justify-center overflow-clip bg-background px-6 py-24 md:px-16"
     >
       <SlideChrome progress={progress} footer={footer} />
       {/* Decorative accent wash anchored bottom-left. */}
@@ -55,20 +55,20 @@ export function TitleSlide({
             </p>
           ) : null}
         </Reveal>
-        <Reveal transition={{ delay: 0.05 }}>
+        <Reveal delay={0.05}>
           <h1 className="font-display text-6xl leading-[0.9] font-bold tracking-tighter text-balance md:text-8xl lg:text-9xl">
             {title}
           </h1>
         </Reveal>
         {subtitle ? (
-          <Reveal transition={{ delay: 0.12 }}>
+          <Reveal delay={0.12}>
             <p className="mt-8 max-w-2xl text-xl leading-relaxed text-muted-foreground text-pretty md:text-2xl">
               {subtitle}
             </p>
           </Reveal>
         ) : null}
         {presenter || date ? (
-          <Reveal transition={{ delay: 0.2 }}>
+          <Reveal delay={0.2}>
             <div className="mt-16 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium tracking-wide text-foreground/80 md:text-base">
               {presenter ? <span>{presenter}</span> : null}
               {presenter && date ? (
