@@ -12,6 +12,7 @@
     "dist"
   ],
   "scripts": {
+    "dev": "pnpm --filter @kopla/kits-demo dev",
     "pack-kits": "node scripts/pack-kits.mjs",
     "build-kit": "node scripts/build-kit.mjs",
     "build-components": "node scripts/build-components.mjs",
