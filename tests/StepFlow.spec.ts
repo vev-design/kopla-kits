@@ -133,6 +133,20 @@ test.describe('quiz', () => {
   });
 });
 
+test('first paint shows only the active question, before hydration ever runs', async ({ page }) => {
+  // The state every reader sees for a beat — HTML arrived, bundles have not:
+  // scripting is ENABLED, so the `scripting` media query matches and the CSS
+  // collapse applies, but every script request is blocked so React never
+  // hydrates. Before this existed, the whole quiz stacked up on first render
+  // and snapped to one question when hydration landed.
+  await page.route('**/*.js*', (route) => route.abort());
+  const at = caseIndex('StepFlow', 'Quiz — four questions');
+  await page.goto(`/component/StepFlow?case=${at}&theme=blank`, { waitUntil: 'domcontentloaded' });
+  const visiblePanels = page.locator('[data-slot="step-flow-panel"]:visible');
+  await expect(visiblePanels).toHaveCount(1);
+  await expect(visiblePanels).toContainText('Where should a brand colour live?');
+});
+
 test('with no JavaScript, reads as one outline of every step', async ({ browser, baseURL }) => {
   // The degraded render, and the state a published page ships when the section
   // using this forgot `@hydrate`. The shared spec checks parity with the hydrated

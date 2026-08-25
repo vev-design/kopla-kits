@@ -14,18 +14,23 @@
 //   quiz    — every step is a question. Picking an answer locks that step, shows
 //             the option's feedback, and counts toward a result panel at the end.
 //
-// Content and interaction are separated by ONE thing: `hidden` on the inactive
-// panels, applied only after the component has hydrated. Every step's markup is
-// in the document the whole time, which is what makes the degraded render honest:
+// Every step's markup is in the document the whole time; which panels PAINT is
+// decided in CSS by `@media (scripting: enabled)`, and that one media query is
+// what reconciles the two first-render truths:
 //
-//   * Unhydrated — the state a published page ships when the section using this
-//     forgot `@hydrate` — the flow reads as one outline, every step visible in
-//     document order. Nothing is lost; it simply is not a flow.
-//   * The cost, stated rather than hidden: the collapse from that outline to a
-//     single panel happens at hydration, so a long flow shifts layout once on
-//     first paint. Rendering only the active step from the server would avoid
-//     the shift and lose every other step's content whenever JS never arrives.
-//     Content surviving is worth more than the shift, so that is the trade.
+//   * Scripts disabled or unavailable — the state a published page ships when
+//     the section using this forgot `@hydrate` — the query never matches, and
+//     the flow reads as one outline, every step visible in document order.
+//     Nothing is lost; it simply is not a flow.
+//   * Scripts enabled — the query matches at FIRST PAINT, before React has
+//     hydrated anything, so only the active panel is ever visible: no flash of
+//     every question stacked up, no layout shift when hydration lands. CSS
+//     knows scripts WILL run before a single line of them has.
+//
+// (A browser too old for the `scripting` media feature ignores the block and
+// gets the previous behaviour — outline first, collapsing at hydration.)
+// After hydration the `hidden` attribute takes over panel visibility, and the
+// two mechanisms agree by construction: both key off the current step.
 //
 // Keyboard: the controls are real `<button>`s and the answers are real radios, so
 // the whole map is the platform's — Tab to the controls, Enter/Space to activate,
@@ -222,6 +227,9 @@ export function StepFlow({
 
   return (
     <div data-slot="step-flow" data-mode={mode} className={cn('flex flex-col gap-6', className)}>
+      {/* The first-paint collapse. Generic on purpose: every StepFlow on a page
+          ships the identical rule, which the cascade dedupes for free. */}
+      <style>{`@media (scripting: enabled){[data-slot="step-flow-panel"]:not([data-active]){display:none}}`}</style>
       {progress === 'dots' ? (
         // An ordered list with `aria-current="step"` — the one ARIA pattern that
         // is actually specified for "where am I in a sequence", and it needs no
@@ -231,10 +239,10 @@ export function StepFlow({
           {steps.map((s, i) => (
             <li key={i} className="flex items-center gap-2">
               <span
-                aria-current={interactive && i === current && !atResult ? 'step' : undefined}
+                aria-current={i === current && !atResult ? 'step' : undefined}
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full border text-xs font-medium tabular-nums',
-                  interactive && i === current && !atResult
+                  i === current && !atResult
                     ? 'border-primary bg-primary text-primary-foreground'
                     : answers[i] !== undefined
                       ? 'border-primary text-primary'
@@ -286,14 +294,16 @@ export function StepFlow({
             tabIndex={isCurrent ? -1 : undefined}
             role={isCurrent ? 'group' : undefined}
             aria-labelledby={isCurrent ? titleId : undefined}
-            // `hidden` only once hydrated, which is the whole degraded-render
-            // story: before that every panel is real, readable content.
-            //
-            // The attribute alone is enough here — Tailwind's preflight backs
-            // `[hidden]` with `display: none !important`, so it beats the
-            // `flex` below. Under a plain UA stylesheet it would not: `hidden`
-            // is a UA rule and any author `display` wins, which is the classic
-            // way a hidden panel stays on screen.
+            // `data-active` is set from the SERVER — it is what the
+            // scripting-gated CSS keys the first paint on, so it must not wait
+            // for hydration the way everything interactive here does.
+            data-active={i === current && !atResult ? '' : undefined}
+            // `hidden` only once hydrated. The attribute alone is enough —
+            // Tailwind's preflight backs `[hidden]` with `display: none
+            // !important`, so it beats the `flex` below. Under a plain UA
+            // stylesheet it would not: `hidden` is a UA rule and any author
+            // `display` wins, which is the classic way a hidden panel stays on
+            // screen.
             hidden={interactive && !isCurrent}
             className={cn('flex flex-col gap-4 outline-none', panelClassName)}
           >
