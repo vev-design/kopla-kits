@@ -25,9 +25,23 @@ version and upgrade deliberately.
 A consumer materializes a workspace once and keeps it — its sections, its
 components, its `globals.css` are the customer's copy, and picking a kit is a
 DETACH: nothing in this repo is ever pushed over them again. What a consumer
-does refresh from the pinned ref is the build tooling (`scripts/build.mjs`,
-`scripts/extract-design.mjs`), so a bug fixed here reaches systems that were
+does refresh is the build tooling, so a fix to it reaches systems that were
 seeded months ago.
+
+Which tooling travels *from this repo's pinned ref* is per-file:
+
+| Script | Whose copy actually runs |
+| --- | --- |
+| `scripts/build.mjs` | This repo's. Refreshed from the pinned ref; there is one implementation. |
+| `scripts/extract-design.mjs` + `scripts/lib/tokens.mjs` | **A host may override these.** A host that compiles `design.json` with its own toolchain writes that toolchain into the workspace on these paths, overwriting what `_base` ships. |
+
+The consequence, stated plainly because it is easy to get wrong: a change to
+`extract-design.mjs` landed here does **not** necessarily reach a consumer. It
+reaches standalone builds, this repo's CI, and hosts that run what `_base`
+ships — not one that supplies its own. `design.json`'s FORMAT (below) is the
+contract both sides owe; `extract-design.mjs` here is the reference
+implementation of it, and a semantics change — hydration inference, prop kinds,
+the components manifest — has to land on both sides or the two disagree.
 
 That asymmetry is a rule for authors of `scripts/`: **a change to the build
 tooling must work against a workspace materialized at an OLDER ref.** Read what
@@ -35,7 +49,8 @@ is on disk rather than what the current `_base` would have put there. The
 Tailwind entry is the worked example — v1.6.0 moved it from `src/globals.css`
 to `src/index.css`, so `build.mjs` compiles `index.css` when it exists and
 `globals.css` when it doesn't, and an old workspace keeps the exact sheet it
-had.
+had. Owning a private extractor does not retire this rule for a host — it moves
+it, since that extractor travels to old workspaces too.
 
 The hydration walk already satisfies this by construction, and it is the shape
 to copy: `extract-design.mjs` does not hardcode whether `@/motion` needs client
@@ -258,6 +273,12 @@ it identically everywhere it's needed:
 scale are excluded (not independent knobs). `dark` is present only when
 the kit ships a `.dark` variant. Every kit must declare a non-empty
 `base` (pack-time error otherwise).
+
+One parser, two call sites, on purpose: a swatch shown at selection time and a
+token compiled into the built site that disagree is a gallery that lies. A host
+overriding the extractor (see **The toolchain travels**) inherits that
+obligation — its parser and this one must agree on `base`/`dark`, or its
+selection-time tokens and its built tokens drift apart.
 
 **Essentials convention**: the knobs every system has — `primary`,
 `background`, `foreground`, `radius`, plus every declared `font-*` —
