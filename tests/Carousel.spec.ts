@@ -136,6 +136,19 @@ test('announces the position only when the reader moved it', async ({ page }) =>
 });
 
 test.describe('auto-advance', () => {
+  /** Park the pointer somewhere that is definitely NOT the carousel.
+   *
+   *  A fresh page's cursor rests at (0,0) — which IS over a carousel rendered
+   *  at the page's top-left corner, and since hydration now seeds the hover
+   *  hold from `:hover`, a correctly-behaving carousel will refuse to rotate
+   *  under it. CI caught exactly that: the runner reported the resting cursor
+   *  as hovering, the hold engaged, and the "advances on its own" tests timed
+   *  out on a component doing precisely what it promises. A test that expects
+   *  rotation must first make "nobody is interacting" actually true. */
+  async function parkPointerAway(page: Page) {
+    await page.mouse.move(1200, 700);
+  }
+
   test('advances on its own, and ships a control that stops it', async ({ page }) => {
     const carousel = await open(page, AUTO);
     // WCAG 2.2.2: moving content lasting more than five seconds needs a way to
@@ -143,12 +156,13 @@ test.describe('auto-advance', () => {
     const pause = carousel.getByRole('button', { name: 'Pause the slideshow' });
     await expect(pause).toBeVisible();
 
+    await parkPointerAway(page);
     await expect.poll(() => scrollLeft(carousel), { timeout: 8000 }).toBeGreaterThan(0);
 
     await pause.click();
     // Clicking put the pointer over the carousel, which pauses it too. Move away
     // so the assertion is about the control rather than the hover.
-    await page.mouse.move(0, 0);
+    await parkPointerAway(page);
     await expect(carousel.getByRole('button', { name: 'Play the slideshow' })).toBeVisible();
     const parked = await settled(carousel);
     await page.waitForTimeout(4000);
@@ -218,6 +232,7 @@ test.describe('auto-advance', () => {
 
   test('stops at the last slide when loop is off', async ({ page }) => {
     const carousel = await open(page, AUTO);
+    await parkPointerAway(page);
     await expect
       .poll(
         async () => {
