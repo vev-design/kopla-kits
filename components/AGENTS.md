@@ -46,11 +46,11 @@ Three rules, and the second is the one that is easy to get wrong:
   `carousel-auto → Carousel` leaves the agent picking the controls, which is
   the same guess moved one prop over. The props are half the recipe.
 - **But if the two answers disagree about `hydrate`, they are two
-  components.** `card-stack` and `scroll-stack` were one component with a
-  `layout` axis until the shuffling deck's `useState` made the pure-CSS pile
+  components.** The scroll-pinned pile once shared a file with a
+  pointer-driven deck, and the deck's `useState` made the pure-CSS pile
   ship a runtime it never ran — hydration is inferred per FILE, so the
-  cheaper answer pays for the expensive one. They are `CardStack` and
-  `ScrollStack` now.
+  cheaper answer pays for the expensive one. (The deck itself was later
+  dropped as never actually asked for; the rule outlived it.)
 - **`note` is for the part that cannot be a literal.** `carousel-auto` needs an
   interval that comes from the design's own prototype timing, so there is no
   value to put in `props` — what belongs in the table is "take it from the
