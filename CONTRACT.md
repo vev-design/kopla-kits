@@ -213,6 +213,14 @@ bun install && bun run build   # gen:design → tsc --noEmit → Bun.build + tai
 producing `dist/library.js`, `dist/theme.css`, and `design.json`.
 CI (`scripts/build-kit.mjs --all`) enforces this on every PR.
 
+The compiler is **TypeScript 7** — the native (Go) `tsc`, whose JS surface
+is a client for an out-of-process compiler rather than the compiler
+itself. `gen:design` drives that client to read the catalog out of the
+type checker, so it talks to the compiler over IPC. **Bun 1.4 or newer**
+is recommended: the step completes in well under a second there, and on
+older Bun the same run costs tens of seconds (per-request pipe latency,
+not extra work).
+
 ## Tokens
 
 A kit **declares its tokens** via `src/globals.css`; the declaration is
