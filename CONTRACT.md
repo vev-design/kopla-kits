@@ -85,6 +85,30 @@ anything it imports in-workspace. Sections built on native primitives
 (`<details name>`, `popover`, CSS scroll-snap) stay out of the list, which is
 the outcome to aim for: no JS to ship and no flag to get wrong.
 
+### Media must stay pointable
+
+A host editor finds the image a person is editing by **hit-testing the cursor**
+and walking the paint stack — not by reading `design.json`. Two class choices
+make a picture unreachable, and neither shows up in a screenshot:
+
+- `pointer-events-none` **on the media element**: it is absent from the hit test
+  entirely, so the image cannot even be selected.
+- a decorative layer over it **without** `pointer-events-none`: a gradient scrim,
+  colour wash or hover tint at `absolute inset-0` swallows the pointer, so the
+  image below never learns it was hovered.
+
+Either way the host's "Change image" affordance never appears and a
+fully-propped image reads as uneditable — worst on the full-bleed heroes where
+the image IS the section. So: **mark every decorative layer `pointer-events-none
+aria-hidden`, and leave the `<img>` / `bg-cover` element hit-testable.**
+
+```tsx
+<img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+<div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 to-background" />
+```
+
+`check-media-editable.mjs` checks both rules over `src/**/*.tsx` on every build.
+
 ## Variants & blocks
 
 Two graded ways a section offers controlled variation. Both live in the
@@ -207,11 +231,16 @@ agent-facing copy-in guide.
 For every kit, the assembled workspace must pass:
 
 ```
-bun install && bun run build   # gen:design → tsc --noEmit → Bun.build + tailwind
+bun install && bun run build   # gen:design → check:media → tsc --noEmit
+                               # → Bun.build + tailwind
 ```
 
 producing `dist/library.js`, `dist/theme.css`, and `design.json`.
 CI (`scripts/build-kit.mjs --all`) enforces this on every PR.
+
+`check:media` (`check-media-editable.mjs`) is advisory in a consumer's workspace
+and **enforced here** — CI sets `KOPLA_MEDIA_STRICT=1`, which promotes its
+warnings to errors. See "Media must stay pointable" below.
 
 ## Tokens
 

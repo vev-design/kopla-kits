@@ -627,7 +627,16 @@ function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
 
   if (checker.isArrayType?.(type) || checker.isTupleType?.(type)) {
     const typeArgs = checker.getTypeArguments(type);
-    const inner = typeArgs[0] ? typeToPropType(typeArgs[0], checker, undefined, depth + 1) : { kind: 'string' };
+    // The override carries INTO the element type. `@kind` describes what the
+    // strings ARE, and a list of them is still a list of those — so
+    // `@kind image` on `gallery: string[]` has to reach the elements, or it is
+    // silently dropped and every consumer treats them as plain text. Only
+    // string-shaped elements consume it (see atomicTypeToPropType), so an
+    // array of objects is unaffected and its fields keep reading their own
+    // JSDoc.
+    const inner = typeArgs[0]
+      ? typeToPropType(typeArgs[0], checker, kindOverride, depth + 1)
+      : { kind: 'string' };
     return { kind: 'array', of: inner };
   }
 

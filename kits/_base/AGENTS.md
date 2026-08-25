@@ -94,7 +94,13 @@ Rules:
   - `/** Feature list. 3–6 items. Each item: 1 sentence, max 12 words. */`
   - `/** Button label. 1–3 words, sentence case (e.g. "Get started"). */`
   When in doubt, err toward tighter ranges — too-long generated text breaks layouts; too-short usually doesn't.
-- For string-shaped props that aren't plain text, add a **`@kind` tag**. Supported: `@kind url`, `@kind image`, `@kind richtext`. Without one, strings render as a text field.
+- For string-shaped props that aren't plain text, add a **`@kind` tag**. Supported: `@kind url`, `@kind image`, `@kind richtext`. Without one, strings render as a text field. On an ARRAY the tag describes the ELEMENTS — `@kind image` on `gallery: string[]` makes every entry an image.
+- **Never put `pointer-events-none` on a media element, and always put it on the layers over one.** A gradient scrim, a colour wash, a hover tint — `absolute inset-0` above a photo — is the standard way to keep overlaid text legible, and this kit set is full of it. But the host editor finds the image a person is pointing at by HIT-TESTING the cursor: a scrim that accepts pointer events swallows the hover, and an image that refuses them is invisible to the test. Either way the "Change image" affordance never appears and the picture reads as uneditable — worst on exactly the full-bleed heroes where the image is the section. So mark every decorative layer `pointer-events-none aria-hidden` (it is not content; a reader should not be able to select it either), and leave the `<img>` / `bg-cover` element hit-testable:
+
+  ```tsx
+  <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+  <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 to-background" />
+  ```
 - **`@kind richtext` holds HTML** and is edited in place in the preview with a real editor, so reach for it when the copy needs emphasis or a link inside a sentence — not for a whole page's structure (that's what an array of typed blocks is for, where YOUR component styles each block). The component renders the value as markup, e.g. `dangerouslySetInnerHTML`.
   List what the editor may offer after the kind — anything you don't list, the editor cannot produce:
   `@kind richtext bold italic link`

@@ -56,7 +56,7 @@ export function Cover({
           <img
             src={image}
             alt=""
-            className="ar-cover-parallax pointer-events-none absolute inset-0 h-[118%] w-full object-cover opacity-35"
+            className="ar-cover-parallax absolute inset-0 h-[118%] w-full object-cover opacity-35"
           />
           <div
             aria-hidden
