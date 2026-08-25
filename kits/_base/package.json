@@ -21,7 +21,7 @@
   "scripts": {
     "build": "bun run gen:design && bun run check:media && tsc --noEmit && bun scripts/build.mjs",
     "gen:design": "bun scripts/extract-design.mjs",
-    "check:media": "bun scripts/check-media-editable.mjs",
+    "check:media": "test ! -f scripts/check-media-editable.mjs || bun scripts/check-media-editable.mjs",
     "ui:add": "bun x shadcn@latest add"
   },
   "dependencies": {

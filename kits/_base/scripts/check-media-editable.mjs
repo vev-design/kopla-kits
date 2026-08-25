@@ -26,6 +26,17 @@
 // while the kits repo owns the shipped set and can hold it to the rule. CI sets
 // KOPLA_MEDIA_STRICT=1, which reaches here through build-kit.mjs's inherited env.
 //
+// It is build tooling, so it must work against a workspace materialized at an
+// OLDER ref (CONTRACT.md → "The toolchain travels; the design source does not").
+// Two things follow. It reads only what is ON DISK — an absent `src/` yields no
+// findings rather than an error — and `check:media` in package.json is GUARDED on
+// this file existing, because package.json and `scripts/` reach an existing
+// workspace by different routes: the host refreshes a fixed list of framework
+// files, and syncs package.json only when its DEPENDENCY surface drifted. A
+// package.json that calls a script the refresh never delivered would fail every
+// existing system's build, which is the exact class of bug that rule exists to
+// stop. Absent checker ⇒ the build is what it was before this shipped.
+//
 //   bun scripts/check-media-editable.mjs [--strict]
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
