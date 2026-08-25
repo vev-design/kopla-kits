@@ -28,14 +28,16 @@
 //
 // It is build tooling, so it must work against a workspace materialized at an
 // OLDER ref (CONTRACT.md → "The toolchain travels; the design source does not").
-// Two things follow. It reads only what is ON DISK — an absent `src/` yields no
-// findings rather than an error — and `check:media` in package.json is GUARDED on
-// this file existing, because package.json and `scripts/` reach an existing
-// workspace by different routes: the host refreshes a fixed list of framework
-// files, and syncs package.json only when its DEPENDENCY surface drifted. A
-// package.json that calls a script the refresh never delivered would fail every
-// existing system's build, which is the exact class of bug that rule exists to
-// stop. Absent checker ⇒ the build is what it was before this shipped.
+// It reads only what is ON DISK — an absent `src/` yields no findings rather
+// than an error — and `check:media` in package.json is GUARDED on this file
+// existing, so a workspace this file never reached builds as it did before.
+//
+// It parses with the STAGED extraction toolchain's TypeScript (`./lib/ts.mjs`,
+// CONTRACT.md → "The toolchain travels"): TypeScript 7 has no in-process
+// parser, so the syntax tree comes from the same out-of-process compiler the
+// extractor uses. A workspace where nothing staged that toolchain gets a
+// SKIPPED notice rather than a crash — except under `--strict`, where a
+// missing toolchain would silently drop the gate and must fail instead.
 //
 //   bun scripts/check-media-editable.mjs [--strict]
 
@@ -43,11 +45,39 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
-import ts from 'typescript';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = resolve(ROOT, 'src');
+const TSCONFIG = resolve(ROOT, 'tsconfig.json');
 const STRICT = process.argv.includes('--strict') || !!process.env.KOPLA_MEDIA_STRICT;
+
+let tsAsync, tsAst;
+try {
+  ({ tsAsync, tsAst } = await import('./lib/ts.mjs'));
+} catch (err) {
+  const note = `check-media-editable: extraction toolchain not staged (${err?.message ?? err})`;
+  if (STRICT) {
+    console.error(`${note} — strict mode refuses to skip the gate.`);
+    process.exit(1);
+  }
+  console.log(`${note} — skipped.`);
+  process.exit(0);
+}
+const { API } = tsAsync;
+const {
+  isBinaryExpression,
+  isConditionalExpression,
+  isJsxAttribute,
+  isJsxElement,
+  isJsxExpression,
+  isJsxFragment,
+  isJsxOpeningElement,
+  isJsxSelfClosingElement,
+  isNoSubstitutionTemplateLiteral,
+  isParenthesizedExpression,
+  isStringLiteral,
+  isTemplateExpression,
+} = tsAst;
 
 /** A class list that paints over the whole of its positioned ancestor — the
  *  shape every scrim, wash and tint in this repo takes. `inset-0` alone is
@@ -77,18 +107,24 @@ function hasPointerEventsNone(classes) {
   return /\bpointer-events-none\b/.test(classes);
 }
 
+/** The source text of a node — TS7 handles carry positions, not text, so the
+ *  file's own text is the source of truth. `pos` includes leading trivia. */
+function sliceOf(node, text) {
+  return text.slice(node.pos, node.end);
+}
+
 /** Every string literal in a `className` — including the branches of a `cn()`
  *  call and a template literal's static chunks, since a scrim's utilities are
  *  often spread across them. */
-function classNameOf(node) {
+function classNameOf(node, text) {
   const attr = node.attributes.properties.find(
-    (p) => ts.isJsxAttribute(p) && p.name.getText() === 'className',
+    (p) => isJsxAttribute(p) && sliceOf(p.name, text).trim() === 'className',
   );
   if (!attr?.initializer) return '';
   const out = [];
   const visit = (n) => {
-    if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) out.push(n.text);
-    else if (ts.isTemplateExpression(n)) {
+    if (isStringLiteral(n) || isNoSubstitutionTemplateLiteral(n)) out.push(n.text);
+    else if (isTemplateExpression(n)) {
       out.push(n.head.text, ...n.templateSpans.map((s) => s.literal.text));
     }
     n.forEachChild(visit);
@@ -97,27 +133,27 @@ function classNameOf(node) {
   return out.join(' ');
 }
 
-function tagNameOf(node) {
-  return node.tagName.getText();
+function tagNameOf(node, text) {
+  return sliceOf(node.tagName, text).trim();
 }
 
 /** JSX element children of `node`, skipping whitespace and text. Fragments and
  *  `{cond ? <a/> : <b/>}` expressions are flattened: for our purposes a scrim
  *  rendered conditionally is still a sibling of the image. */
 function jsxChildren(node) {
-  const children = ts.isJsxElement(node) ? node.children : [];
+  const children = isJsxElement(node) ? node.children : [];
   const out = [];
   const collect = (n) => {
-    if (ts.isJsxElement(n)) {
+    if (isJsxElement(n)) {
       out.push(n.openingElement);
       return; // its own children are a level down, checked when we visit it
     }
-    if (ts.isJsxSelfClosingElement(n)) {
+    if (isJsxSelfClosingElement(n)) {
       out.push(n);
       return;
     }
-    if (ts.isJsxFragment(n) || ts.isJsxExpression(n) || ts.isConditionalExpression(n) ||
-        ts.isBinaryExpression(n) || ts.isParenthesizedExpression(n)) {
+    if (isJsxFragment(n) || isJsxExpression(n) || isConditionalExpression(n) ||
+        isBinaryExpression(n) || isParenthesizedExpression(n)) {
       n.forEachChild(collect);
     }
   };
@@ -125,23 +161,23 @@ function jsxChildren(node) {
   return out;
 }
 
-function describe(el, file, source) {
-  const { line } = source.getLineAndCharacterOfPosition(el.getStart());
-  return `${relative(ROOT, file)}:${line + 1}`;
+function describe(el, file, text) {
+  // Line of the node's first non-trivia character (pos points at the end of
+  // the previous token, so skip the leading whitespace/comments ourselves).
+  const lead = /^\s*/.exec(text.slice(el.pos, el.end))[0].length;
+  const line = text.slice(0, el.pos + lead).split('\n').length;
+  return `${relative(ROOT, file)}:${line}`;
 }
 
-function checkFile(file, findings) {
-  const text = readFileSync(file, 'utf8');
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-
+function checkFile(file, source, text, findings) {
   const walk = (node) => {
     // Rule 1 — a media element that refuses the pointer.
-    if (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) {
-      const classes = classNameOf(node);
-      const tag = tagNameOf(node);
-      if (isMediaElement(tag, classes, node.getText()) && hasPointerEventsNone(classes)) {
+    if (isJsxSelfClosingElement(node) || isJsxOpeningElement(node)) {
+      const classes = classNameOf(node, text);
+      const tag = tagNameOf(node, text);
+      if (isMediaElement(tag, classes, sliceOf(node, text)) && hasPointerEventsNone(classes)) {
         findings.push({
-          where: describe(node, file, source),
+          where: describe(node, file, text),
           message:
             `<${tag}> displays media and carries \`pointer-events-none\`, so the editor's ` +
             'hit test cannot find it — the image cannot be selected or swapped. Move the class ' +
@@ -150,20 +186,20 @@ function checkFile(file, findings) {
       }
     }
     // Rule 2 — a sibling that covers a media element and eats the pointer.
-    if (ts.isJsxElement(node)) {
+    if (isJsxElement(node)) {
       const kids = jsxChildren(node);
       const media = kids.filter((k) =>
-        isMediaElement(tagNameOf(k), classNameOf(k), k.getText()),
+        isMediaElement(tagNameOf(k, text), classNameOf(k, text), sliceOf(k, text)),
       );
       if (media.length > 0) {
         for (const kid of kids) {
           if (media.includes(kid)) continue;
-          const classes = classNameOf(kid);
+          const classes = classNameOf(kid, text);
           if (!coversParent(classes) || hasPointerEventsNone(classes)) continue;
           findings.push({
-            where: describe(kid, file, source),
+            where: describe(kid, file, text),
             message:
-              `<${tagNameOf(kid)}> covers a sibling media element (\`inset-0\`) without ` +
+              `<${tagNameOf(kid, text)}> covers a sibling media element (\`inset-0\`) without ` +
               '`pointer-events-none`, so it swallows the hover and the "Change image" ' +
               'affordance never appears. Add `pointer-events-none aria-hidden`.',
           });
@@ -186,8 +222,23 @@ function tsxFilesUnder(dir) {
   return out;
 }
 
+const files = tsxFilesUnder(SRC);
 const findings = [];
-for (const file of tsxFilesUnder(SRC)) checkFile(file, findings);
+if (files.length > 0) {
+  const api = new API({ cwd: ROOT });
+  try {
+    const snapshot = await api.updateSnapshot({ openProjects: [TSCONFIG] });
+    const project = await snapshot.getProject(TSCONFIG);
+    if (!project) throw new Error(`could not load ${TSCONFIG}`);
+    for (const file of files) {
+      const source = await project.program.getSourceFile(file);
+      if (!source) continue; // outside the project's include — nothing to say
+      checkFile(file, source, readFileSync(file, 'utf8'), findings);
+    }
+  } finally {
+    await api.close();
+  }
+}
 
 if (findings.length === 0) {
   console.log('check-media-editable: every media element is pointable ✓');
