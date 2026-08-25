@@ -22,6 +22,7 @@ import process from 'node:process';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
+const EXTRACTOR_SRC = resolve(ROOT, 'scripts/extractor');
 const BUILD_DIR = resolve(ROOT, '.build');
 
 // Mirror pack-kits.mjs: never carry local build artifacts into the
@@ -37,6 +38,13 @@ async function listKits() {
     .sort();
 }
 
+async function stageExtractor(work) {
+  await mkdir(resolve(work, 'scripts/lib'), { recursive: true });
+  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs']) {
+    await cp(resolve(EXTRACTOR_SRC, rel), resolve(work, 'scripts', rel));
+  }
+}
+
 async function buildKit(slug, sharedModules) {
   const work = resolve(BUILD_DIR, slug);
   await rm(work, { recursive: true, force: true });
@@ -45,6 +53,13 @@ async function buildKit(slug, sharedModules) {
   // base ∪ kit — kit wins on collisions (cp overwrites with force).
   await cp(resolve(KITS_SRC, '_base'), work, { recursive: true, filter });
   await cp(resolve(KITS_SRC, slug), work, { recursive: true, force: true, filter });
+
+  // Stage the extractor the way a host does: it is not part of _base (a
+  // workspace's extraction is owned by whoever compiles it — CONTRACT.md →
+  // "The toolchain travels"), so this repo's contract check injects its own
+  // copy from scripts/extractor/ before the build, exactly where
+  // package.json's gen:design expects it.
+  await stageExtractor(work);
 
   if (sharedModules && existsSync(sharedModules)) {
     // Deps are defined entirely by _base/package.json, so node_modules is

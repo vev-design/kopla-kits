@@ -71,6 +71,13 @@ const nextConfig: NextConfig = {
   // them at runtime. Kits are type-checked authoritatively by the `kits` CI
   // job (build-kit.mjs --all assembles each kit + runs `tsc --noEmit`); the
   // demo only needs to bundle and render them, so skip type-checking here.
+  //
+  // The demo is deliberately still on TypeScript 6 while the kits are on 7.
+  // Next 15 loads this file, and decides TypeScript is installed at all, via
+  // the TS 6 JS compiler API (`ts.sys`, `typescript/lib/typescript.js`) — none
+  // of which TypeScript 7 ships. Moving the demo to 7 means moving to Next 16
+  // first, which in turn means finding a Turbopack home for the resolver
+  // above. Kits are unaffected: they don't depend on the demo.
   typescript: { ignoreBuildErrors: true },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack(config: any) {

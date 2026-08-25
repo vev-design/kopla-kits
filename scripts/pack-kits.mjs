@@ -26,7 +26,7 @@
 // Additive — consumers that predate it ignore the key.
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { collectTokensFromCss } from '../kits/_base/scripts/lib/tokens.mjs';
+import { collectTokensFromCss } from './extractor/lib/tokens.mjs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';

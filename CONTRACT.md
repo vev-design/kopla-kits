@@ -33,15 +33,19 @@ Which tooling travels *from this repo's pinned ref* is per-file:
 | Script | Whose copy actually runs |
 | --- | --- |
 | `scripts/build.mjs` | This repo's. Refreshed from the pinned ref; there is one implementation. |
-| `scripts/extract-design.mjs` + `scripts/lib/tokens.mjs` | **A host may override these.** A host that compiles `design.json` with its own toolchain writes that toolchain into the workspace on these paths, overwriting what `_base` ships. |
+| `scripts/extract-design.mjs` + `scripts/lib/*.mjs` | **The host's.** `_base` does not ship an extractor: whoever compiles a workspace stages their own onto these paths before the build (this repo's CI does the same from `scripts/extractor/` — see its README). |
 
-The consequence, stated plainly because it is easy to get wrong: a change to
-`extract-design.mjs` landed here does **not** necessarily reach a consumer. It
-reaches standalone builds, this repo's CI, and hosts that run what `_base`
-ships — not one that supplies its own. `design.json`'s FORMAT (below) is the
-contract both sides owe; `extract-design.mjs` here is the reference
-implementation of it, and a semantics change — hydration inference, prop kinds,
-the components manifest — has to land on both sides or the two disagree.
+The consequence, stated plainly: extraction SEMANTICS — hydration inference,
+prop kinds, the components manifest — are owned by the host that compiles the
+workspace, and a change to them lands there, not here. What this repo owes is
+the other half of the contract: `design.json`'s FORMAT (below), and source
+that extracts well — `kits/_base/AGENTS.md` is the authoring guide for that
+(precise prop types, JSDoc on every prop, `@kind` on string-shaped props),
+and `scripts/extractor/` holds the snapshot this repo's CI checks kits
+against. A consequence worth knowing: a kit folder copied OUT of this repo
+builds its pages and styles but does not produce a `design.json` on its own —
+`gen:design` expects the extractor to have been staged. Deliberate: revisit
+if kits are ever authored outside this repo.
 
 That asymmetry is a rule for authors of `scripts/`: **a change to the build
 tooling must work against a workspace materialized at an OLDER ref.** Read what

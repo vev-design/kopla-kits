@@ -25,11 +25,45 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { tsAsync, tsAst } from './lib/ts.mjs';
 
 import { collectTokensFromCss } from './lib/tokens.mjs';
 
+// Named bindings, destructured rather than imported: lib/ts.mjs decides WHICH
+// typescript these come from (the container's own install, not the
+// workspace's) — see that file for why the workspace's copy cannot be used.
+const { API, SignatureKind, SymbolFlags, TypeFlags } = tsAsync;
+const {
+  formatSyntaxKind,
+  isArrayLiteralExpression,
+  isArrowFunction,
+  isAsExpression,
+  isCallExpression,
+  isExportDeclaration,
+  isExpressionStatement,
+  isFunctionDeclaration,
+  isFunctionExpression,
+  isIdentifier,
+  isImportDeclaration,
+  isJsxAttribute,
+  isJsxExpression,
+  isNoSubstitutionTemplateLiteral,
+  isNumericLiteral,
+  isObjectLiteralExpression,
+  isParenthesizedExpression,
+  isPrefixUnaryExpression,
+  isPropertyAccessExpression,
+  isPropertyAssignment,
+  isStringLiteral,
+  isTypeAssertion,
+  isUnionTypeNode,
+  isVariableDeclaration,
+  isVariableStatement,
+  SyntaxKind,
+} = tsAst;
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const TSCONFIG = resolve(ROOT, 'tsconfig.json');
 const SECTIONS_INDEX = resolve(ROOT, 'src/sections/index.ts');
 const COMPONENTS_INDEX = resolve(ROOT, 'src/components/index.ts');
 const README = resolve(ROOT, 'README.md');
@@ -38,29 +72,48 @@ const DESIGN_JSON = resolve(ROOT, 'design.json');
 
 const SPECIALIZED_STRING_KINDS = new Set(['url', 'image', 'richtext']);
 
-function main() {
-  const program = ts.createProgram({
-    rootNames: [SECTIONS_INDEX, COMPONENTS_INDEX],
-    options: {
-      target: ts.ScriptTarget.ES2022,
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      jsx: ts.JsxEmit.ReactJSX,
-      strict: true,
-      esModuleInterop: true,
-      skipLibCheck: true,
-      noEmit: true,
-      allowJs: false,
-      baseUrl: ROOT,
-      paths: { '@/*': ['src/*'] },
-    },
-  });
-  const checker = program.getTypeChecker();
+// TypeScript 7 is the native compiler, so its JS surface is a CLIENT for a
+// compiler running out of process: every checker lookup below is a round trip,
+// hence the awaits, and the run owns a server handle that has to be released
+// or `gen:design` never exits.
+//
+// This is the async client on purpose. The sync one reaches for a raw fd on
+// the child's stdout (`stdout._handle`), which Node exposes and Bun does not —
+// and the toolchain contract is `bun install && bun run build`.
+async function main() {
+  const api = new API({ cwd: ROOT });
+  try {
+    await run(api);
+  } finally {
+    await api.close();
+  }
+}
 
-  const indexSource = program.getSourceFile(SECTIONS_INDEX);
+/** The project every AST/type lookup below is resolved against. Set once, in
+ *  `run()` — symbols hand back node HANDLES rather than nodes, and a handle
+ *  only means something inside the project that produced it. */
+let project = null;
+
+/** Resolve a declaration handle (`symbol.valueDeclaration`, `declarations[i]`)
+ *  to its AST node. */
+async function nodeOf(handle) {
+  return handle ? ((await handle.resolve(project)) ?? null) : null;
+}
+
+async function run(api) {
+  // The workspace tsconfig IS the configuration — same `jsx`, `paths`, and
+  // `strict` the kit's own `tsc --noEmit` gate uses, so the catalog can't be
+  // extracted under options the kit never compiles with. Both barrels sit
+  // under its `include: ["src"]`.
+  const snapshot = await api.updateSnapshot({ openProjects: [TSCONFIG] });
+  project = await snapshot.getProject(TSCONFIG);
+  if (!project) throw new Error(`could not load ${TSCONFIG}`);
+  const { checker, program } = project;
+
+  const indexSource = await program.getSourceFile(SECTIONS_INDEX);
   if (!indexSource) throw new Error(`could not load ${SECTIONS_INDEX}`);
 
-  const sections = collectSections(indexSource, checker, program);
+  const sections = await collectSections(indexSource, checker, program);
   if (sections.length === 0) {
     // A kit MAY ship zero sections — the `blank` bare-canvas kit, whose
     // sections the architect authors from scratch on the first run. Emit an
@@ -73,10 +126,10 @@ function main() {
   }
 
   const readmeInfo = parseReadme();
-  const demo = collectDemo(sections);
+  const demo = await collectDemo(sections, program);
   const chain = sections.map((s) => s.name).join(' → ');
   const tokens = collectTokens();
-  const components = collectComponents(program, checker);
+  const components = await collectComponents(program, checker);
 
   // The flat, authoritative index of every export that needs client JS —
   // sections and components together, names only.
@@ -155,12 +208,56 @@ function collectTokens() {
   return collectTokensFromCss(css);
 }
 
+// ── Barrel order ──────────────────────────────────────────────────────
+
+/** A barrel's exports, ordered by the `export * from '…'` line that pulled each
+ *  one in.
+ *
+ *  Both catalogs are ordered documents — the sections barrel's line order IS
+ *  the recommended composition chain, and the components barrel's is catalog
+ *  order — but `getExportsOfModule` returns a symbol TABLE, whose order is the
+ *  compiler's business and not the file's. So rank each export by its
+ *  re-export line, then by where it sits in the file that line names. */
+async function exportsInBarrelOrder(indexSource, moduleSymbol, checker) {
+  const lineOfFile = new Map();
+  let line = 0;
+  for (const statement of indexSource.statements) {
+    if (!isExportDeclaration(statement) || !statement.moduleSpecifier) continue;
+    if (!isStringLiteral(statement.moduleSpecifier)) continue;
+    const target = await checker.getSymbolAtLocation(statement.moduleSpecifier);
+    for (const d of target?.declarations ?? []) {
+      if (d.kind === SyntaxKind.SourceFile && !lineOfFile.has(d.path)) {
+        lineOfFile.set(d.path, line);
+      }
+    }
+    line += 1;
+  }
+
+  const keyed = [];
+  for (const exp of await checker.getExportsOfModule(moduleSymbol)) {
+    let target = exp;
+    if (target.flags & SymbolFlags.Alias) target = await checker.getAliasedSymbol(target);
+    const decl = target.valueDeclaration ?? target.declarations?.[0];
+    keyed.push({
+      exp,
+      // Anything the barrel declares itself, or re-exports from a file no line
+      // names, sorts after the lines — it has no place in the stated order.
+      line: (decl && lineOfFile.get(decl.path)) ?? line,
+      // Handle indices run in parse order, so this is source order within a file.
+      index: decl?.index ?? 0,
+      seen: keyed.length,
+    });
+  }
+  keyed.sort((a, b) => a.line - b.line || a.index - b.index || a.seen - b.seen);
+  return keyed.map((k) => k.exp);
+}
+
 // ── Sections ──────────────────────────────────────────────────────────
 
-function collectSections(indexSource, checker, program) {
-  const moduleSymbol = checker.getSymbolAtLocation(indexSource);
+async function collectSections(indexSource, checker, program) {
+  const moduleSymbol = await checker.getSymbolAtLocation(indexSource);
   if (!moduleSymbol) return [];
-  const exports = checker.getExportsOfModule(moduleSymbol);
+  const exports = await exportsInBarrelOrder(indexSource, moduleSymbol, checker);
 
   const sections = [];
   for (const exp of exports) {
@@ -169,31 +266,31 @@ function collectSections(indexSource, checker, program) {
     if (exp.name.endsWith('Demo')) continue;
 
     let target = exp;
-    if (target.flags & ts.SymbolFlags.Alias) target = checker.getAliasedSymbol(target);
-    const decl = target.valueDeclaration ?? target.declarations?.[0];
+    if (target.flags & SymbolFlags.Alias) target = await checker.getAliasedSymbol(target);
+    const decl = await nodeOf(target.valueDeclaration ?? target.declarations?.[0]);
     if (!decl) continue;
     const signatureNode = resolveSignatureNode(decl);
     if (!signatureNode || signatureNode.parameters.length === 0) continue;
 
-    const propsType = resolvePropsTypeAtSignature(signatureNode, checker);
+    const propsType = await resolvePropsTypeAtSignature(signatureNode, checker);
     if (!propsType) {
       throw new Error(
         `could not resolve props type for section '${exp.name}'. ` +
           `Sections must be React components with a typed props parameter.`,
       );
     }
-    const description = readPropsInterfaceJSDoc(propsType, checker) ?? '';
-    const props = propsTypeToSchema(propsType, checker);
+    const description = (await readPropsInterfaceJSDoc(propsType, checker)) ?? '';
+    const props = await propsTypeToSchema(propsType, checker);
     // A section needs client JS in production (→ `hydrate: true`) if it opts
     // in via a `@hydrate` JSDoc tag on its Props, or if it (or anything it
     // imports in-workspace) uses React state/effects, a JSX event handler, or
     // an animation lib. Otherwise it ships as static
     // HTML. The production builder reads this to decide per-page.
-    const hydrate = sectionNeedsHydration(decl, propsType, checker);
+    const hydrate = await sectionNeedsHydration(decl, propsType, checker);
     sections.push({ name: exp.name, description, props, ...(hydrate ? { hydrate: true } : {}) });
   }
-  // Preserve declaration order from src/sections/index.ts — that order
-  // is the recommended composition chain.
+  // Order comes from src/sections/index.ts (see `exportsInBarrelOrder`) —
+  // that order is the recommended composition chain.
   return sections;
 }
 
@@ -207,12 +304,12 @@ function collectSections(indexSource, checker, program) {
 // provenance only exists in agent runs). Components live in their own barrel,
 // so the section list + composition chain are untouched.
 
-function collectComponents(program, checker) {
-  const indexSource = program.getSourceFile(COMPONENTS_INDEX);
+async function collectComponents(program, checker) {
+  const indexSource = await program.getSourceFile(COMPONENTS_INDEX);
   if (!indexSource) return [];
-  const moduleSymbol = checker.getSymbolAtLocation(indexSource);
+  const moduleSymbol = await checker.getSymbolAtLocation(indexSource);
   if (!moduleSymbol) return [];
-  const exports = checker.getExportsOfModule(moduleSymbol);
+  const exports = await exportsInBarrelOrder(indexSource, moduleSymbol, checker);
 
   const components = [];
   for (const exp of exports) {
@@ -223,20 +320,20 @@ function collectComponents(program, checker) {
     }
 
     let target = exp;
-    if (target.flags & ts.SymbolFlags.Alias) target = checker.getAliasedSymbol(target);
-    const decl = target.valueDeclaration ?? target.declarations?.[0];
+    if (target.flags & SymbolFlags.Alias) target = await checker.getAliasedSymbol(target);
+    const decl = await nodeOf(target.valueDeclaration ?? target.declarations?.[0]);
     if (!decl) continue;
     const signatureNode = resolveSignatureNode(decl);
     if (!signatureNode || signatureNode.parameters.length === 0) continue;
     // The barrel can also re-export styling helpers (e.g. cva `buttonVariants`)
     // — keep only functions that actually render React content.
-    if (!signatureReturnsReactContent(signatureNode, checker)) continue;
+    if (!(await signatureReturnsReactContent(signatureNode, checker))) continue;
 
-    const propsType = resolvePropsTypeAtSignature(signatureNode, checker);
+    const propsType = await resolvePropsTypeAtSignature(signatureNode, checker);
     if (!propsType) continue;
-    const description = readPropsInterfaceJSDoc(propsType, checker) ?? '';
-    const props = propsTypeToSchema(propsType, checker);
-    const hydrate = sectionNeedsHydration(decl, propsType, checker);
+    const description = (await readPropsInterfaceJSDoc(propsType, checker)) ?? '';
+    const props = await propsTypeToSchema(propsType, checker);
+    const hydrate = await sectionNeedsHydration(decl, propsType, checker);
     const axes = deriveAxesFromProps(props);
     const showcase = collectComponentShowcase(decl, exp.name);
     components.push({
@@ -254,13 +351,14 @@ function collectComponents(program, checker) {
 
 /** Does this function's return type render React content (JSX), as opposed to a
  *  cva/util helper that returns a string/object? */
-function signatureReturnsReactContent(signatureNode, checker) {
-  const sig = checker.getSignatureFromDeclaration(signatureNode);
+async function signatureReturnsReactContent(signatureNode, checker) {
+  const sig = await checker.getSignatureFromDeclaration(signatureNode);
   if (!sig) return false;
-  const ret = checker.getReturnTypeOfSignature(sig);
-  if (isReactContentType(ret)) return true;
+  const ret = await checker.getReturnTypeOfSignature(sig);
+  if (!ret) return false;
+  if (await isReactContentType(ret)) return true;
   // Inferred JSX / `Element | null` unions read cleanest off the string form.
-  return /\b(?:JSX\.Element|ReactElement|ReactNode|Element)\b/.test(checker.typeToString(ret));
+  return /\b(?:JSX\.Element|ReactElement|ReactNode|Element)\b/.test(await checker.typeToString(ret));
 }
 
 /** Each enum prop (optionally wrapped nullable when the prop is `?:`) becomes a
@@ -281,13 +379,13 @@ function deriveAxesFromProps(props) {
  *  of `collectDemo` for sections; reads the same source file the component is
  *  declared in. */
 function collectComponentShowcase(decl, name) {
-  const sourceFile = decl.getSourceFile?.();
+  const sourceFile = decl.getSourceFile();
   if (!sourceFile) return [];
   const initializer = findExportedConstInitializer(sourceFile, `${name}Showcase`);
-  if (!initializer || !ts.isArrayLiteralExpression(initializer)) return [];
+  if (!initializer || !isArrayLiteralExpression(initializer)) return [];
   const out = [];
   for (const elem of initializer.elements) {
-    if (!ts.isObjectLiteralExpression(elem)) continue;
+    if (!isObjectLiteralExpression(elem)) continue;
     // Showcase entries are static data (like a section's *Demo). A non-literal
     // value — e.g. a JSX node passed to a `children` slot — can't be serialized;
     // skip it with a warning rather than failing the whole build.
@@ -308,16 +406,16 @@ function collectComponentShowcase(decl, name) {
 
 function resolveSignatureNode(decl) {
   if (
-    ts.isFunctionDeclaration(decl) ||
-    ts.isFunctionExpression(decl) ||
-    ts.isArrowFunction(decl)
+    isFunctionDeclaration(decl) ||
+    isFunctionExpression(decl) ||
+    isArrowFunction(decl)
   ) {
     return decl;
   }
-  if (ts.isVariableDeclaration(decl) && decl.initializer) {
+  if (isVariableDeclaration(decl) && decl.initializer) {
     if (
-      ts.isArrowFunction(decl.initializer) ||
-      ts.isFunctionExpression(decl.initializer)
+      isArrowFunction(decl.initializer) ||
+      isFunctionExpression(decl.initializer)
     ) {
       return decl.initializer;
     }
@@ -325,9 +423,9 @@ function resolveSignatureNode(decl) {
   return null;
 }
 
-function resolvePropsTypeAtSignature(signatureNode, checker) {
+async function resolvePropsTypeAtSignature(signatureNode, checker) {
   const param = signatureNode.parameters[0];
-  const paramSymbol = checker.getSymbolAtLocation(param.name) ?? param.symbol;
+  const paramSymbol = await checker.getSymbolAtLocation(param.name);
   if (paramSymbol) return checker.getTypeOfSymbolAtLocation(paramSymbol, signatureNode);
   return checker.getTypeAtLocation(param);
 }
@@ -372,18 +470,15 @@ function isClientLibSpecifier(text) {
  *  Note the asymmetry with the authoring guidance: sections SHOULD prefer
  *  native primitives (`<details name>`, `popover`, scroll-snap) precisely so
  *  this returns false and the page ships static. */
-function sectionNeedsHydration(componentDecl, propsType, checker) {
+async function sectionNeedsHydration(componentDecl, propsType, checker) {
   // Explicit opt-in via @hydrate on the Props interface always wins.
-  const symbol = propsType.aliasSymbol ?? propsType.symbol;
-  for (const d of symbol?.declarations ?? []) {
-    for (const tag of ts.getJSDocCommentsAndTags(d)) {
-      const text = ts.isJSDoc(tag) ? (tag.comment ?? '') : '';
-      if (typeof text === 'string' && /@hydrate\b/.test(text)) return true;
-    }
+  const symbol = (await propsType.getAliasSymbol()) ?? (await propsType.getSymbol());
+  if (symbol && /@hydrate\b/.test(await checker.getDocumentationCommentOfSymbol(symbol))) {
+    return true;
   }
-  const sourceFile = componentDecl.getSourceFile?.();
+  const sourceFile = componentDecl.getSourceFile();
   if (!sourceFile) return false;
-  return fileNeedsHydration(sourceFile, checker, new Set());
+  return await fileNeedsHydration(sourceFile, checker, new Set());
 }
 
 /** Client-JS evidence in this file, or transitively in any workspace file it
@@ -395,7 +490,7 @@ function sectionNeedsHydration(componentDecl, propsType, checker) {
  *  Only workspace sources are followed — a `node_modules` .d.ts carries no
  *  implementation to inspect, and the packages that matter are recognised by
  *  specifier instead. `seen` guards import cycles. */
-function fileNeedsHydration(sourceFile, checker, seen) {
+async function fileNeedsHydration(sourceFile, checker, seen) {
   if (seen.has(sourceFile.fileName)) return false;
   seen.add(sourceFile.fileName);
 
@@ -403,8 +498,8 @@ function fileNeedsHydration(sourceFile, checker, seen) {
   const [first] = sourceFile.statements;
   if (
     first &&
-    ts.isExpressionStatement(first) &&
-    ts.isStringLiteral(first.expression) &&
+    isExpressionStatement(first) &&
+    isStringLiteral(first.expression) &&
     first.expression.text === 'use client'
   ) {
     return true;
@@ -419,9 +514,9 @@ function fileNeedsHydration(sourceFile, checker, seen) {
     // Read off the AST (not the source text) so a specifier inside a comment
     // or an unrelated string can't trigger it.
     if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      (isImportDeclaration(node) || isExportDeclaration(node)) &&
       node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
+      isStringLiteral(node.moduleSpecifier)
     ) {
       if (isClientLibSpecifier(node.moduleSpecifier.text)) {
         found = true;
@@ -433,11 +528,11 @@ function fileNeedsHydration(sourceFile, checker, seen) {
     // A stateful hook CALL — `useState(…)`. The callee may be bare or
     // qualified (`React.useState`). A mere mention in a comment, a string, or
     // a type position is not a call, so none of those match.
-    if (ts.isCallExpression(node)) {
+    if (isCallExpression(node)) {
       const callee = node.expression;
-      const name = ts.isIdentifier(callee)
+      const name = isIdentifier(callee)
         ? callee.text
-        : ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.name)
+        : isPropertyAccessExpression(callee) && isIdentifier(callee.name)
           ? callee.name.text
           : null;
       if (name && STATEFUL_HOOKS.has(name)) {
@@ -450,17 +545,17 @@ function fileNeedsHydration(sourceFile, checker, seen) {
     // `onClick?: () => void` in a Props interface is a PropertySignature, not
     // a JsxAttribute, so it correctly says nothing about this file.
     if (
-      ts.isJsxAttribute(node) &&
-      ts.isIdentifier(node.name) &&
+      isJsxAttribute(node) &&
+      isIdentifier(node.name) &&
       /^on[A-Z]/.test(node.name.text) &&
       node.initializer &&
-      ts.isJsxExpression(node.initializer)
+      isJsxExpression(node.initializer)
     ) {
       found = true;
       return;
     }
 
-    ts.forEachChild(node, visit);
+    node.forEachChild(visit);
   };
   visit(sourceFile);
   if (found) return true;
@@ -468,35 +563,25 @@ function fileNeedsHydration(sourceFile, checker, seen) {
   for (const specifier of imported) {
     // Resolve through the checker rather than the raw path so tsconfig `@/*`
     // aliases and extensionless relative imports both land.
-    const moduleSymbol = checker.getSymbolAtLocation(specifier);
-    for (const decl of moduleSymbol?.declarations ?? []) {
-      if (!ts.isSourceFile(decl)) continue;
-      if (decl.fileName.includes('node_modules') || decl.isDeclarationFile) continue;
-      if (fileNeedsHydration(decl, checker, seen)) return true;
+    const moduleSymbol = await checker.getSymbolAtLocation(specifier);
+    for (const handle of moduleSymbol?.declarations ?? []) {
+      // A handle carries its kind and file path, so both cheap rejections
+      // happen before the node itself is materialized.
+      if (handle.kind !== SyntaxKind.SourceFile) continue;
+      if (handle.path.includes('node_modules')) continue;
+      const decl = await nodeOf(handle);
+      if (!decl || decl.isDeclarationFile) continue;
+      if (await fileNeedsHydration(decl, checker, seen)) return true;
     }
   }
   return false;
 }
 
-function readPropsInterfaceJSDoc(propsType, checker) {
+async function readPropsInterfaceJSDoc(propsType, checker) {
   // Use the type's own symbol (the interface or type alias declaration).
-  const symbol = propsType.aliasSymbol ?? propsType.symbol;
+  const symbol = (await propsType.getAliasSymbol()) ?? (await propsType.getSymbol());
   if (!symbol) return null;
-  const decls = symbol.declarations ?? [];
-  for (const decl of decls) {
-    const tags = ts.getJSDocCommentsAndTags(decl);
-    for (const tag of tags) {
-      if (ts.isJSDoc(tag)) {
-        const text = typeof tag.comment === 'string'
-          ? tag.comment
-          : ts.displayPartsToString(
-              tag.comment?.map((c) => ({ text: c.text ?? '', kind: 'text' })) ?? [],
-            );
-        if (text.trim()) return text.trim();
-      }
-    }
-  }
-  return null;
+  return (await checker.getDocumentationCommentOfSymbol(symbol)).trim() || null;
 }
 
 // ── Type → PropType ───────────────────────────────────────────────────
@@ -524,19 +609,19 @@ const REACT_CONTENT_NAMES = new Set([
 /** True for a type declared in node_modules (React/DOM lib) — framework
  *  machinery whose internals aren't authoring surface. Arrays/tuples are
  *  handled before this is consulted, so element types still extract. */
-function isLibraryType(type) {
-  const sym = type.aliasSymbol ?? type.symbol;
+async function isLibraryType(type) {
+  const sym = (await type.getAliasSymbol()) ?? (await type.getSymbol());
   for (const d of sym?.declarations ?? []) {
-    if ((d.getSourceFile?.().fileName ?? '').includes('/node_modules/')) return true;
+    if (d.path.includes('/node_modules/')) return true;
   }
   return false;
 }
 
 /** React render content (`ReactNode`, `ReactElement`, `JSX.Element`, …) — a
  *  rich-content slot, not structured data. Surface as richtext, stop recursing. */
-function isReactContentType(type) {
-  const a = type.aliasSymbol?.name;
-  const s = type.symbol?.name;
+async function isReactContentType(type) {
+  const a = (await type.getAliasSymbol())?.name;
+  const s = (await type.getSymbol())?.name;
   return Boolean((a && REACT_CONTENT_NAMES.has(a)) || (s && REACT_CONTENT_NAMES.has(s)));
 }
 
@@ -544,25 +629,85 @@ function isReactContentType(type) {
  *  `extends React.ComponentProps<…>` pulls in), not an authored field. */
 function isLibraryProp(prop) {
   const decl = prop.valueDeclaration ?? prop.declarations?.[0];
-  return (decl?.getSourceFile?.().fileName ?? '').includes('/node_modules/');
+  return (decl?.path ?? '').includes('/node_modules/');
 }
 
 /** Function-typed prop (event handler, render prop) — not an authoring field. */
-function isFunctionType(type, checker) {
-  return checker.getSignaturesOfType(type, ts.SignatureKind.Call).length > 0;
+async function isFunctionType(type, checker) {
+  return (await checker.getSignaturesOfType(type, SignatureKind.Call)).length > 0;
 }
 
-function propsTypeToSchema(type, checker) {
-  const out = {};
-  for (const prop of checker.getPropertiesOfType(type)) {
+// ── Author order ──────────────────────────────────────────────────────
+// design.json is an ORDERED document: the props object is the field order an
+// editor renders, and an enum's first value reads as the primary one. The
+// checker's own ordering is an implementation detail that has changed between
+// compiler versions, so the two helpers below pin both to what the source
+// says instead of inheriting whatever the compiler happens to hand back.
+
+/** A type's authored properties, each paired with its declaration node: the
+ *  type's own members first in source order, then inherited ones. Library
+ *  props and props with no declaration are dropped here, so callers just
+ *  iterate. */
+async function declaredPropsInOrder(type, checker) {
+  const own = new Set();
+  const typeSymbol = (await type.getAliasSymbol()) ?? (await type.getSymbol());
+  for (const d of typeSymbol?.declarations ?? []) {
+    const node = await nodeOf(d);
+    if (node) own.add(node);
+  }
+
+  const entries = [];
+  for (const prop of await checker.getPropertiesOfType(type)) {
     if (isLibraryProp(prop)) continue;
-    const decl = prop.valueDeclaration ?? prop.declarations?.[0];
+    const decl = await nodeOf(prop.valueDeclaration ?? prop.declarations?.[0]);
     if (!decl) continue;
-    const propType = checker.getTypeOfSymbolAtLocation(prop, decl);
-    if (isFunctionType(propType, checker)) continue;
-    const optional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
-    const { description, kindOverride } = readJSDoc(prop, checker);
-    let entry = typeToPropType(propType, checker, kindOverride, 0);
+    // `own` holds the interface / type-literal nodes the type is declared by,
+    // so a member declared directly in one of them is authored here and
+    // anything else arrived through an `extends`.
+    entries.push({ prop, decl, inherited: own.has(decl.parent) ? 0 : 1 });
+  }
+  // `pos` only orders members of the same declaration; ties across separate
+  // inherited interfaces just fall out stable.
+  entries.sort((a, b) => a.inherited - b.inherited || a.decl.pos - b.decl.pos);
+  return entries;
+}
+
+/** A union's constituents in the order the source spells them out —
+ *  `variant?: 'two-col' | 'three-col'` means what it says in the order it says
+ *  it, and the first value is the one the component defaults to.
+ *
+ *  The spelling is either right there on the prop, or one hop away behind a
+ *  type alias (`media?: MediaBlockProps`). Each written member is resolved back
+ *  to a type and matched by identity, so this reorders and never invents:
+ *  anything the two disagree about leaves `members` alone, as does a union
+ *  with no written form at all (a cva/mapped type, say). */
+async function unionInDeclaredOrder(members, typeNode, type, checker) {
+  let written = typeNode && isUnionTypeNode(typeNode) ? typeNode : null;
+  if (!written) {
+    const aliasDecl = await nodeOf((await type.getAliasSymbol())?.declarations?.[0]);
+    if (aliasDecl?.type && isUnionTypeNode(aliasDecl.type)) written = aliasDecl.type;
+  }
+  if (!written) return members;
+
+  const byId = new Map(members.map((t) => [t.id, t]));
+  const ordered = [];
+  for (const member of written.types) {
+    const resolved = await checker.getTypeFromTypeNode(member);
+    if (!resolved || !byId.has(resolved.id)) return members;
+    ordered.push(byId.get(resolved.id));
+    byId.delete(resolved.id);
+  }
+  return byId.size === 0 ? ordered : members;
+}
+
+async function propsTypeToSchema(type, checker) {
+  const out = {};
+  for (const { prop, decl } of await declaredPropsInOrder(type, checker)) {
+    const propType = await checker.getTypeOfSymbolAtLocation(prop, decl);
+    if (await isFunctionType(propType, checker)) continue;
+    const optional = (prop.flags & SymbolFlags.Optional) !== 0;
+    const { description, kindOverride } = await readJSDoc(prop, checker);
+    let entry = await typeToPropType(propType, checker, kindOverride, 0, decl.type);
     if (optional) entry = wrapNullable(entry);
     if (description) entry = { ...entry, description };
     out[prop.name] = entry;
@@ -570,37 +715,47 @@ function propsTypeToSchema(type, checker) {
   return out;
 }
 
-function typeToPropType(type, checker, kindOverride, depth = 0) {
-  // ReactNode is itself an aliased union, so check before isUnion().
-  if (isReactContentType(type)) return { kind: 'richtext' };
+// `typeNode` is the prop's WRITTEN type, when there is one — the source order
+// of a union is only recoverable from the declaration, never from the type.
+async function typeToPropType(type, checker, kindOverride, depth = 0, typeNode = null) {
+  // ReactNode is itself an aliased union, so check before isUnionType().
+  if (await isReactContentType(type)) return { kind: 'richtext' };
   if (depth > MAX_PROP_DEPTH) return { kind: 'string' };
-  if (type.isUnion()) {
-    const nonNullish = type.types.filter(
-      (t) => !(t.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)),
+  if (type.isUnionType()) {
+    const constituents = await type.getTypes();
+    const nonNullish = constituents.filter(
+      (t) => !(t.flags & (TypeFlags.Null | TypeFlags.Undefined)),
     );
-    const hadNullish = nonNullish.length !== type.types.length;
+    const hadNullish = nonNullish.length !== constituents.length;
+    // Reorder after dropping null/undefined: `variant?: 'a' | 'b'` writes two
+    // members but types as three.
+    const members = await unionInDeclaredOrder(nonNullish, typeNode, type, checker);
     let inner;
-    if (nonNullish.length === 0) inner = { kind: 'string' };
-    else if (nonNullish.length === 1) inner = typeToPropType(nonNullish[0], checker, kindOverride, depth);
-    else inner = unionToPropType(nonNullish, checker, kindOverride, depth);
+    if (members.length === 0) inner = { kind: 'string' };
+    else if (members.length === 1) inner = await typeToPropType(members[0], checker, kindOverride, depth);
+    else inner = await unionToPropType(members, checker, kindOverride, depth);
     return hadNullish ? wrapNullable(inner) : inner;
   }
-  return atomicTypeToPropType(type, checker, kindOverride, depth);
+  return await atomicTypeToPropType(type, checker, kindOverride, depth);
 }
 
-function unionToPropType(types, checker, kindOverride, depth = 0) {
+async function unionToPropType(types, checker, kindOverride, depth = 0) {
   // A union that includes React content (e.g. `ReactNode` flattened with
   // `undefined`) is a render slot — surface it as richtext, not a grab-bag.
-  if (types.some((t) => isReactContentType(t))) return { kind: 'richtext' };
-  const allStringLiterals = types.every((t) => t.isStringLiteral());
+  for (const t of types) {
+    if (await isReactContentType(t)) return { kind: 'richtext' };
+  }
+  const allStringLiterals = types.every((t) => t.isStringLiteralType());
   if (allStringLiterals) {
     return { kind: 'enum', values: types.map((t) => t.value) };
   }
-  return { kind: 'union', options: types.map((t) => typeToPropType(t, checker, kindOverride, depth + 1)) };
+  const options = [];
+  for (const t of types) options.push(await typeToPropType(t, checker, kindOverride, depth + 1));
+  return { kind: 'union', options };
 }
 
-function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
-  if (kindOverride && type.flags & ts.TypeFlags.StringLike) {
+async function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
+  if (kindOverride && type.flags & TypeFlags.StringLike) {
     // `@kind <kind> [feature ...]` — the kind, then (richtext only) which
     // formatting the in-preview editor should offer for this field, e.g.
     // `@kind richtext bold italic link bulletList`. Omitted means the host's
@@ -616,17 +771,17 @@ function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
       return kind === 'richtext' && features.length > 0 ? { kind, features } : { kind };
     }
   }
-  if (type.isStringLiteral()) return { kind: 'literal', value: type.value };
-  if (type.isNumberLiteral()) return { kind: 'literal', value: type.value };
-  if (type.flags & ts.TypeFlags.BooleanLiteral) {
-    return { kind: 'literal', value: checker.typeToString(type) === 'true' };
+  if (type.isStringLiteralType()) return { kind: 'literal', value: type.value };
+  if (type.isNumberLiteralType()) return { kind: 'literal', value: type.value };
+  if (type.flags & TypeFlags.BooleanLiteral) {
+    return { kind: 'literal', value: (await checker.typeToString(type)) === 'true' };
   }
-  if (type.flags & ts.TypeFlags.String) return { kind: 'string' };
-  if (type.flags & ts.TypeFlags.Number) return { kind: 'number' };
-  if (type.flags & ts.TypeFlags.Boolean) return { kind: 'boolean' };
+  if (type.flags & TypeFlags.String) return { kind: 'string' };
+  if (type.flags & TypeFlags.Number) return { kind: 'number' };
+  if (type.flags & TypeFlags.Boolean) return { kind: 'boolean' };
 
-  if (checker.isArrayType?.(type) || checker.isTupleType?.(type)) {
-    const typeArgs = checker.getTypeArguments(type);
+  if ((await checker.isArrayType(type)) || (await checker.isTupleType(type))) {
+    const typeArgs = await checker.getTypeArguments(type);
     // The override carries INTO the element type. `@kind` describes what the
     // strings ARE, and a list of them is still a list of those — so
     // `@kind image` on `gallery: string[]` has to reach the elements, or it is
@@ -635,25 +790,24 @@ function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
     // array of objects is unaffected and its fields keep reading their own
     // JSDoc.
     const inner = typeArgs[0]
-      ? typeToPropType(typeArgs[0], checker, kindOverride, depth + 1)
+      ? await typeToPropType(typeArgs[0], checker, kindOverride, depth + 1)
       : { kind: 'string' };
     return { kind: 'array', of: inner };
   }
 
-  if (type.flags & ts.TypeFlags.Object) {
+  if (type.flags & TypeFlags.Object) {
     // Don't walk framework objects (CSSProperties, DOM elements, ReactElement)
     // or function types — terminal instead of exploding their internals.
-    if (isFunctionType(type, checker) || isLibraryType(type)) return { kind: 'string' };
+    if ((await isFunctionType(type, checker)) || (await isLibraryType(type))) {
+      return { kind: 'string' };
+    }
     const fields = {};
-    for (const prop of checker.getPropertiesOfType(type)) {
-      if (isLibraryProp(prop)) continue;
-      const decl = prop.valueDeclaration ?? prop.declarations?.[0];
-      if (!decl) continue;
-      const fieldType = checker.getTypeOfSymbolAtLocation(prop, decl);
-      if (isFunctionType(fieldType, checker)) continue;
-      const optional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
-      const { description, kindOverride: childOverride } = readJSDoc(prop, checker);
-      let entry = typeToPropType(fieldType, checker, childOverride, depth + 1);
+    for (const { prop, decl } of await declaredPropsInOrder(type, checker)) {
+      const fieldType = await checker.getTypeOfSymbolAtLocation(prop, decl);
+      if (await isFunctionType(fieldType, checker)) continue;
+      const optional = (prop.flags & SymbolFlags.Optional) !== 0;
+      const { description, kindOverride: childOverride } = await readJSDoc(prop, checker);
+      let entry = await typeToPropType(fieldType, checker, childOverride, depth + 1, decl.type);
       if (optional) entry = wrapNullable(entry);
       if (description) entry = { ...entry, description };
       fields[prop.name] = entry;
@@ -671,14 +825,12 @@ function wrapNullable(inner) {
 
 // ── JSDoc reader ──────────────────────────────────────────────────────
 
-function readJSDoc(symbol, checker) {
-  const tags = symbol.getJsDocTags?.(checker) ?? [];
-  const docs = symbol.getDocumentationComment?.(checker) ?? [];
-  const description = ts.displayPartsToString(docs).trim() || null;
+async function readJSDoc(symbol, checker) {
+  const description = (await symbol.getDocumentationComment(checker)).trim() || null;
   let kindOverride = null;
-  for (const tag of tags) {
+  for (const tag of await symbol.getJsDocTags(checker)) {
     if (tag.name === 'kind') {
-      kindOverride = ts.displayPartsToString(tag.text).trim() || null;
+      kindOverride = (tag.text ?? '').trim() || null;
     }
   }
   return { description, kindOverride };
@@ -686,40 +838,31 @@ function readJSDoc(symbol, checker) {
 
 // ── Demo ──────────────────────────────────────────────────────────────
 
-function collectDemo(sections) {
+async function collectDemo(sections, program) {
   // For each section X, look for a value export `XDemo` whose initializer
   // is an object literal (single instance) or an array literal of object
   // literals (multiple instances). Demo entries appear in section order.
-  // Re-using the section program would be cleaner; we re-parse here so
-  // each section's source file is scanned once for its sibling Demo.
+  // The file is already parsed as part of the program (the barrel imports
+  // it), so take that AST rather than re-parsing.
   const demo = [];
   for (const section of sections) {
     const sourcePath = resolve(ROOT, `src/sections/${section.name}.tsx`);
-    let sourceText;
-    try {
-      sourceText = readFileSync(sourcePath, 'utf8');
-    } catch {
+    const sourceFile = await program.getSourceFile(sourcePath);
+    if (!sourceFile) {
       console.warn(`extract-design: no source file at ${sourcePath} for section ${section.name}`);
       continue;
     }
-    const sourceFile = ts.createSourceFile(
-      sourcePath,
-      sourceText,
-      ts.ScriptTarget.ES2022,
-      true,
-      ts.ScriptKind.TSX,
-    );
     const demoName = `${section.name}Demo`;
     const initializer = findExportedConstInitializer(sourceFile, demoName);
     if (!initializer) continue;
 
-    if (ts.isArrayLiteralExpression(initializer)) {
+    if (isArrayLiteralExpression(initializer)) {
       for (const elem of initializer.elements) {
-        if (ts.isObjectLiteralExpression(elem)) {
+        if (isObjectLiteralExpression(elem)) {
           demo.push({ type: section.name, props: literalToValue(elem) });
         }
       }
-    } else if (ts.isObjectLiteralExpression(initializer)) {
+    } else if (isObjectLiteralExpression(initializer)) {
       demo.push({ type: section.name, props: literalToValue(initializer) });
     } else {
       console.warn(
@@ -732,13 +875,13 @@ function collectDemo(sections) {
 
 function findExportedConstInitializer(sourceFile, name) {
   for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue;
+    if (!isVariableStatement(statement)) continue;
     const hasExport = (statement.modifiers ?? []).some(
-      (m) => m.kind === ts.SyntaxKind.ExportKeyword,
+      (m) => m.kind === SyntaxKind.ExportKeyword,
     );
     if (!hasExport) continue;
     for (const decl of statement.declarationList.declarations) {
-      if (ts.isIdentifier(decl.name) && decl.name.text === name && decl.initializer) {
+      if (isIdentifier(decl.name) && decl.name.text === name && decl.initializer) {
         return decl.initializer;
       }
     }
@@ -747,34 +890,34 @@ function findExportedConstInitializer(sourceFile, name) {
 }
 
 function literalToValue(node) {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
-  if (ts.isNumericLiteral(node)) return Number(node.text);
-  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
-  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
-  if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+  if (isStringLiteral(node) || isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (isNumericLiteral(node)) return Number(node.text);
+  if (node.kind === SyntaxKind.TrueKeyword) return true;
+  if (node.kind === SyntaxKind.FalseKeyword) return false;
+  if (node.kind === SyntaxKind.NullKeyword) return null;
   if (
-    node.kind === ts.SyntaxKind.UndefinedKeyword ||
-    (ts.isIdentifier(node) && node.text === 'undefined')
+    node.kind === SyntaxKind.UndefinedKeyword ||
+    (isIdentifier(node) && node.text === 'undefined')
   ) {
     return null;
   }
   if (
-    ts.isPrefixUnaryExpression(node) &&
-    node.operator === ts.SyntaxKind.MinusToken &&
-    ts.isNumericLiteral(node.operand)
+    isPrefixUnaryExpression(node) &&
+    node.operator === SyntaxKind.MinusToken &&
+    isNumericLiteral(node.operand)
   ) {
     return -Number(node.operand.text);
   }
-  if (ts.isArrayLiteralExpression(node)) {
+  if (isArrayLiteralExpression(node)) {
     return node.elements.map((el) => literalToValue(el));
   }
-  if (ts.isObjectLiteralExpression(node)) {
+  if (isObjectLiteralExpression(node)) {
     const obj = {};
     for (const prop of node.properties) {
-      if (ts.isPropertyAssignment(prop)) {
-        const key = ts.isIdentifier(prop.name)
+      if (isPropertyAssignment(prop)) {
+        const key = isIdentifier(prop.name)
           ? prop.name.text
-          : ts.isStringLiteral(prop.name)
+          : isStringLiteral(prop.name)
             ? prop.name.text
             : null;
         if (!key) continue;
@@ -783,13 +926,13 @@ function literalToValue(node) {
     }
     return obj;
   }
-  if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
+  if (isAsExpression(node) || isTypeAssertion(node)) {
     return literalToValue(node.expression);
   }
-  if (ts.isParenthesizedExpression(node)) return literalToValue(node.expression);
+  if (isParenthesizedExpression(node)) return literalToValue(node.expression);
   throw new Error(
     `*Demo exports must be static literals (no function calls, identifiers, or template ` +
-      `interpolations). Got: ${ts.SyntaxKind[node.kind]}`,
+      `interpolations). Got: ${formatSyntaxKind(node.kind)}`,
   );
 }
 
@@ -847,4 +990,4 @@ function parseReadme() {
   };
 }
 
-main();
+await main();

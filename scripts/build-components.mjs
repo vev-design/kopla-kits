@@ -46,6 +46,13 @@ await mkdir(WORK, { recursive: true });
 await cp(resolve(KITS_SRC, '_base'), WORK, { recursive: true, filter });
 await cp(resolve(KITS_SRC, 'blank'), WORK, { recursive: true, force: true, filter });
 
+// The extractor is not part of _base (CONTRACT.md → "The toolchain travels");
+// stage this repo's own copy, the same way build-kit.mjs does.
+await mkdir(resolve(WORK, 'scripts/lib'), { recursive: true });
+for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs']) {
+  await cp(resolve(ROOT, 'scripts/extractor', rel), resolve(WORK, 'scripts', rel));
+}
+
 // The copy-in, per components/AGENTS.md: everything but component.json
 // into src/components/, one barrel line per component.
 for (const name of names) {
