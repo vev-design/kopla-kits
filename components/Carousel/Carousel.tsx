@@ -166,6 +166,22 @@ export function Carousel({
   const [held, setHeld] = useState(false); // under the pointer, or holding focus
   const [announced, setAnnounced] = useState('');
 
+  // The hover/focus that PRECEDED hydration. `pointerenter` and `focus` only
+  // fire at boundaries, so a cursor already parked over the carousel — or a
+  // keyboard focus already inside it, the track is focusable from the server —
+  // when the handlers attach never announces itself, and the timer would start
+  // moving slides under a pointer that thinks it is pausing them. Hydration has
+  // to ASK. (Found by CI: a cold server made the test's hover land before the
+  // handlers existed, which is exactly a slow reader's first second on the page.)
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    if (root.matches(':hover') || root.contains(document.activeElement)) {
+      setHeld(true);
+    }
+  }, []);
+
   // Where the reader is HEADED, which is not the same as where the track has got
   // to. Two clicks of the forward arrow in quick succession must move two slides,
   // and a smooth scroll takes a few hundred milliseconds to arrive — so a second
@@ -275,6 +291,7 @@ export function Carousel({
 
   return (
     <div
+      ref={rootRef}
       data-slot="carousel"
       // The APG carousel pattern: a group whose role is DESCRIBED as a carousel,
       // named by what it holds. `aria-roledescription` without a real label

@@ -157,8 +157,48 @@ test.describe('auto-advance', () => {
 
   test('pauses while the pointer is over it', async ({ page }) => {
     const carousel = await open(page, AUTO);
+    // Hydration marker before the hover: on a cold CI server, `networkidle`
+    // lands well before React attaches handlers, and a mouse parked over an
+    // unhydrated carousel fires no further enter events. The component now
+    // also asks `:hover` at hydration for exactly that reader — but the test
+    // should exercise the ordinary path, not lean on the recovery.
+    await expect(carousel.getByRole('button', { name: 'Pause the slideshow' })).toBeVisible();
     const box = (await carousel.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const parked = await settled(carousel);
+    await page.waitForTimeout(4000);
+    expect(await scrollLeft(carousel)).toBe(parked);
+  });
+
+  test('a pointer already parked over it when hydration lands still pauses it', async ({
+    page,
+  }) => {
+    // The CI failure, kept as a feature test: the cursor arrives BEFORE the
+    // handlers exist — the slow reader's first second on any page — and
+    // `pointerenter` never re-fires for a stationary cursor, so hydration must
+    // read `:hover` itself. Deterministic by construction: every script is
+    // HELD at the network layer while the mouse parks over the server-rendered
+    // track, then released, so the order is never a race.
+    const gated: Array<() => void> = [];
+    let gateOpen = false;
+    await page.route('**/*.js*', async (route) => {
+      if (gateOpen) return route.continue();
+      gated.push(() => void route.continue());
+    });
+
+    await page.goto(`/component/Carousel?case=${caseIndex('Carousel', AUTO)}&theme=blank`, {
+      waitUntil: 'domcontentloaded',
+    });
+    // The track is server-rendered, so its geometry is real before any script.
+    const carousel = page.locator('[data-slot="carousel"]');
+    const box = (await carousel.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + 40);
+
+    // Pointer parked; NOW let hydration happen underneath it.
+    gateOpen = true;
+    for (const release of gated) release();
+    await expect(carousel.getByRole('button', { name: 'Pause the slideshow' })).toBeVisible();
+
     const parked = await settled(carousel);
     await page.waitForTimeout(4000);
     expect(await scrollLeft(carousel)).toBe(parked);
