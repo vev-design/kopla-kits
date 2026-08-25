@@ -28,7 +28,7 @@ async function open(page: Page, dir: string, label: string, hash = '') {
 }
 
 test('every one of them declares hydrate: false, which is the promise this file checks', () => {
-  for (const name of ['Accordion', 'Tabs', 'Modal', 'ScrollStack']) {
+  for (const name of ['Accordion', 'Tabs', 'Modal', 'ScrollStack', 'Drawer']) {
     const found = components.find((c) => c.name === name);
     expect(found, `${name} is missing from the catalog`).toBeTruthy();
     expect(found?.hydrate, `${name} declares hydrate: true`).toBe(false);
@@ -139,6 +139,59 @@ test.describe('Modal', () => {
     await page.getByRole('button', { name: 'See the details' }).click();
     await page.getByRole('button', { name: 'Close' }).click();
     await expect(page.locator('[data-slot="modal"]')).toBeHidden();
+  });
+});
+
+test.describe('Drawer', () => {
+  test('opens from its trigger, closes on Escape with focus returned', async ({ page }) => {
+    await open(page, 'Drawer', 'Mobile navigation');
+    const trigger = page.getByRole('button', { name: 'Menu' });
+    const panel = page.locator('[data-slot="drawer"]');
+
+    await expect(panel).toBeHidden();
+    await trigger.click();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('link', { name: 'Journal' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    // Focus return is the browser's — the part every hand-rolled drawer forgets.
+    await expect(trigger).toBeFocused();
+  });
+
+  /** The entry slide is a 200ms CSS transition; measuring or clicking inside
+   *  the panel mid-slide races it (one failure sampled `left: -10` — a third
+   *  of the way through the 32px translate). The computed `translate` going
+   *  back to `none` is the deterministic "the slide is over" signal. */
+  async function slideSettled(page: Page) {
+    await expect
+      .poll(() =>
+        page.locator('[data-slot="drawer"]').evaluate((el) => getComputedStyle(el).translate),
+      )
+      .toBe('none');
+  }
+
+  test('pins to the requested edge, full height, in the top layer', async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 700 });
+    await open(page, 'Drawer', 'Filters from the left, no title');
+    await page.getByRole('button', { name: 'Filters' }).click();
+    await slideSettled(page);
+    const box = await page.locator('[data-slot="drawer"]').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: Math.round(r.left), top: Math.round(r.top), height: Math.round(r.height), open: el.matches(':popover-open') };
+    });
+    expect(box.open).toBe(true);
+    expect(box.left).toBe(0);
+    expect(box.top).toBe(0);
+    expect(box.height).toBe(700);
+  });
+
+  test('the close control hides rather than toggles', async ({ page }) => {
+    await open(page, 'Drawer', 'Mobile navigation');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await slideSettled(page);
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.locator('[data-slot="drawer"]')).toBeHidden();
   });
 });
 

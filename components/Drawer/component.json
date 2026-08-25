@@ -1,0 +1,15 @@
+{
+  "name": "Drawer",
+  "description": "A slide-in edge panel opened by its own trigger — the mobile-nav case — built on the native `popover` attribute: top layer, backdrop, light dismiss, Escape and focus return, with no JavaScript.",
+  "whenToUse": "Designs where a control opens a panel from the SIDE of the screen — mobile navigation, filters, a link list with one emphasised action. Pass the panel's contents as children to keep the design's own markup; `links` + `cta` are the data fallback for previews. This ships NO JavaScript, so a section using it needs no `@hydrate` — the hand-rolled version (useState + outside-click listener + scroll lock) is exactly the pattern it replaces. One limit to know, same as Modal: `popover` does not TRAP focus — tabbing past the last link continues into the page behind, which is fine for navigation (every destination leaves the page anyway) and wrong for a form someone must complete; that wants a script and an `@hydrate` section. NOT for a centred dialog over the page (that is Modal), and not for content that should be readable in place (that is Accordion).",
+  "tags": ["navigation", "panel", "no-js", "platform"],
+  "hydrate": false,
+  "implements": [
+    {
+      "token": "drawer",
+      "props": {},
+      "note": "Set side from the design ('right' default). Nothing here needs @hydrate — `popover` plus `popovertarget` is the whole mechanism, including focus return. Adopted from PR #27."
+    }
+  ],
+  "vendor": []
+}
