@@ -15,16 +15,20 @@
         151+. The trigger arms at parse time and plays the animation once on
         entry. Zero JavaScript.
      2. POLYFILL — for browsers without it, the page build injects a small
-        IntersectionObserver that adds `.kit-in` on entry (agent-cf's
-        build-runner/reveal-enhance.mjs — the class names here and there are
-        a KEEP-IN-SYNC pair). The script feature-detects and is a no-op where
-        the native path runs, so it retires itself as browsers catch up.
+        IntersectionObserver that hides each element as it starts observing
+        it (`.kit-hidden`) and swaps that for `.kit-in` on entry (agent-cf's
+        build-runner/reveal-enhance.mjs — the three class names here and
+        there are a KEEP-IN-SYNC set). The script feature-detects and is a
+        no-op where the native path runs, so it retires itself as browsers
+        catch up.
 
    Either way the failure direction is VISIBLE: an element that never gets a
    trigger or a class simply has no animation and sits at its resting state.
-   Nothing in this file hides content on its own — which is also what keeps
-   dynamically-added elements (a hydrated section re-rendering) safe: they
-   appear plainly instead of waiting for a reveal that never comes.
+   Nothing in this file hides content on its own — `.kit-hidden` matches only
+   what the script hid in the same breath as observing it — which is also
+   what keeps dynamically-added elements (a hydrated section re-rendering)
+   safe: they appear plainly instead of waiting for a reveal that never
+   comes.
 
    Wired into the theme build by `src/index.css` (the base-owned Tailwind
    entry) — kits don't import this file themselves. */
@@ -54,10 +58,19 @@
   }
 
   /* Polyfill path: identical animation, started by the injected observer
-     adding `.kit-in`. Without the script (blocked, stripped, or a surface
-     that doesn't inject it, like the editor preview) nothing matches and the
-     content is simply visible. */
+     swapping `.kit-hidden` for `.kit-in`. The script applies `.kit-hidden`
+     atomically with observing — the native branch holds the from-state via
+     its armed animation's `both` fill, and without this the polyfill's
+     elements would be VISIBLE until the observer fired, then snap to the
+     keyframe's opacity 0 and fade back in: appear, vanish, reappear. Without
+     the script (blocked, stripped, or a surface that doesn't inject it, like
+     the editor preview) neither class ever exists and the content is simply
+     visible. */
   @supports not (animation-trigger: --t play-once) {
+    .kit-reveal.kit-hidden {
+      opacity: 0;
+      translate: 0 16px;
+    }
     .kit-reveal.kit-in {
       animation: kit-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
       animation-delay: calc(var(--kit-enter-delay, 0) * 1s);

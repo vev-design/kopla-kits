@@ -17,8 +17,8 @@ The wrappers carry **no hydration cost**: a section using them still publishes a
 - Every wrapper renders a plain `div` carrying a class from `motion.css` (`kit-reveal`, `kit-hover`) — pass any HTML prop, including Tailwind `className`.
 - `Reveal` takes `delay` (seconds) to hold an element back behind a sibling; `Stagger` derives the same per-child delay from `step`.
 - Durations, easings and keyframes live in `motion.css`. Update them there when the spec's motion timing changes.
-- Every animation's resting/fallback state is the fully-visible layout. Never author a state that needs JS or animation support to become visible — nothing in `motion.css` hides content on its own, and `.kit-in` is applied only by the host's reveal script, never authored.
-- The class names `kit-reveal` and `kit-in` are a KEEP-IN-SYNC contract with the host's injected reveal script (kopla's `build-runner/reveal-enhance.mjs`). Rename them in both places or not at all.
+- Every animation's resting/fallback state is the fully-visible layout. Never author a state that needs JS or animation support to become visible — nothing in `motion.css` hides content on its own, and `.kit-hidden` / `.kit-in` are applied only by the host's reveal script, never authored.
+- The class names `kit-reveal`, `kit-hidden` and `kit-in` are a KEEP-IN-SYNC contract with the host's injected reveal script (kopla's `build-runner/reveal-enhance.mjs`). Rename them in both places or not at all.
 
 ## Adding a new wrapper
 
