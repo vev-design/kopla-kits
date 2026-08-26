@@ -1,12 +1,33 @@
 /* CSS behind the motion wrappers in this folder (see AGENTS.md).
    Everything here is progressive enhancement: the resting state is the
-   fully-visible layout, and animation only engages when the browser
-   supports scroll-driven animations AND the user hasn't asked for
-   reduced motion. No JavaScript is involved — sections that animate
-   with these classes still publish as static HTML.
+   fully-visible layout, and animation only engages when the browser can
+   trigger it and the user hasn't asked for reduced motion.
 
-   Wired into the theme build by `src/index.css` (the base-owned
-   Tailwind entry) — kits don't import this file themselves. */
+   The reveal is TIME-PLAYED, triggered on viewport entry — not scrubbed by
+   scroll position. A scrubbed reveal (the previous design) completed within
+   the first ~200px of an element entering the viewport, i.e. while it was
+   still at the screen's bottom edge, which made the effect invisible in
+   practice at any real scroll speed.
+
+   Two ways the same animation starts, one @keyframes:
+
+     1. NATIVE — `animation-trigger` (CSS Animations 2), shipped in Chrome
+        151+. The trigger arms at parse time and plays the animation once on
+        entry. Zero JavaScript.
+     2. POLYFILL — for browsers without it, the page build injects a small
+        IntersectionObserver that adds `.kit-in` on entry (agent-cf's
+        build-runner/reveal-enhance.mjs — the class names here and there are
+        a KEEP-IN-SYNC pair). The script feature-detects and is a no-op where
+        the native path runs, so it retires itself as browsers catch up.
+
+   Either way the failure direction is VISIBLE: an element that never gets a
+   trigger or a class simply has no animation and sits at its resting state.
+   Nothing in this file hides content on its own — which is also what keeps
+   dynamically-added elements (a hydrated section re-rendering) safe: they
+   appear plainly instead of waiting for a reveal that never comes.
+
+   Wired into the theme build by `src/index.css` (the base-owned Tailwind
+   entry) — kits don't import this file themselves. */
 
 @keyframes kit-reveal {
   from {
@@ -16,25 +37,30 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
+  /* Native trigger: the animation is armed at parse and plays ONCE when the
+     element enters the viewport. `play-once` keeps the end state when the
+     visitor scrolls back up. Every element declares the same trigger name;
+     names are tree-scoped, so each resolves to its own trigger.
+     `--kit-enter-delay` (seconds) staggers grouped reveals — set per child
+     by the Stagger wrapper, or via Reveal's `delay` prop. */
+  @supports (animation-trigger: --t play-once) {
     .kit-reveal {
-      /* Scrubbed by scroll rather than played on a clock: the fade-rise
-         tracks the element's own entry into the viewport, and content
-         already on screen at load just sits at its resting state.
-         `--kit-enter-delay` (seconds — kept for parity with the old
-         time-based API) shifts the range so a delayed sibling resolves a
-         beat further into the scroll. The range end is capped at 24vh so
-         tall blocks don't crawl in over their whole height.
+      animation: kit-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
+      timeline-trigger-name: --kit-reveal;
+      timeline-trigger-source: view();
+      animation-trigger: --kit-reveal play-once;
+    }
+  }
 
-         Gotcha: `view()` reads the nearest ancestor SCROLL CONTAINER, and
-         `overflow: hidden` creates one that never scrolls — which would
-         freeze the animation at its first frame and leave the content
-         invisible. Sections therefore crop with `overflow-clip`, never
-         `overflow-hidden`. */
-      animation: kit-reveal cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-timeline: view();
-      animation-range-start: entry calc(var(--kit-enter-delay, 0) * 80vh);
-      animation-range-end: entry calc(min(40%, 24vh) + var(--kit-enter-delay, 0) * 80vh);
+  /* Polyfill path: identical animation, started by the injected observer
+     adding `.kit-in`. Without the script (blocked, stripped, or a surface
+     that doesn't inject it, like the editor preview) nothing matches and the
+     content is simply visible. */
+  @supports not (animation-trigger: --t play-once) {
+    .kit-reveal.kit-in {
+      animation: kit-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
     }
   }
 }
