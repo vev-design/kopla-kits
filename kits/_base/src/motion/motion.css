@@ -1,7 +1,7 @@
 /* CSS behind the motion wrappers in this folder (see AGENTS.md).
    Everything here is progressive enhancement: the resting state is the
-   fully-visible layout, and animation only engages when the browser can
-   trigger it and the user hasn't asked for reduced motion.
+   fully-visible layout, and animation only engages when the trigger runs and
+   the user hasn't asked for reduced motion.
 
    The reveal is TIME-PLAYED, triggered on viewport entry — not scrubbed by
    scroll position. A scrubbed reveal (the previous design) completed within
@@ -9,26 +9,27 @@
    still at the screen's bottom edge, which made the effect invisible in
    practice at any real scroll speed.
 
-   Two ways the same animation starts, one @keyframes:
+   The trigger is a small IntersectionObserver the HOST's page build injects
+   (kopla's build-runner/reveal-enhance.mjs): it hides each element as it
+   starts observing it (`.kit-hidden`) and swaps that for `.kit-in` when the
+   element is ~18% into the viewport. The three class names are a
+   KEEP-IN-SYNC set with that script. From a section author's point of view
+   the wrappers are just CSS classes.
 
-     1. NATIVE — `animation-trigger` (CSS Animations 2), shipped in Chrome
-        151+. The trigger arms at parse time and plays the animation once on
-        entry. Zero JavaScript.
-     2. POLYFILL — for browsers without it, the page build injects a small
-        IntersectionObserver that hides each element as it starts observing
-        it (`.kit-hidden`) and swaps that for `.kit-in` on entry (agent-cf's
-        build-runner/reveal-enhance.mjs — the three class names here and
-        there are a KEEP-IN-SYNC set). The script feature-detects and is a
-        no-op where the native path runs, so it retires itself as browsers
-        catch up.
+   Deliberately NOT the native CSS `animation-trigger` (Chrome 151+), yet:
+   measured on a real publish, native triggers evaluate against the
+   provisional PRE-IMAGE layout — below-fold elements sit momentarily "in
+   view" before images size the page, the trigger fires, `play-once` never
+   rearms, and those sections show nothing when actually scrolled to. CSS
+   has no post-layout correction hook; the script does (it rewinds reveals
+   that played below the fold, unseen). Revisit native when the trigger's
+   interaction with late layout has an answer.
 
-   Either way the failure direction is VISIBLE: an element that never gets a
-   trigger or a class simply has no animation and sits at its resting state.
-   Nothing in this file hides content on its own — `.kit-hidden` matches only
-   what the script hid in the same breath as observing it — which is also
-   what keeps dynamically-added elements (a hydrated section re-rendering)
-   safe: they appear plainly instead of waiting for a reveal that never
-   comes.
+   The failure direction is VISIBLE: nothing in this file hides content on
+   its own — `.kit-hidden` matches only what the script hid in the same
+   breath as observing it. No script (blocked, stripped, or a surface that
+   doesn't inject it, like the editor preview) means no class ever exists
+   and the content simply shows at rest.
 
    Wired into the theme build by `src/index.css` (the base-owned Tailwind
    entry) — kits don't import this file themselves. */
@@ -36,45 +37,20 @@
 @keyframes kit-reveal {
   from {
     opacity: 0;
-    translate: 0 16px;
+    translate: 0 24px;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Native trigger: the animation is armed at parse and plays ONCE when the
-     element enters the viewport. `play-once` keeps the end state when the
-     visitor scrolls back up. Every element declares the same trigger name;
-     names are tree-scoped, so each resolves to its own trigger.
-     `--kit-enter-delay` (seconds) staggers grouped reveals — set per child
-     by the Stagger wrapper, or via Reveal's `delay` prop. */
-  @supports (animation-trigger: --t play-once) {
-    .kit-reveal {
-      animation: kit-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
-      timeline-trigger-name: --kit-reveal;
-      timeline-trigger-source: view();
-      animation-trigger: --kit-reveal play-once;
-    }
+  .kit-reveal.kit-hidden {
+    opacity: 0;
+    translate: 0 24px;
   }
-
-  /* Polyfill path: identical animation, started by the injected observer
-     swapping `.kit-hidden` for `.kit-in`. The script applies `.kit-hidden`
-     atomically with observing — the native branch holds the from-state via
-     its armed animation's `both` fill, and without this the polyfill's
-     elements would be VISIBLE until the observer fired, then snap to the
-     keyframe's opacity 0 and fade back in: appear, vanish, reappear. Without
-     the script (blocked, stripped, or a surface that doesn't inject it, like
-     the editor preview) neither class ever exists and the content is simply
-     visible. */
-  @supports not (animation-trigger: --t play-once) {
-    .kit-reveal.kit-hidden {
-      opacity: 0;
-      translate: 0 16px;
-    }
-    .kit-reveal.kit-in {
-      animation: kit-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
-    }
+  .kit-reveal.kit-in {
+    animation: kit-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* Seconds — set per child by the Stagger wrapper (0.12s steps by
+       default), or via Reveal's `delay` prop. */
+    animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
   }
 }
 

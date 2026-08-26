@@ -8,8 +8,8 @@ The wrappers carry **no hydration cost**: a section using them still publishes a
 
 | Wrapper      | Trigger        | Effect                                                        |
 |--------------|----------------|---------------------------------------------------------------|
-| `Reveal`     | Viewport entry | Plays a 0.6s fade from `opacity: 0` + `translate: 0 16px` to rest, once, when the element enters the viewport |
-| `Stagger`    | Viewport entry | Same fade, each child's `animation-delay` a beat later (80ms default) — a visible left-to-right / top-to-bottom wave |
+| `Reveal`     | Viewport entry | Plays a 0.8s fade from `opacity: 0` + `translate: 0 24px` to rest, once, when the element is ~18% into the viewport |
+| `Stagger`    | Viewport entry | Same fade, each child's `animation-delay` a beat later (120ms default) — a visible left-to-right / top-to-bottom wave |
 | `Hover`      | Mouse hover    | Lifts `translate: 0 -2px`, scales down on press               |
 
 ## Conventions
@@ -22,7 +22,7 @@ The wrappers carry **no hydration cost**: a section using them still publishes a
 
 ## Adding a new wrapper
 
-1. Add the class + `@keyframes` to `motion.css`, inside the `@media (prefers-reduced-motion: no-preference)` guard — and if it should trigger on viewport entry, wire it through the same native-`@supports` / `.kit-in` pair the reveal uses.
+1. Add the class + `@keyframes` to `motion.css`, inside the `@media (prefers-reduced-motion: no-preference)` guard — and if it should trigger on viewport entry, wire it through the same `.kit-hidden` / `.kit-in` pair the reveal uses.
 2. Create `<Name>.tsx` in this folder rendering a plain `div` with the class; accept `ComponentPropsWithoutRef<'div'>` when the wrapper maps directly to a single element.
 3. Re-export from `index.ts`.
 
