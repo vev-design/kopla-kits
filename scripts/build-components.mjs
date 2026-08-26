@@ -251,6 +251,15 @@ for (const slug of kits) {
   await cp(resolve(KITS_SRC, '_base'), work, { recursive: true, filter });
   await cp(resolve(KITS_SRC, slug), work, { recursive: true, force: true, filter });
 
+  // The extractor is not part of _base any more (CONTRACT.md → "The toolchain
+  // travels"): whoever compiles a workspace stages their own copy. This repo's
+  // lives in scripts/extractor/, and staging it here is exactly what
+  // build-kit.mjs does — the CI check builds the way a real consumer does.
+  await mkdir(resolve(work, 'scripts/lib'), { recursive: true });
+  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs']) {
+    await cp(resolve(ROOT, 'scripts/extractor', rel), resolve(work, 'scripts', rel));
+  }
+
   // The copy-in, per components/AGENTS.md: everything but component.json into
   // src/components/, one barrel line per component. The barrel here is the KIT's
   // own, which is the whole reason for building more than once.

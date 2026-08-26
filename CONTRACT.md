@@ -20,6 +20,48 @@ version and upgrade deliberately.
   artifact is a JSON bundle, not an npm-packed file tree — `npm pack`
   strips `.gitignore`.
 
+## The toolchain travels; the design source does not
+
+A consumer materializes a workspace once and keeps it — its sections, its
+components, its `globals.css` are the customer's copy, and picking a kit is a
+DETACH: nothing in this repo is ever pushed over them again. What a consumer
+does refresh is the build tooling, so a fix to it reaches systems that were
+seeded months ago.
+
+Which tooling travels *from this repo's pinned ref* is per-file:
+
+| Script | Whose copy actually runs |
+| --- | --- |
+| `scripts/build.mjs` | This repo's. Refreshed from the pinned ref; there is one implementation. |
+| `scripts/extract-design.mjs` + `scripts/lib/*.mjs` | **The host's.** `_base` does not ship an extractor: whoever compiles a workspace stages their own onto these paths before the build (this repo's CI does the same from `scripts/extractor/` — see its README). |
+
+The consequence, stated plainly: extraction SEMANTICS — hydration inference,
+prop kinds, the components manifest — are owned by the host that compiles the
+workspace, and a change to them lands there, not here. What this repo owes is
+the other half of the contract: `design.json`'s FORMAT (below), and source
+that extracts well — `kits/_base/AGENTS.md` is the authoring guide for that
+(precise prop types, JSDoc on every prop, `@kind` on string-shaped props),
+and `scripts/extractor/` holds the snapshot this repo's CI checks kits
+against. A consequence worth knowing: a kit folder copied OUT of this repo
+builds its pages and styles but does not produce a `design.json` on its own —
+`gen:design` expects the extractor to have been staged. Deliberate: revisit
+if kits are ever authored outside this repo.
+
+That asymmetry is a rule for authors of `scripts/`: **a change to the build
+tooling must work against a workspace materialized at an OLDER ref.** Read what
+is on disk rather than what the current `_base` would have put there. The
+Tailwind entry is the worked example — v1.6.0 moved it from `src/globals.css`
+to `src/index.css`, so `build.mjs` compiles `index.css` when it exists and
+`globals.css` when it doesn't, and an old workspace keeps the exact sheet it
+had. Owning a private extractor does not retire this rule for a host — it moves
+it, since that extractor travels to old workspaces too.
+
+The hydration walk already satisfies this by construction, and it is the shape
+to copy: `extract-design.mjs` does not hardcode whether `@/motion` needs client
+JS, it FOLLOWS the import and reads the wrappers on disk. So a workspace on the
+old JS wrappers is still correctly hydrated by today's extractor, and one on the
+CSS wrappers publishes static. Detect, don't assert.
+
 ## Required kit files
 
 | File | Purpose |
@@ -61,6 +103,30 @@ React hook call, a JSX event handler, an animation-lib import — in the file or
 anything it imports in-workspace. Sections built on native primitives
 (`<details name>`, `popover`, CSS scroll-snap) stay out of the list, which is
 the outcome to aim for: no JS to ship and no flag to get wrong.
+
+### Media must stay pointable
+
+A host editor finds the image a person is editing by **hit-testing the cursor**
+and walking the paint stack — not by reading `design.json`. Two class choices
+make a picture unreachable, and neither shows up in a screenshot:
+
+- `pointer-events-none` **on the media element**: it is absent from the hit test
+  entirely, so the image cannot even be selected.
+- a decorative layer over it **without** `pointer-events-none`: a gradient scrim,
+  colour wash or hover tint at `absolute inset-0` swallows the pointer, so the
+  image below never learns it was hovered.
+
+Either way the host's "Change image" affordance never appears and a
+fully-propped image reads as uneditable — worst on the full-bleed heroes where
+the image IS the section. So: **mark every decorative layer `pointer-events-none
+aria-hidden`, and leave the `<img>` / `bg-cover` element hit-testable.**
+
+```tsx
+<img src={image} alt="" className="absolute inset-0 size-full object-cover" />
+<div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 to-background" />
+```
+
+`check-media-editable.mjs` checks both rules over `src/**/*.tsx` on every build.
 
 ## Variants & blocks
 
@@ -184,11 +250,16 @@ agent-facing copy-in guide.
 For every kit, the assembled workspace must pass:
 
 ```
-bun install && bun run build   # gen:design → tsc --noEmit → Bun.build + tailwind
+bun install && bun run build   # gen:design → check:media → tsc --noEmit
+                               # → Bun.build + tailwind
 ```
 
 producing `dist/library.js`, `dist/theme.css`, and `design.json`.
 CI (`scripts/build-kit.mjs --all`) enforces this on every PR.
+
+`check:media` (`check-media-editable.mjs`) is advisory in a consumer's workspace
+and **enforced here** — CI sets `KOPLA_MEDIA_STRICT=1`, which promotes its
+warnings to errors. See "Media must stay pointable" below.
 
 ## Tokens
 
@@ -206,6 +277,12 @@ it identically everywhere it's needed:
 scale are excluded (not independent knobs). `dark` is present only when
 the kit ships a `.dark` variant. Every kit must declare a non-empty
 `base` (pack-time error otherwise).
+
+One parser, two call sites, on purpose: a swatch shown at selection time and a
+token compiled into the built site that disagree is a gallery that lies. A host
+overriding the extractor (see **The toolchain travels**) inherits that
+obligation — its parser and this one must agree on `base`/`dark`, or its
+selection-time tokens and its built tokens drift apart.
 
 **Essentials convention**: the knobs every system has — `primary`,
 `background`, `foreground`, `radius`, plus every declared `font-*` —

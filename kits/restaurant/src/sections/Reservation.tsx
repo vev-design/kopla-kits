@@ -57,7 +57,7 @@ export function Reservation({
       className="relative flex w-full items-center justify-center overflow-clip"
     >
       <img src={image} alt="" className="absolute inset-0 size-full object-cover" />
-      <div className="absolute inset-0 bg-background/80" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-background/80" />
       <Reveal className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-6 px-6 py-28 text-center md:py-36">
         {overline ? (
           <p className="text-xs font-medium uppercase tracking-eyebrow text-primary">

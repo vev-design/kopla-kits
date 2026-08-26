@@ -12,6 +12,7 @@
 // Run with Bun: `bun scripts/build.mjs`.
 
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -95,18 +96,20 @@ if (!result.success) {
 
 // Tailwind v4 CLI compiles the theme + scans src/ for used utilities. Its
 // native oxide binary ships as a prebuilt optional dependency (no postinstall
-// script), so `bun install` resolves it cleanly. The entry is src/index.css
-// (base-owned: kit globals.css + _base motion.css), not globals.css itself.
+// script), so `bun install` resolves it cleanly.
+//
+// The entry is src/index.css (base-owned: kit globals.css + _base motion.css),
+// falling back to globals.css when there is no index.css. The fallback is not
+// defensive noise — this script TRAVELS. A consumer materializes a workspace
+// once and keeps it, refreshing only its build tooling from the pinned ref, so
+// a workspace created before index.css existed will run this file against a
+// tree that has only globals.css. Compiling what is actually there is what
+// lets the toolchain move without touching anyone's design source.
+const cssEntry = existsSync(resolve(ROOT, 'src/index.css'))
+  ? resolve(ROOT, 'src/index.css')
+  : resolve(ROOT, 'src/globals.css');
 execFileSync(
   'bun',
-  [
-    'x',
-    '@tailwindcss/cli',
-    '-i',
-    resolve(ROOT, 'src/index.css'),
-    '-o',
-    resolve(ROOT, 'dist/theme.css'),
-    '--minify',
-  ],
+  ['x', '@tailwindcss/cli', '-i', cssEntry, '-o', resolve(ROOT, 'dist/theme.css'), '--minify'],
   { cwd: ROOT, stdio: 'inherit' },
 );
