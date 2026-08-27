@@ -1,41 +1,56 @@
 /* CSS behind the motion wrappers in this folder (see AGENTS.md).
    Everything here is progressive enhancement: the resting state is the
-   fully-visible layout, and animation only engages when the browser
-   supports scroll-driven animations AND the user hasn't asked for
-   reduced motion. No JavaScript is involved — sections that animate
-   with these classes still publish as static HTML.
+   fully-visible layout, and animation only engages when the trigger runs and
+   the user hasn't asked for reduced motion.
 
-   Wired into the theme build by `src/index.css` (the base-owned
-   Tailwind entry) — kits don't import this file themselves. */
+   The reveal is TIME-PLAYED, triggered on viewport entry — not scrubbed by
+   scroll position. A scrubbed reveal (the previous design) completed within
+   the first ~200px of an element entering the viewport, i.e. while it was
+   still at the screen's bottom edge, which made the effect invisible in
+   practice at any real scroll speed.
+
+   The trigger is a small IntersectionObserver the HOST's page build injects
+   (kopla's build-runner/reveal-enhance.mjs): it hides each element as it
+   starts observing it (`.kit-hidden`) and swaps that for `.kit-in` when the
+   element is ~18% into the viewport. The three class names are a
+   KEEP-IN-SYNC set with that script. From a section author's point of view
+   the wrappers are just CSS classes.
+
+   Deliberately NOT the native CSS `animation-trigger` (Chrome 151+), yet:
+   measured on a real publish, native triggers evaluate against the
+   provisional PRE-IMAGE layout — below-fold elements sit momentarily "in
+   view" before images size the page, the trigger fires, `play-once` never
+   rearms, and those sections show nothing when actually scrolled to. CSS
+   has no post-layout correction hook; the script does (it rewinds reveals
+   that played below the fold, unseen). Revisit native when the trigger's
+   interaction with late layout has an answer.
+
+   The failure direction is VISIBLE: nothing in this file hides content on
+   its own — `.kit-hidden` matches only what the script hid in the same
+   breath as observing it. No script (blocked, stripped, or a surface that
+   doesn't inject it, like the editor preview) means no class ever exists
+   and the content simply shows at rest.
+
+   Wired into the theme build by `src/index.css` (the base-owned Tailwind
+   entry) — kits don't import this file themselves. */
 
 @keyframes kit-reveal {
   from {
     opacity: 0;
-    translate: 0 16px;
+    translate: 0 24px;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .kit-reveal {
-      /* Scrubbed by scroll rather than played on a clock: the fade-rise
-         tracks the element's own entry into the viewport, and content
-         already on screen at load just sits at its resting state.
-         `--kit-enter-delay` (seconds — kept for parity with the old
-         time-based API) shifts the range so a delayed sibling resolves a
-         beat further into the scroll. The range end is capped at 24vh so
-         tall blocks don't crawl in over their whole height.
-
-         Gotcha: `view()` reads the nearest ancestor SCROLL CONTAINER, and
-         `overflow: hidden` creates one that never scrolls — which would
-         freeze the animation at its first frame and leave the content
-         invisible. Sections therefore crop with `overflow-clip`, never
-         `overflow-hidden`. */
-      animation: kit-reveal cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-timeline: view();
-      animation-range-start: entry calc(var(--kit-enter-delay, 0) * 80vh);
-      animation-range-end: entry calc(min(40%, 24vh) + var(--kit-enter-delay, 0) * 80vh);
-    }
+  .kit-reveal.kit-hidden {
+    opacity: 0;
+    translate: 0 24px;
+  }
+  .kit-reveal.kit-in {
+    animation: kit-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* Seconds — set per child by the Stagger wrapper (0.12s steps by
+       default), or via Reveal's `delay` prop. */
+    animation-delay: calc(var(--kit-enter-delay, 0) * 1s);
   }
 }
 

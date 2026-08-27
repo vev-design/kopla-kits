@@ -17,7 +17,7 @@ interface StaggerProps extends Omit<ComponentPropsWithoutRef<'div'>, 'children'>
  *     <Card />
  *   </Stagger>
  */
-export function Stagger({ children, step = 0.08, ...rest }: StaggerProps) {
+export function Stagger({ children, step = 0.12, ...rest }: StaggerProps) {
   const items = Children.toArray(children);
   return (
     <div {...rest}>
