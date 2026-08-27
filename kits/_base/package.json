@@ -5,6 +5,10 @@
   "type": "module",
   "main": "./dist/library.js",
   "module": "./dist/library.js",
+  "//sideEffects": "Lets a consumer's bundler drop the sections and components a page doesn't use — library.js bundles the whole system, so without this a page using three sections still downloads twelve. NOT plain `false`: theme.css is imported FOR its side effect, and `false` would license a bundler to drop it and ship the page unstyled.",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./dist/library.js",
     "./theme.css": "./dist/theme.css",

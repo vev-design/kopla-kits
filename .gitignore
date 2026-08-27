@@ -5,6 +5,10 @@ dist/
 .DS_Store
 .vercel
 demo/kits.gen/
+demo/components.gen/
+demo/public/lab-themes/
 demo/next-env.d.ts
 *.tsbuildinfo
 *.tgz
+test-results/
+playwright-report/

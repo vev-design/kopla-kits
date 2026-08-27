@@ -1,0 +1,12 @@
+{
+  "name": "StepFlow",
+  "description": "A guided flow shown one step at a time, with a progress indicator and next/back controls — and, as a quiz, a question per step that is checked as it is answered and a score at the end.",
+  "whenToUse": "Designs that walk the reader through a SEQUENCE one panel at a time rather than showing everything at once. Two shapes, and they are different answers rather than a detail to infer: `mode='stepper'` for a how-it-works, onboarding or guided explainer; `mode='quiz'` when each step is a question with answer options, where picking one locks the step, reveals why it was right or wrong, and counts toward a result panel. Pass the panels as children to keep the design's own markup — `steps` still carries each title and, for a quiz, its options, because the progress indicator and the answer check need that as data. NOT for sections a reader should be able to see side by side (that is a grid), for panels they should be free to open in any order (that is Accordion or Tabs), or for a horizontal gallery (that is Carousel).",
+  "tags": ["steps", "quiz", "sequence", "interactive"],
+  "hydrate": true,
+  "implements": [
+    { "token": "stepper", "props": { "mode": "stepper" } },
+    { "token": "quiz", "props": { "mode": "quiz" } }
+  ],
+  "vendor": []
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Accordion",
+  "description": "A stack of expanding rows built on native <details>/<summary> — exclusive by default, so opening one closes the rest. No JavaScript at all.",
+  "whenToUse": "Designs that show a list of labels the reader expands one at a time — an FAQ, a spec list, a set of policy sections. `exclusive` (the default) closes the others when one opens; set it false for a list the reader can open all of. Pass the panels as children to keep the design's own markup. This ships NO JavaScript, so a section using it needs no `@hydrate`. NOT for a set of panels shown side by side in a strip of tabs (that is Tabs), not for a sequence to be completed in order (that is StepFlow), and not a place to hide anything expensive — a closed row's content is still in the DOM and still loads.",
+  "tags": ["disclosure", "faq", "no-js", "platform"],
+  "hydrate": false,
+  "implements": [
+    {
+      "token": "accordion",
+      "props": { "exclusive": true },
+      "note": "Set exclusive: false when the design shows more than one panel open at once. Nothing here needs @hydrate — a <details name> group is the whole mechanism."
+    }
+  ],
+  "vendor": []
+}

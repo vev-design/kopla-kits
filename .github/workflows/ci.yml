@@ -36,6 +36,34 @@ jobs:
       - run: node scripts/build-kit.mjs --all
       - run: node scripts/build-components.mjs
 
+  # The advanced-components catalog's behaviour, driven through the component
+  # lab: fits at 360/768/1440, 44px targets, no console noise, animation
+  # actually suppressed under reduced motion, every word still there with
+  # JavaScript disabled — plus the per-component specs. See components/AGENTS.md
+  # ("The interactive contract"); these assertions ARE that contract.
+  components:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Chromium only: these are behaviour and layout invariants, not
+      # browser-compatibility checks — the config says the same.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:components
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   # The demo must build — it's also what Vercel deploys for preview URLs.
   demo:
     runs-on: ubuntu-latest

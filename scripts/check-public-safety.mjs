@@ -29,6 +29,11 @@ const BANNED = [
 const ALLOW = [
   // Brand names in demo/sponsor content are content, not architecture.
   { path: /Sponsors\.tsx$/, re: /Supabase/ },
+  // The component lab's iframe embedding ATTRIBUTE (the platform feature its
+  // scripts-off mode is built on — withholding `allow-scripts` is the no-JS
+  // test), not the banned infrastructure term. Matched as the attribute forms
+  // only, so prose use of the word stays flagged.
+  { path: /app\/\(gallery\)\/components\/Lab\.tsx$/, re: /\ballow-scripts\b|\bsandbox=/ },
 ];
 
 const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
