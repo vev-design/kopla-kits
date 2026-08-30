@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Flare & Wedge — a specimen system where the letterform carries the page.
+   The palette deliberately RECEDES so the terminals can do the work: a warm
+   off-white ground, a warm near-black ink, and exactly one hot red confined
+   to rules and small marks. Headlines are never colored — stacking a color
+   contrast on top of a terminal contrast is the failure mode this system is
+   built to avoid.
+
+   Type is a three-slot system. `--font-display` is Cinzel, cut on Roman
+   square-capital proportions with flared serifs — the inscriptional voice.
+   `--font-wedge` is Bricolage Grotesque, a genuinely variable sans with
+   spurred, modulated terminals — the expressive voice that reads monolinear
+   at distance. `--font-sans` is Inter, a plain grotesk held at body sizes so
+   the contrast lives entirely in the display face.
+
+   Numerals are two separate tokens, not one: `--numeric-text` (oldstyle,
+   proportional) for running prose, `--numeric-table` (lining, tabular) for
+   anything that has to align in a column.
+
+   Single-scheme by design — no `.dark` block. */
+:root {
+  --radius: 0.125rem;
+  --background: oklch(0.955 0.013 88);
+  --foreground: oklch(0.19 0.005 70);
+  --card: oklch(0.975 0.009 88);
+  --card-foreground: oklch(0.19 0.005 70);
+  --popover: oklch(0.975 0.009 88);
+  --popover-foreground: oklch(0.19 0.005 70);
+  --primary: oklch(0.605 0.235 27);
+  --primary-foreground: oklch(0.975 0.009 88);
+  --secondary: oklch(0.925 0.012 85);
+  --secondary-foreground: oklch(0.19 0.005 70);
+  --muted: oklch(0.925 0.012 85);
+  --muted-foreground: oklch(0.5 0.01 70);
+  --accent: oklch(0.605 0.235 27);
+  --accent-foreground: oklch(0.975 0.009 88);
+  --destructive: oklch(0.605 0.235 27);
+  --border: oklch(0.87 0.012 85);
+  --input: oklch(0.87 0.012 85);
+  --ring: oklch(0.605 0.235 27);
+  --chart-1: oklch(0.605 0.235 27);
+  --chart-2: oklch(0.19 0.005 70);
+  --chart-3: oklch(0.5 0.01 70);
+  --chart-4: oklch(0.7 0.06 60);
+  --chart-5: oklch(0.87 0.012 85);
+  --sidebar: oklch(0.955 0.013 88);
+  --sidebar-foreground: oklch(0.19 0.005 70);
+  --sidebar-primary: oklch(0.605 0.235 27);
+  --sidebar-primary-foreground: oklch(0.975 0.009 88);
+  --sidebar-accent: oklch(0.925 0.012 85);
+  --sidebar-accent-foreground: oklch(0.19 0.005 70);
+  --sidebar-border: oklch(0.87 0.012 85);
+  --sidebar-ring: oklch(0.605 0.235 27);
+
+  /* Two numeral tokens, deliberately separate. Oldstyle figures sit on the
+     x-height and belong in prose; tabular lining figures align in columns
+     and belong in tables and specimen grids. */
+  --numeric-text: oldstyle-nums proportional-nums;
+  --numeric-table: lining-nums tabular-nums;
+
+  /* All-caps display blocks get +2% to +4% tracking — flare serifs need the
+     air that a grotesk does not. */
+  --tracking-caps: 0.03em;
+  /* The label voice sits far wider than the display voice. */
+  --tracking-label: 0.26em;
+  /* Classical body measure: 60–70 characters. */
+  --measure: 66ch;
+  /* Wordmark clear space equals one cap height on every side. */
+  --clear-space: 1em;
+
+  /* One alternate for `a` and `g`, locked at brand level rather than chosen
+     per instance. Applied through the `.alt-set` utility below. */
+  --stylistic-set: "ss01";
+}
+
+@theme inline {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --font-wedge: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    /* Prose defaults to oldstyle figures; tables opt back into tabular. */
+    font-variant-numeric: var(--numeric-text);
+  }
+}
+
+@layer utilities {
+  /* Running prose: oldstyle, proportional. */
+  .nums-text {
+    font-variant-numeric: var(--numeric-text);
+  }
+  /* Columns that must align: lining, tabular. */
+  .nums-table {
+    font-variant-numeric: var(--numeric-table);
+  }
+  /* All-caps lockups turn on rare ligatures and case-sensitive forms so
+     punctuation lifts to cap height instead of sitting on the baseline. */
+  .caps-lockup {
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    font-feature-settings: "dlig" 1, "case" 1, "calt" 1;
+  }
+  /* The one locked stylistic set — a brand-level decision, not per-instance. */
+  .alt-set {
+    font-feature-settings: var(--stylistic-set) 1;
+  }
+  /* Classical measure for body copy. */
+  .measure {
+    max-width: var(--measure);
+  }
+  /* With no italic in the family, emphasis is weight plus small caps. */
+  .emphasis {
+    font-weight: 700;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.06em;
+  }
+}
