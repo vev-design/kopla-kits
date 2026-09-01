@@ -15,14 +15,14 @@
       "props": {
         "mode": "stepper"
       },
-      "note": "Author the frame's markup and wire useStepFlow (mode 'stepper') + primitives into it; the design decides which nav exists (reachability: with no Next drawn, advancing is the reader's own gesture). Use the styled StepFlow only when the design drew no flow UI."
+      "note": "START FROM skeleton.stepper.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. The design decides which nav exists (reachability: with no Next drawn, advancing is the reader's own gesture). Use the styled StepFlow only when the design drew no flow UI at all."
     },
     {
       "token": "quiz",
       "props": {
         "mode": "quiz"
       },
-      "note": "Author the frame's markup: StepFlowOption asChild makes the design's answer cards the controls, verdicts arrive as data-state='correct|wrong', no Next mounted means answering advances after the verdict beat. The ending is a decision — plain result, or a capture form (StepFlowAnswerFields carries the answers) per the host's form contract."
+      "note": "START FROM skeleton.quiz.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. StepFlowOption asChild makes the design's answer cards the controls (verdicts arrive as data-state), no Next mounted means answering advances after the verdict beat, and the ending is a decision — plain result, or the skeleton's commented capture form (StepFlowAnswerFields carries the answers) per the host's form contract."
     }
   ],
   "vendor": []

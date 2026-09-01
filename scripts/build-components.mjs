@@ -47,7 +47,15 @@ const DEFAULT_SECOND = 'finance';
 
 // Mirror build-kit.mjs: never carry local artifacts or metadata files.
 const SKIP = new Set(['node_modules', 'dist', 'dist-ssr', '.DS_Store', 'kit.json', '.gitkeep', 'component.json']);
-const filter = (src) => !SKIP.has(src.split('/').at(-1));
+// `skeleton.*.tsx` files are SECTION sources for the agent to copy and reshape
+// (components/AGENTS.md) — they import `@/components/*` as a section would, so
+// copying them into src/components/ would both fail the workspace typecheck's
+// alias resolution expectations and surface them in the extractor's catalog as
+// components, which they are not.
+const filter = (src) => {
+  const name = src.split('/').at(-1);
+  return !SKIP.has(name) && !name.startsWith('skeleton.');
+};
 
 if (!existsSync(COMPONENTS_SRC)) {
   console.log('build-components: no components/ catalog — nothing to check');

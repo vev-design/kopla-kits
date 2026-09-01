@@ -13,12 +13,12 @@
     {
       "token": "carousel-arrows",
       "props": {},
-      "note": "Author the frame's markup; the track scrolls and snaps with no JavaScript, and the controls are whichever primitives the design's drawn controls become (arrows without dots is common, dots without arrows too). Use the styled Carousel only when the design drew no gallery UI."
+      "note": "START FROM skeleton.carousel-arrows.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. The track scrolls and snaps with no JavaScript; render only the controls the design draws (arrows without dots is common, dots without arrows too), and mount both arrows — the lone drawn arrow's mirror appears exactly when a slide is behind. Use the styled Carousel only when the design drew no gallery UI at all."
     },
     {
       "token": "carousel-auto",
       "props": {},
-      "note": "Same, plus autoAdvanceMs from the design's own AFTER_TIMEOUT delay — never invent an interval; omitting it is correct when the design does not specify one. Auto-advance stops under prefers-reduced-motion and refuses to run without a CarouselPause mounted."
+      "note": "START FROM skeleton.carousel-auto.tsx beside this file, same contract. autoAdvanceMs comes from the design's own AFTER_TIMEOUT delay — never invent an interval; omitting it is correct when the design does not specify one. A CarouselPause must be mounted (the engine refuses the timer without one); auto-advance already pauses on hover/focus and stops under prefers-reduced-motion."
     }
   ],
   "vendor": []

@@ -65,8 +65,10 @@ component that isn't a recipe for any of them.
 1. **Pick by `whenToUse`.** Read the `component.json` files (or the
    staged `catalog.json`); `whenToUse` says what each component is for
    AND what it is not for.
-2. **Copy everything except `component.json`** into `src/components/`,
-   keeping the relative layout. Today's components are a single
+2. **Copy everything except `component.json` and `skeleton.*` files** into
+   `src/components/`, keeping the relative layout. A `skeleton.<token>.tsx`
+   is a SECTION source: copy its content into `src/sections/` instead and
+   reshape the markup there (its own header says what to keep). Today's components are a single
    `<Name>.tsx`; a vendored component also ships a `<Name>.vendor/`
    folder whose relative imports already resolve after the copy — so
    the copy is always verbatim, never edited.
@@ -97,6 +99,15 @@ plus the catalog-specific rules:
   was the live example). Carousel and StepFlow are the shape to copy;
   platform-CSS components (Accordion, Tabs, Drawer, Modal) owe the same
   principle as attribute-carrying primitives when they are next touched.
+- **Every engine ships `skeleton.<token>.tsx` files** — one minimal SECTION
+  per behaviour token, importing the engine from `@/components/*`, with the
+  keep-vs-reshape split stated in its header. The skeleton is what an agent
+  copies and reshapes (its markup is entirely disposable; the hook and
+  primitives are not), so it is the delivery format, not documentation:
+  the `implements` notes point at it by name. Skeletons are excluded from
+  the workspace assembly (`build-components.mjs` skips `skeleton.*`) —
+  they are section SOURCES, not catalog components, and must never appear
+  in the extractor's manifest.
 
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
   react, `lucide-react`, `@/lib/utils`, `@/lib/count-up`, `@/motion`,
