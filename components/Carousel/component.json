@@ -1,19 +1,36 @@
 {
   "name": "Carousel",
-  "description": "A horizontal gallery of slides on a scroll-snap track — swipeable and keyboard-scrollable with no JavaScript — with arrows, dots and optional auto-advance layered on top.",
-  "whenToUse": "Designs that show a ROW of slides one or a few at a time, scrolled sideways. Two shapes, and they are different answers rather than a detail to infer: `controls='arrows'` (or `'both'`) for a gallery the reader drives; `autoAdvanceMs` for one that advances on a timer — and that number comes from the design's own prototype timing, never from a guess. Pass the slides as children to keep the design's own markup; `items` is a data fallback for previews. NOT for a row of cards that all fit at once (that is a grid), not for cards stacked on top of each other and driven by scroll (that is ScrollStack), and not for a sequence the reader has to complete in order (that is StepFlow).",
-  "tags": ["gallery", "slides", "scroll-snap", "interactive"],
+  "description": "A carousel ENGINE (useCarousel + Carousel* slot primitives) over a no-JS scroll-snap track, wearing the design's own slides, arrows and dots. Ships no look: what you copy is mechanics, and the starting markup is skeleton.carousel-arrows.tsx / skeleton.carousel-auto.tsx.",
+  "exports": [
+    "CarouselRoot",
+    "CarouselTrack",
+    "CarouselSlide",
+    "CarouselNext",
+    "CarouselPrev",
+    "CarouselDot",
+    "CarouselPause"
+  ],
+  "demo": "Carousel.demo",
+  "whenToUse": "Designs that show a ROW of slides one or a few at a time, scrolled sideways. Author the frame's OWN markup and drive it with useCarousel + the primitives: CarouselTrack is the scroll-snap mechanism (swipes with no JS), CarouselNext/CarouselPrev asChild make the design's drawn arrows the controls — mount BOTH even when the frame draws one, because a directional control renders exactly when it has a target, so the lone arrow's mirror appears once a slide is behind — and CarouselDot wears the design's own markers. A frame that rests mid-deck (the third project is the hero image) sets initialIndex — never reorder the slides to bring it to the front, which points every numbered control at the wrong slide. autoAdvanceMs comes from the design's own timing where the design states one, and refuses to run without a CarouselPause mounted. A design that drew NO gallery UI of its own still starts from the skeleton — choose the controls yourself and style them in the kit's tokens; there is no styled component to fall back to, because the copy carries no look. NOT for a row of cards that all fit at once (grid), cards stacked and driven by scroll (ScrollStack), or an ordered flow (StepFlow).",
+  "tags": [
+    "gallery",
+    "slides",
+    "scroll-snap",
+    "interactive"
+  ],
   "hydrate": true,
   "implements": [
     {
       "token": "carousel-arrows",
-      "props": { "controls": "both" },
-      "note": "The track scrolls and snaps with no JavaScript; the arrows and dots are what need it."
+      "props": {},
+      "skeleton": "skeleton.carousel-arrows.tsx",
+      "note": "START FROM skeleton.carousel-arrows.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. The track scrolls and snaps with no JavaScript; render only the controls the design draws (arrows without dots is common, dots without arrows too), and mount both arrows — the lone drawn arrow's mirror appears exactly when a slide is behind. Keep the slides in the design's own order and pass initialIndex when the frame rests on a later one: reordering the array to put the resting slide first desynchronizes every numbered control from the track, so the marker reading '4' rewinds to the start."
     },
     {
       "token": "carousel-auto",
-      "props": { "controls": "dots" },
-      "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT delay. Never invent an interval — omitting it is correct when the design does not specify one. Auto-advance stops under prefers-reduced-motion and always ships a pause control."
+      "props": {},
+      "skeleton": "skeleton.carousel-auto.tsx",
+      "note": "START FROM skeleton.carousel-auto.tsx beside this file, same contract, including initialIndex for a frame that rests mid-deck. autoAdvanceMs is the delay the design states — a prototype's AFTER_TIMEOUT is where it comes from when there is one. Where the source cannot state a timing at all (a still frame, a captured page), pick a readable default of 5000 and say so: a gallery asked to advance itself and given no interval does not advance, which is the one outcome that is certainly not what was asked for. A CarouselPause must be mounted (the engine refuses the timer without one, so omitting the interval also leaves the pause control hidden and inert); auto-advance already pauses on hover/focus and stops under prefers-reduced-motion."
     }
   ],
   "vendor": []

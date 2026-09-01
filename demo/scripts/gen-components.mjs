@@ -60,16 +60,23 @@ for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
   const manifestPath = resolve(COMPONENTS, entry.name, 'component.json');
   if (!existsSync(manifestPath)) continue; // a folder without one isn't a component
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  const file = resolve(COMPONENTS, entry.name, `${entry.name}.tsx`);
+  // Which module holds the RENDERED component, which is not always the one the
+  // agent copies. A `demo` in the manifest points at a `<Name>.demo.tsx` that
+  // the copy-in deliberately excludes: a component whose look would otherwise
+  // travel into every workspace keeps its look here, where the lab is the only
+  // consumer. Absent, the module is the component's own file, as before.
+  const moduleName = typeof manifest.demo === 'string' && manifest.demo ? manifest.demo : entry.name;
+  const file = resolve(COMPONENTS, entry.name, `${moduleName}.tsx`);
   if (!existsSync(file)) {
     // Loud: a manifest with no component is a catalog error, and a lab that
     // silently skipped it would hide exactly the thing it exists to show.
-    console.error(`gen-components: ${entry.name}/component.json has no ${entry.name}.tsx`);
+    console.error(`gen-components: ${entry.name}/component.json has no ${moduleName}.tsx`);
     process.exitCode = 1;
     continue;
   }
   manifests.push({
     dir: entry.name,
+    module: moduleName,
     ...manifest,
     implements: normalizeImplements(manifest.implements),
     cases: showcaseCases(await readFile(file, 'utf8')),
@@ -289,7 +296,7 @@ await writeFile(
     '',
     "import type { ComponentType } from 'react';",
     ...manifests.map(
-      (m) => `import * as ${m.dir}Mod from '../../components/${m.dir}/${m.dir}';`,
+      (m) => `import * as ${m.dir}Mod from '../../components/${m.dir}/${m.module}';`,
     ),
     '',
     'export interface ShowcaseCase {',

@@ -47,7 +47,24 @@ const DEFAULT_SECOND = 'finance';
 
 // Mirror build-kit.mjs: never carry local artifacts or metadata files.
 const SKIP = new Set(['node_modules', 'dist', 'dist-ssr', '.DS_Store', 'kit.json', '.gitkeep', 'component.json']);
-const filter = (src) => !SKIP.has(src.split('/').at(-1));
+// Two families never reach a workspace, for opposite reasons.
+//
+// `skeleton.*.tsx` are SECTION sources for the agent to copy and reshape
+// (components/AGENTS.md) — they import `@/components/*` as a section would, so
+// copying them into src/components/ would both fail the workspace typecheck's
+// alias resolution expectations and surface them in the extractor's catalog as
+// components, which they are not.
+//
+// `*.demo.tsx` is a component's LOOK — the lab's rendering of it, and the
+// fallback for a design that drew none of its own. It is excluded because a
+// copied look is a look the agent will reach for: the styled wrapper used to
+// live inside `<Name>.tsx`, and it arrived in a customer's design system as a
+// catalog entry nothing rendered, having first been copied over designs that
+// drew their own controls. What a workspace receives is mechanics.
+const filter = (src) => {
+  const name = src.split('/').at(-1);
+  return !SKIP.has(name) && !name.startsWith('skeleton.') && !name.includes('.demo.');
+};
 
 if (!existsSync(COMPONENTS_SRC)) {
   console.log('build-components: no components/ catalog — nothing to check');
@@ -278,9 +295,29 @@ for (const slug of kits) {
 
   // The build passing isn't enough — each component must also have made it into
   // the machine-readable catalog (design.json.components).
+  //
+  // Checked against the manifest's `exports` where it has one, and against the
+  // folder name otherwise. The list exists because a folder does not always
+  // ship one component named after itself: Carousel contributes seven
+  // primitives and NO `Carousel` (that is the demo, which never leaves this
+  // repo). It names COMPONENTS — a hook is a legitimate export and not a
+  // catalog entry, so it does not belong in the list. Naming them is strictly
+  // stronger than the folder-name rule it replaces: it catches a primitive that
+  // quietly stops being exported from the barrel, which the old check could not
+  // see, and which would leave an authored section importing a name the
+  // consumer's catalog does not have.
   const design = JSON.parse(await readFile(resolve(work, 'design.json'), 'utf8'));
   const surfaced = new Map((design.components ?? []).map((c) => [c.name, c]));
-  const missing = names.filter((n) => !surfaced.has(n));
+  const missing = [];
+  const expectedByComponent = new Map();
+  for (const name of names) {
+    const manifest = JSON.parse(await readFile(resolve(COMPONENTS_SRC, name, 'component.json'), 'utf8'));
+    const expected = Array.isArray(manifest.exports) && manifest.exports.length > 0
+      ? manifest.exports
+      : [name];
+    expectedByComponent.set(name, expected);
+    missing.push(...expected.filter((e) => !surfaced.has(e)).map((e) => `${name} → ${e}`));
+  }
   if (missing.length > 0) {
     console.error(
       `build-components: ${slug} built, but missing from design.json.components: ${missing.join(', ')}`,
@@ -293,14 +330,23 @@ for (const slug of kits) {
   // regex pass above reads the source and guesses, this one is the same analysis
   // the consumer's own build runs, so a disagreement means the manifest is lying
   // about the one field that decides whether a page ships a runtime.
+  //
+  // Read across the folder's exports rather than one name: hydration is
+  // inferred per FILE, so a folder that ships several exports from one module
+  // gets one answer spread over all of them. `hydrate: true` therefore means
+  // "at least one of these needs client JS" and `false` means "none of them
+  // does" — the direction that matters, since the cost of getting it wrong is
+  // asymmetric (a false `false` ships a dead interactive component; a false
+  // `true` only ships a runtime nothing uses).
   const lies = [];
   for (const name of names) {
     const manifest = JSON.parse(await readFile(resolve(COMPONENTS_SRC, name, 'component.json'), 'utf8'));
-    const inferred = surfaced.get(name)?.hydrate ?? false;
+    const exports = expectedByComponent.get(name) ?? [name];
+    const inferred = exports.some((e) => surfaced.get(e)?.hydrate === true);
     if (Boolean(manifest.hydrate) !== inferred) {
       lies.push(
         `${name}: component.json says hydrate: ${Boolean(manifest.hydrate)}, ` +
-          `the extractor infers ${inferred}`,
+          `the extractor infers ${inferred} across ${exports.join(', ')}`,
       );
     }
   }

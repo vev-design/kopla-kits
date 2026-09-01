@@ -11,13 +11,29 @@ Each component is a folder:
 
 ```
 components/<Name>/
-  component.json   # catalog metadata: description, whenToUse, tags,
-                   # hydrate, implements, vendor (never copied into a
-                   # workspace)
-  <Name>.tsx       # the component — the file you copy
-  <Name>.vendor/   # (optional) pinned third-party code the component
-                   # ships with; copied alongside the component
+  component.json     # catalog metadata: description, exports, whenToUse, tags,
+                     # hydrate, implements, demo, vendor (never copied into a
+                     # workspace)
+  <Name>.tsx         # the component — the file you copy
+  <Name>.demo.tsx    # (optional) its rendered LOOK: the lab's demo, and the
+                     # fallback for a design that drew none of its own. NEVER
+                     # copied — see below.
+  skeleton.<tok>.tsx # (optional) a minimal SECTION driving the component,
+                     # copied into src/sections/ and reshaped. Never copied
+                     # into src/components/.
+  <Name>.vendor/     # (optional) pinned third-party code the component
+                     # ships with; copied alongside the component
 ```
+
+Two manifest fields go with that layout, both optional:
+
+- **`demo`** names the module holding the rendered component (`"Carousel.demo"`).
+  The lab imports THAT; the copy-in excludes it. Absent, the component's own
+  file is both.
+- **`exports`** lists the components this folder contributes to
+  `design.json.components`, for folders that do not ship one component named
+  after themselves. `build-components.mjs` asserts every name surfaced. A hook
+  is a legitimate export and not a catalog entry, so it does not go in the list.
 
 ## `implements`: which behaviour a component is the recipe for
 
@@ -31,7 +47,7 @@ actually staged rather than from a paragraph of prose in a prompt.
 "implements": [
   { "token": "carousel-arrows", "props": { "controls": "both" } },
   { "token": "carousel-auto",   "props": { "controls": "dots" },
-    "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT. Never invent an interval." }
+    "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT; where the source states no timing, default to 5000 rather than omitting it." }
 ]
 ```
 
@@ -53,8 +69,12 @@ Three rules, and the second is the one that is easy to get wrong:
   dropped as never actually asked for; the rule outlived it.)
 - **`note` is for the part that cannot be a literal.** `carousel-auto` needs an
   interval that comes from the design's own prototype timing, so there is no
-  value to put in `props` — what belongs in the table is "take it from the
-  design, never invent one".
+  value to put in `props` — what belongs in the table is where to read it from,
+  **and what to do when the source cannot say**. A note that only forbids
+  ("never invent one") answers the first half and leaves the second to the
+  reader, who then ships the behaviour switched off: a gallery asked to
+  auto-advance with no interval is a manual gallery, and the timer's own pause
+  control hides itself because there is nothing to pause. Give the fallback.
 
 A bare string (`"implements": ["marquee"]`) stays legal and means the
 component's defaults already are that behaviour. Omit the field entirely for a
@@ -65,9 +85,12 @@ component that isn't a recipe for any of them.
 1. **Pick by `whenToUse`.** Read the `component.json` files (or the
    staged `catalog.json`); `whenToUse` says what each component is for
    AND what it is not for.
-2. **Copy everything except `component.json`** into `src/components/`,
-   keeping the relative layout. Today's components are a single
-   `<Name>.tsx`; a vendored component also ships a `<Name>.vendor/`
+2. **Copy everything except `component.json`, `skeleton.*` and `*.demo.tsx`**
+   into `src/components/`, keeping the relative layout. A `skeleton.<token>.tsx`
+   is a SECTION source: copy its content into `src/sections/` instead and
+   reshape the markup there (its own header says what to keep). A
+   `<Name>.demo.tsx` is not copied at all — it is a look, and looks belong to
+   the design being built. A vendored component also ships a `<Name>.vendor/`
    folder whose relative imports already resolve after the copy — so
    the copy is always verbatim, never edited.
 3. **Register it**: add `export * from './<Name>';` to
@@ -83,6 +106,40 @@ component that isn't a recipe for any of them.
 
 Same contract as a kit's component catalog (CONTRACT.md "Components"),
 plus the catalog-specific rules:
+
+- **A component that owns BEHAVIOUR ships it as an ENGINE, and the engine's
+  file ships no look at all.** A hook plus unstyled slot primitives (`asChild`
+  on every interactive one) in `<Name>.tsx`; the styled component rebuilt ON
+  them in `<Name>.demo.tsx`, which the lab renders and the copy-in never
+  takes. The separation is not tidiness. While the styled wrapper lived in the
+  copied file, a customer's design system ended up with a rendered component
+  registered in its own catalog that no page used, and agents reached for the
+  nearest runnable thing and then fought its chrome instead of wearing the
+  engine underneath. A class in `<Name>.tsx` must be one that IS mechanics — a
+  scroll-snap track, an `sr-only` — and never a colour, a radius or a spacing.
+  No visible interactive element — a row,
+  a tab, a trigger, a control strip — may be reachable ONLY through
+  component-owned markup: the consumer of this catalog is an agent wiring
+  behaviour into a section that is ALREADY designed, and a widget whose
+  chrome cannot be shed loses to a hand-rolled rewrite of the mechanics,
+  which then reintroduces exactly the bugs the tested code solves (a
+  five-slide gallery whose last dot scrolled backwards past the whole deck
+  was the live example). Carousel and StepFlow are the shape to copy;
+  platform-CSS components (Accordion, Tabs, Drawer, Modal) owe the same
+  principle as attribute-carrying primitives when they are next touched.
+- **Every engine ships `skeleton.<token>.tsx` files** — one minimal SECTION
+  per behaviour token, importing the engine from `@/components/*`, with the
+  keep-vs-reshape split stated in its header. The skeleton is what an agent
+  copies and reshapes (its markup is entirely disposable; the hook and
+  primitives are not), so it is the delivery format, not documentation:
+  each `implements` entry names its skeleton in a `skeleton` field AND leads
+  its note with it, so a consumer can put the path in its own table rather
+  than hoping the note is read. Skeletons are excluded from the workspace
+  assembly (`build-components.mjs` skips `skeleton.*`) — they are section
+  SOURCES, not catalog components, and must never appear in the extractor's
+  manifest. An engine with no skeleton is an engine an agent has to design an
+  API usage for from scratch, which is the state this catalog was in when it
+  produced its worst output.
 
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
   react, `lucide-react`, `@/lib/utils`, `@/lib/count-up`, `@/motion`,

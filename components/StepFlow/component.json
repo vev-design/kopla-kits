@@ -1,12 +1,42 @@
 {
   "name": "StepFlow",
-  "description": "A guided flow shown one step at a time, with a progress indicator and next/back controls — and, as a quiz, a question per step that is checked as it is answered and a score at the end.",
-  "whenToUse": "Designs that walk the reader through a SEQUENCE one panel at a time rather than showing everything at once. Two shapes, and they are different answers rather than a detail to infer: `mode='stepper'` for a how-it-works, onboarding or guided explainer; `mode='quiz'` when each step is a question with answer options, where picking one locks the step, reveals why it was right or wrong, and counts toward a result panel. Pass the panels as children to keep the design's own markup — `steps` still carries each title and, for a quiz, its options, because the progress indicator and the answer check need that as data. NOT for sections a reader should be able to see side by side (that is a grid), for panels they should be free to open in any order (that is Accordion or Tabs), or for a horizontal gallery (that is Carousel).",
-  "tags": ["steps", "quiz", "sequence", "interactive"],
+  "description": "A stepped-flow ENGINE (useStepFlow + StepFlow* slot primitives) that wears the design's own markup — panels, answer cards, counter words, whichever nav the frame draws. Ships no look: what you copy is mechanics, and the starting markup is skeleton.quiz.tsx / skeleton.stepper.tsx.",
+  "exports": [
+    "StepFlowRoot",
+    "StepFlowProgress",
+    "StepFlowPanel",
+    "StepFlowOption",
+    "StepFlowBack",
+    "StepFlowNext",
+    "StepFlowResult",
+    "StepFlowAnswerFields"
+  ],
+  "demo": "StepFlow.demo",
+  "whenToUse": "Designs that walk the reader through a SEQUENCE one panel at a time. Author the frame's OWN markup and drive it with useStepFlow + the primitives: StepFlowPanel per step, StepFlowOption asChild makes the design's card the whole answer control (real radio underneath), StepFlowProgress is a render prop over the design's own counter words, StepFlowBack/StepFlowNext exist only where the frame draws them — and when no Next is mounted, picking an answer IS the advance (after a beat that shows the verdict). StepFlowResult is the ending: the author's markup over { score, answers, restart }, or mount a native form inside it (with StepFlowAnswerFields) and the ending is a capture per the host's form contract. A design that drew NO quiz or stepper UI of its own still starts from the skeleton — choose the panel, the counter wording and the nav yourself and style them in the kit's tokens; there is no styled component to fall back to, because the copy carries no look. NOT for panels the reader opens in any order (Accordion or Tabs) or a horizontal gallery (Carousel).",
+  "tags": [
+    "steps",
+    "quiz",
+    "sequence",
+    "interactive"
+  ],
   "hydrate": true,
   "implements": [
-    { "token": "stepper", "props": { "mode": "stepper" } },
-    { "token": "quiz", "props": { "mode": "quiz" } }
+    {
+      "token": "stepper",
+      "props": {
+        "mode": "stepper"
+      },
+      "skeleton": "skeleton.stepper.tsx",
+      "note": "START FROM skeleton.stepper.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. The design decides which nav exists (reachability: with no Next drawn, advancing is the reader's own gesture)."
+    },
+    {
+      "token": "quiz",
+      "props": {
+        "mode": "quiz"
+      },
+      "skeleton": "skeleton.quiz.tsx",
+      "note": "START FROM skeleton.quiz.tsx beside this file: copy it into a section, reshape every element and class to the design, keep the hook and primitives. StepFlowOption asChild makes the design's answer cards the controls (verdicts arrive as data-state), no Next mounted means answering advances after the verdict beat, and the ending is a decision — plain result, or the skeleton's commented capture form (StepFlowAnswerFields carries the answers) per the host's form contract."
+    }
   ],
   "vendor": []
 }
