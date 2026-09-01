@@ -84,6 +84,20 @@ component that isn't a recipe for any of them.
 Same contract as a kit's component catalog (CONTRACT.md "Components"),
 plus the catalog-specific rules:
 
+- **A component that owns BEHAVIOUR ships it as an ENGINE.** A hook plus
+  unstyled slot primitives (`asChild` on every interactive one), with the
+  styled component rebuilt ON them as the lab demo and the fallback for a
+  design that drew no UI of its own. No visible interactive element — a row,
+  a tab, a trigger, a control strip — may be reachable ONLY through
+  component-owned markup: the consumer of this catalog is an agent wiring
+  behaviour into a section that is ALREADY designed, and a widget whose
+  chrome cannot be shed loses to a hand-rolled rewrite of the mechanics,
+  which then reintroduces exactly the bugs the tested code solves (a
+  five-slide gallery whose last dot scrolled backwards past the whole deck
+  was the live example). Carousel and StepFlow are the shape to copy;
+  platform-CSS components (Accordion, Tabs, Drawer, Modal) owe the same
+  principle as attribute-carrying primitives when they are next touched.
+
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
   react, `lucide-react`, `@/lib/utils`, `@/lib/count-up`, `@/motion`,
   `@/components/*` — everything a workspace already has, because they are
