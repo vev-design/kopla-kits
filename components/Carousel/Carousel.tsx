@@ -161,10 +161,13 @@ export interface UseCarouselOptions {
   /**
    * Advance on a timer, in milliseconds.
    *
-   * Set this ONLY from the design's own timing — a prototype's AFTER_TIMEOUT
-   * delay is where it comes from. Leave it out and the carousel does not
-   * auto-advance, which is the right default: how long a reader gets with each
-   * slide is the design's decision, and inventing a number makes it ours.
+   * How long a reader gets with each slide is the design's decision wherever
+   * the design makes one — a prototype's AFTER_TIMEOUT delay always wins. Where
+   * the source cannot state a timing at all, a readable default (5000) is the
+   * right answer and omission is not: a gallery asked to advance itself and
+   * handed no interval is a manual gallery, and its pause control hides itself
+   * because there is nothing to pause. Leave it out only for a gallery that is
+   * genuinely reader-driven.
    * Ignored under `prefers-reduced-motion`, and REFUSED entirely when no
    * `CarouselPause` is mounted — moving content needs a way to stop it
    * (WCAG 2.2.2), and a dev-time console error beats a silent failure.
@@ -770,11 +773,10 @@ export interface CarouselProps {
   /**
    * Advance on a timer, in milliseconds.
    *
-   * Set this ONLY from the design's own timing — a Figma prototype's
-   * `AFTER_TIMEOUT` delay is where it comes from. Leave it out and the carousel
-   * does not auto-advance, which is the right default: how long a reader gets
-   * with each slide is the design's decision, and inventing a number makes it
-   * ours. Ignored under `prefers-reduced-motion`.
+   * The design's own timing wins where it states one (a prototype's
+   * `AFTER_TIMEOUT`). Where the source states none, 5000 rather than nothing —
+   * see `UseCarouselOptions.autoAdvanceMs`, which this forwards to. Ignored
+   * under `prefers-reduced-motion`.
    */
   autoAdvanceMs?: number | null;
   /**
