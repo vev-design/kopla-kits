@@ -15,6 +15,10 @@
 //   offset math every hand-rolled track gets wrong differently. The design
 //   draws numbered dots, a lone next arrow (its mirror appears only when a
 //   slide is behind), and cropped neighbours.
+// - `mid-deck-hero`: a design frame resting on its FOURTH slide, built by
+//   rotating the slide array so that slide came first — which reproduced the
+//   frame and pointed control "4" at track index 0, so pressing it rewound the
+//   whole deck. `initialIndex` is the option that removes the reason to rotate.
 // - `card-quiz`: a quiz whose design drew nearly everything — answers as three
 //   clickable cards in a row, a Back pill, its own "Question 1 / 3" — and
 //   whose implementation was hijacked by the styled StepFlow's scaffold
@@ -135,6 +139,83 @@ const dotStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
+const HERO_SLIDES = ['Fiserv Forum', 'Moraine Sands', 'St. Anthony North', 'Cleo Parker', 'DuPage'];
+
+/** A full-bleed hero whose design frame rests on the FOURTH slide, with five
+ *  numbered controls. The slides stay in document order and `initialIndex`
+ *  carries the resting position — the fixture exists because the alternative
+ *  looks equally right and is not: rotating the array so the resting slide is
+ *  first reproduces the frame, and then control "4" points at track index 0, so
+ *  pressing it rewinds to the left-hand end of the deck. */
+function MidDeckHero() {
+  const car = useCarousel({ count: HERO_SLIDES.length, initialIndex: 3 });
+  return (
+    <CarouselRoot car={car} label="Featured projects" style={{ position: 'relative', height: 320 }}>
+      <style>{`
+        [data-slot="carousel-dot"][aria-current="true"]{background:#111;color:#fff}
+      `}</style>
+      <CarouselTrack
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+        }}
+      >
+        {HERO_SLIDES.map((name, i) => (
+          <CarouselSlide
+            key={name}
+            index={i}
+            style={{
+              position: 'relative',
+              minWidth: '100%',
+              height: '100%',
+              flexShrink: 0,
+              scrollSnapAlign: 'start',
+              display: 'grid',
+              placeItems: 'center',
+              background: i % 2 ? '#1f3a5f' : '#26456f',
+              color: '#fff',
+              fontSize: 28,
+              fontWeight: 600,
+            }}
+          >
+            {name}
+          </CarouselSlide>
+        ))}
+      </CarouselTrack>
+      <CarouselPrev asChild>
+        <button aria-label="Previous slide" style={{ ...arrowStyle, left: 16 }}>
+          ←
+        </button>
+      </CarouselPrev>
+      <CarouselNext asChild>
+        <button aria-label="Next slide" style={{ ...arrowStyle, right: 16 }}>
+          →
+        </button>
+      </CarouselNext>
+      {/* The design's own numbered controls, along the bottom edge. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 24,
+          bottom: 20,
+          display: 'flex',
+          gap: 8,
+        }}
+      >
+        {HERO_SLIDES.map((name, i) => (
+          <CarouselDot key={name} index={i} style={dotStyle}>
+            {i + 1}
+          </CarouselDot>
+        ))}
+      </div>
+    </CarouselRoot>
+  );
+}
+
 const QUESTIONS = [
   { prompt: 'Where are you starting from?', options: ['Brand new', 'Been around', 'Leading already'] },
   { prompt: 'What are you after?', options: ['Community', 'Adventure', 'Growth'] },
@@ -243,6 +324,7 @@ const pillStyle: React.CSSProperties = {
 // `fixtures[name]` lookup across the boundary reads undefined and 404s.
 const FIXTURES: Record<string, () => React.ReactNode> = {
   'peek-carousel': PeekCarousel,
+  'mid-deck-hero': MidDeckHero,
   'card-quiz': CardQuiz,
 };
 

@@ -65,6 +65,53 @@ test.describe('peek carousel — authored markup on useCarousel', () => {
   });
 });
 
+test.describe('mid-deck hero — a design that rests on slide 4', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/fixture/mid-deck-hero?theme=blank');
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('the track opens on the design\'s slide, with that control marked', async ({ page }) => {
+    const track = page.locator('[data-slot="carousel-track"]');
+    const resting = await settledScrollLeft(track);
+    const width = await track.evaluate((el) => el.clientWidth);
+    // Slide 4 of five full-width slides: three slides in from the left end.
+    expect(resting).toBeGreaterThan(width * 2.5);
+    await expect(page.getByRole('button', { name: '4', exact: true })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    // The mirror arrow is honest about the seeded position, not about slide 1.
+    await expect(page.locator('[data-slot="carousel-prev"]')).toBeVisible();
+  });
+
+  test('control 4 is slide 4 — pressing it never rewinds the deck', async ({ page }) => {
+    // The regression: the resting slide was expressed by ROTATING the array, so
+    // dot 4 addressed track index 0 and pressing it scrolled to the far left.
+    const track = page.locator('[data-slot="carousel-track"]');
+    const resting = await settledScrollLeft(track);
+    await page.getByRole('button', { name: '5', exact: true }).click();
+    const atFive = await settledScrollLeft(track);
+    expect(atFive).toBeGreaterThan(resting);
+    await page.getByRole('button', { name: '4', exact: true }).click();
+    const backAtFour = await settledScrollLeft(track);
+    expect(Math.abs(backAtFour - resting)).toBeLessThan(2); // one slide back, not five
+    expect(backAtFour).toBeGreaterThan(0);
+  });
+
+  test('the reader keeps the track once they move it', async ({ page }) => {
+    // The seeded jump is an opening position, not a leash: it must not drag the
+    // track back on a later render.
+    const track = page.locator('[data-slot="carousel-track"]');
+    await settledScrollLeft(track);
+    await page.getByRole('button', { name: '1', exact: true }).click();
+    const atOne = await settledScrollLeft(track);
+    expect(atOne).toBeLessThan(2);
+    await page.waitForTimeout(400);
+    expect(await track.evaluate((el) => el.scrollLeft)).toBeLessThan(2);
+  });
+});
+
 test.describe('card quiz — authored markup on useStepFlow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fixture/card-quiz?theme=blank');

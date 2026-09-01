@@ -7,7 +7,12 @@
 // pre-hydration inert state) that hand-rolled tracks get wrong invisibly.
 //
 // Rules that survive any reshape:
-// - Slides must be DIRECT children of CarouselTrack (measurement walks them).
+// - Slides must be DIRECT children of CarouselTrack, in the DESIGN's own order
+//   (measurement walks them). If the frame rests on a later slide — the third
+//   project is the hero image — say so with `initialIndex`, and never by
+//   rotating the array to bring that slide to the front: every numbered control
+//   then addresses a different slide than it labels, and the marker reading "4"
+//   rewinds the deck to its left-hand end.
 // - Mount BOTH arrows even when the design draws one: a directional control
 //   renders exactly when it has a target, so the lone arrow's mirror appears
 //   once a slide is behind. Render only the controls the design draws — no dot

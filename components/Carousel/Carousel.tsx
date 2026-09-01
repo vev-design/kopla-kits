@@ -42,6 +42,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -61,6 +62,12 @@ import { cn } from '@/lib/utils';
  * ──────────────────────────────────────────────────────────────────────────── */
 
 type AnyProps = Record<string, unknown>;
+
+/** `useLayoutEffect` where there is a layout, `useEffect` where there is not.
+ *  Chosen once per environment, never per render, so it is not a conditional
+ *  hook — React warns about the layout variant during server rendering, and a
+ *  copy-in component lands in apps that render on a server. */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 function composeRefs(...refs: (Ref<unknown> | undefined)[]): (node: unknown) => void {
   return (node) => {
@@ -128,6 +135,29 @@ function renderSlot(
 export interface UseCarouselOptions {
   /** How many slides the track holds. */
   count: number;
+  /**
+   * The slide the track RESTS on before the reader touches it, 0-based.
+   *
+   * A design's still frame routinely shows a gallery mid-deck — the third
+   * project is the hero image, the second card is the one centered. That is a
+   * fact about the design, and it needs an option, because the alternative an
+   * author reaches for otherwise is to ROTATE the slide array so the resting
+   * slide is first. Rotating reproduces the frame and breaks the gallery: every
+   * index-addressed control (`CarouselDot index=`, a deep link, `slideProps`)
+   * now points at a different slide than its label, so pressing the marker that
+   * reads "4" rewinds to the left-hand end of the track. Set this instead and
+   * the slides stay in document order, where dot n IS slide n.
+   *
+   * Applied as an instant, unannounced jump once the engine has a track — and
+   * re-applied if the value itself changes, so a prop control moves it. It
+   * never fights the reader: their own scrolling wins from then on.
+   *
+   * With scripts off the track rests at slide 1 regardless (`scrollLeft` starts
+   * at 0 and there is no script to move it), so the slide the design drew is a
+   * hydration-time position, not a server-rendered one. Every slide is real
+   * content in document order either way.
+   */
+  initialIndex?: number;
   /**
    * Advance on a timer, in milliseconds.
    *
@@ -202,12 +232,22 @@ export interface CarouselEngine {
   registerPause: () => () => void;
 }
 
-export function useCarousel({ count, autoAdvanceMs, loop = false }: UseCarouselOptions): CarouselEngine {
+export function useCarousel({
+  count,
+  initialIndex = 0,
+  autoAdvanceMs,
+  loop = false,
+}: UseCarouselOptions): CarouselEngine {
   const trackRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
 
-  const [index, setIndex] = useState(0);
-  const [atStart, setAtStart] = useState(true);
+  const start = Math.max(0, Math.min(Math.trunc(initialIndex), count - 1));
+
+  // Seeded at the resting slide rather than at 0: the markers are rendered
+  // before any measurement can run, and a dot row that marks slide 1 for a
+  // frame and then jumps is the flicker this option exists to remove.
+  const [index, setIndex] = useState(start);
+  const [atStart, setAtStart] = useState(start === 0);
   const [atEnd, setAtEnd] = useState(false);
 
   // The controls only exist once this has hydrated: an arrow that cannot scroll
@@ -254,7 +294,7 @@ export function useCarousel({ count, autoAdvanceMs, loop = false }: UseCarouselO
   // in render. (This ref is ALSO why "press dot 5 from slide 4" moves exactly one
   // slide forward instead of rewinding past everything: the jump is computed from
   // the target slide's own offset, not from an accumulated guess.)
-  const targetRef = useRef(0);
+  const targetRef = useRef(start);
   // Resyncing the target after a scroll SETTLES is what keeps it honest: a swipe,
   // a wheel, a keyboard arrow and a snap-back all move the track without going
   // through this engine, and after any of them the scroll position is the truth.
@@ -314,7 +354,7 @@ export function useCarousel({ count, autoAdvanceMs, loop = false }: UseCarouselO
   }, [measure, count]);
 
   const scrollToIndex = useCallback(
-    (target: number, fromReader: boolean) => {
+    (target: number, fromReader: boolean, instant = false) => {
       const track = trackRef.current;
       const clamped = Math.max(0, Math.min(target, count - 1));
       const slide = track?.children[clamped] as HTMLElement | undefined;
@@ -336,13 +376,33 @@ export function useCarousel({ count, autoAdvanceMs, loop = false }: UseCarouselO
       if (align.includes('center')) left -= (track.clientWidth - slide.offsetWidth) / 2;
       else if (align.includes('end')) left -= track.clientWidth - slide.offsetWidth;
       left = Math.max(0, Math.min(left, track.scrollWidth - track.clientWidth));
-      track.scrollTo({ left, behavior: reduced ? 'auto' : 'smooth' });
+      // `behavior` in the options object overrides the track's own
+      // `scroll-behavior: smooth`, which is what makes the opening jump land
+      // before the first paint instead of animating in from slide 1.
+      track.scrollTo({ left, behavior: instant || reduced ? 'auto' : 'smooth' });
       // Announced only when the READER moved it. A carousel that narrates its
       // own timer talks over everything else on the page every few seconds.
       if (fromReader) setAnnounced(`Slide ${clamped + 1} of ${count}`);
     },
     [count, reduced],
   );
+
+  // Park the track on the design's resting slide. A LAYOUT effect, so the jump
+  // is committed in the same frame as the first paint — a passive effect would
+  // show slide 1 and then slide sideways on every load.
+  //
+  // Guarded by the value rather than by "have I run": re-running when
+  // `initialIndex` CHANGES is what makes it a live prop (a prop control in an
+  // editor moves the gallery), while re-running on every render would drag the
+  // track back under a reader who had scrolled away.
+  const appliedStart = useRef<number | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (appliedStart.current === start) return;
+    if (!trackRef.current) return;
+    appliedStart.current = start;
+    if (start === 0) return; // already where a fresh track sits
+    scrollToIndex(start, false, true);
+  }, [start, scrollToIndex]);
 
   const goTo = useCallback((i: number) => scrollToIndex(i, true), [scrollToIndex]);
   /** One slide along from wherever the reader was last headed. */

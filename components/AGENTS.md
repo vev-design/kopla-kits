@@ -31,7 +31,7 @@ actually staged rather than from a paragraph of prose in a prompt.
 "implements": [
   { "token": "carousel-arrows", "props": { "controls": "both" } },
   { "token": "carousel-auto",   "props": { "controls": "dots" },
-    "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT. Never invent an interval." }
+    "note": "Set autoAdvanceMs from the design's own AFTER_TIMEOUT; where the source states no timing, default to 5000 rather than omitting it." }
 ]
 ```
 
@@ -53,8 +53,12 @@ Three rules, and the second is the one that is easy to get wrong:
   dropped as never actually asked for; the rule outlived it.)
 - **`note` is for the part that cannot be a literal.** `carousel-auto` needs an
   interval that comes from the design's own prototype timing, so there is no
-  value to put in `props` — what belongs in the table is "take it from the
-  design, never invent one".
+  value to put in `props` — what belongs in the table is where to read it from,
+  **and what to do when the source cannot say**. A note that only forbids
+  ("never invent one") answers the first half and leaves the second to the
+  reader, who then ships the behaviour switched off: a gallery asked to
+  auto-advance with no interval is a manual gallery, and the timer's own pause
+  control hides itself because there is nothing to pause. Give the fallback.
 
 A bare string (`"implements": ["marquee"]`) stays legal and means the
 component's defaults already are that behaviour. Omit the field entirely for a
