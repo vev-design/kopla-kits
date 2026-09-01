@@ -11,13 +11,29 @@ Each component is a folder:
 
 ```
 components/<Name>/
-  component.json   # catalog metadata: description, whenToUse, tags,
-                   # hydrate, implements, vendor (never copied into a
-                   # workspace)
-  <Name>.tsx       # the component — the file you copy
-  <Name>.vendor/   # (optional) pinned third-party code the component
-                   # ships with; copied alongside the component
+  component.json     # catalog metadata: description, exports, whenToUse, tags,
+                     # hydrate, implements, demo, vendor (never copied into a
+                     # workspace)
+  <Name>.tsx         # the component — the file you copy
+  <Name>.demo.tsx    # (optional) its rendered LOOK: the lab's demo, and the
+                     # fallback for a design that drew none of its own. NEVER
+                     # copied — see below.
+  skeleton.<tok>.tsx # (optional) a minimal SECTION driving the component,
+                     # copied into src/sections/ and reshaped. Never copied
+                     # into src/components/.
+  <Name>.vendor/     # (optional) pinned third-party code the component
+                     # ships with; copied alongside the component
 ```
+
+Two manifest fields go with that layout, both optional:
+
+- **`demo`** names the module holding the rendered component (`"Carousel.demo"`).
+  The lab imports THAT; the copy-in excludes it. Absent, the component's own
+  file is both.
+- **`exports`** lists the components this folder contributes to
+  `design.json.components`, for folders that do not ship one component named
+  after themselves. `build-components.mjs` asserts every name surfaced. A hook
+  is a legitimate export and not a catalog entry, so it does not go in the list.
 
 ## `implements`: which behaviour a component is the recipe for
 
@@ -69,11 +85,12 @@ component that isn't a recipe for any of them.
 1. **Pick by `whenToUse`.** Read the `component.json` files (or the
    staged `catalog.json`); `whenToUse` says what each component is for
    AND what it is not for.
-2. **Copy everything except `component.json` and `skeleton.*` files** into
-   `src/components/`, keeping the relative layout. A `skeleton.<token>.tsx`
+2. **Copy everything except `component.json`, `skeleton.*` and `*.demo.tsx`**
+   into `src/components/`, keeping the relative layout. A `skeleton.<token>.tsx`
    is a SECTION source: copy its content into `src/sections/` instead and
-   reshape the markup there (its own header says what to keep). Today's components are a single
-   `<Name>.tsx`; a vendored component also ships a `<Name>.vendor/`
+   reshape the markup there (its own header says what to keep). A
+   `<Name>.demo.tsx` is not copied at all — it is a look, and looks belong to
+   the design being built. A vendored component also ships a `<Name>.vendor/`
    folder whose relative imports already resolve after the copy — so
    the copy is always verbatim, never edited.
 3. **Register it**: add `export * from './<Name>';` to
@@ -90,10 +107,17 @@ component that isn't a recipe for any of them.
 Same contract as a kit's component catalog (CONTRACT.md "Components"),
 plus the catalog-specific rules:
 
-- **A component that owns BEHAVIOUR ships it as an ENGINE.** A hook plus
-  unstyled slot primitives (`asChild` on every interactive one), with the
-  styled component rebuilt ON them as the lab demo and the fallback for a
-  design that drew no UI of its own. No visible interactive element — a row,
+- **A component that owns BEHAVIOUR ships it as an ENGINE, and the engine's
+  file ships no look at all.** A hook plus unstyled slot primitives (`asChild`
+  on every interactive one) in `<Name>.tsx`; the styled component rebuilt ON
+  them in `<Name>.demo.tsx`, which the lab renders and the copy-in never
+  takes. The separation is not tidiness. While the styled wrapper lived in the
+  copied file, a customer's design system ended up with a rendered component
+  registered in its own catalog that no page used, and agents reached for the
+  nearest runnable thing and then fought its chrome instead of wearing the
+  engine underneath. A class in `<Name>.tsx` must be one that IS mechanics — a
+  scroll-snap track, an `sr-only` — and never a colour, a radius or a spacing.
+  No visible interactive element — a row,
   a tab, a trigger, a control strip — may be reachable ONLY through
   component-owned markup: the consumer of this catalog is an agent wiring
   behaviour into a section that is ALREADY designed, and a widget whose
@@ -108,10 +132,14 @@ plus the catalog-specific rules:
   keep-vs-reshape split stated in its header. The skeleton is what an agent
   copies and reshapes (its markup is entirely disposable; the hook and
   primitives are not), so it is the delivery format, not documentation:
-  the `implements` notes point at it by name. Skeletons are excluded from
-  the workspace assembly (`build-components.mjs` skips `skeleton.*`) —
-  they are section SOURCES, not catalog components, and must never appear
-  in the extractor's manifest.
+  each `implements` entry names its skeleton in a `skeleton` field AND leads
+  its note with it, so a consumer can put the path in its own table rather
+  than hoping the note is read. Skeletons are excluded from the workspace
+  assembly (`build-components.mjs` skips `skeleton.*`) — they are section
+  SOURCES, not catalog components, and must never appear in the extractor's
+  manifest. An engine with no skeleton is an engine an agent has to design an
+  API usage for from scratch, which is the state this catalog was in when it
+  produced its worst output.
 
 - **Single-file** (`<Name>.tsx`) unless vendoring; imports limited to
   react, `lucide-react`, `@/lib/utils`, `@/lib/count-up`, `@/motion`,
