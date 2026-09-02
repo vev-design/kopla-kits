@@ -328,7 +328,7 @@ Builds during work are for your own verification — nothing host-side happens w
 
 ## Reference images (when present)
 
-If the prompt includes a "## Reference images" manifest, the user attached visuals to the chat. They live under `refs/` in the workspace. Read them with the Read tool — they're context for tokens, type, mood, layout, motion. They are NOT assets to ship; if a reference should appear in the system as a real asset, copy it into `public/`.
+If the prompt includes a "## Reference images" manifest, the user attached visuals to the chat. The host stages them OUTSIDE the workspace and names each file's path in the task message — open them by that path (the Read tool on Claude, `view_image` on Codex); nothing is ever written under `refs/`, and never copy one into the workspace, which is committed and backed up every turn. They are context for tokens, type, mood, layout, motion — NOT assets to ship. A reference that should appear in the system as a real asset arrives as a hosted URL or an asset module from the host, never from the picture.
 
 ## Constraints
 

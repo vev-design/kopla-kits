@@ -96,8 +96,12 @@ component that isn't a recipe for any of them.
 3. **Register it**: add `export * from './<Name>';` to
    `src/components/index.ts` (the catalog barrel — export order is
    catalog order). The extractor then surfaces it into
-   `design.json.components` on the next build; no manifest editing
-   needed.
+   `design.json.components` on the next build as `origin: generated`, so no
+   manifest entry is needed for a generated component. `components.manifest.json`
+   (workspace root, `[{ name, origin, showcase }]`) is for a component with a
+   SOURCE (a Figma `origin`) or a showcase that differs from its `<Name>Showcase`
+   export; when you do add an entry, merge into the existing array and rewrite
+   the whole file pretty-printed.
 4. **Use it from sections** like any other catalog component. Adapt at
    the call site (props, copy, wrapper layout). Edit the copied file
    only when the request genuinely needs different behavior.
