@@ -61,7 +61,10 @@ the extractor (`gen:design`). Another process assembles every component and publ
 4. **`bun run build` ONCE.** `gen:design` (`extract-design.mjs`) reads the
    barrel, your union props (→ variant axes), and `<Name>Showcase`, and emits the
    component into `design.json.components` with `origin: { kind: 'generated' }`.
-   Confirm it type-checks + bundles. Fix errors, done.
+   Confirm it type-checks + bundles. Fix errors, done. No
+   `components.manifest.json` entry is needed for a generated component: that
+   file records provenance (`origin`) and showcase for components with a SOURCE,
+   and a host import pipeline writes it for those.
 
 ## Never
 
