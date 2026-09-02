@@ -1,0 +1,14 @@
+{
+  "name": "Neon Glass",
+  "description": "A dark, ambient design system: frosted glass panels glow over deep-violet-to-hot-pink gradients, headlines sweep variable weight as you scroll, and a fine film grain keeps the shine from feeling flat.",
+  "whenToUse": "Pick for a bold, immersive announcement: AI and creative-tool product launches, music and event pages, app or drop reveals, and premium tech brands that want to feel alive rather than corporate. The chain reads as one continuous glow-through: a frosted sticky navbar, a full-bleed ambient hero whose headline scrubs font weight on scroll, a bento feature grid of glass cards, a pinned glass-framed media showcase, an animated stat band, a glass testimonial, glass pricing tiers with a highlighted plan, a closing gradient CTA, and a glass footer. The palette is near-black with deep-violet and electric-blue glow and one hot-pink accent; Bricolage Grotesque carries the kinetic display type. Differentiation: AI Product (this repo's other dark kit) is flat, neutral, and engineered — one iris accent, hairline rules, a terminal window — for a serious dev-platform register; Neon Glass is maximal and glowing, built from translucent layered glass and multi-hue gradients, for a brand that wants spectacle. Kinetic Type (this repo's other scroll-scrubbed-type kit) is explicitly built to carry a brand on typography alone with little to no photography, on a light warm ground; Neon Glass is dark, expects real imagery and video inside its glass frames, and reserves the weight-scrub for the hero rather than making it the whole system. Avoid Neon Glass for content-dense reading, dashboards, accessibility-first contexts that need stable high-contrast text, or conservative corporate and financial brands — the glow and grain compete with dense copy and the near-black base is not a place for long-form text.",
+  "tags": [
+    "Glassmorphism",
+    "Dark",
+    "Gradient",
+    "Kinetic"
+  ],
+  "featured": false,
+  "order": 35,
+  "accent": "#FF2D78"
+}
