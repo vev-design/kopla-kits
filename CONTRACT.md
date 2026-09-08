@@ -148,6 +148,15 @@ page agents) can only pick what the kit author enumerated.
   `<MediaBlock media={…} />` (or the individual block components).
   Adding a block to `_base` never widens an existing section's slot;
   each section opts in explicitly.
+
+  A slot is the DEFAULT for a section's content media (its own subject
+  matter — a hero photograph, an image-text column, a product shot);
+  design furniture (logos, avatars, icons, textures, background
+  patterns) stays a plain `@kind image` string. The asymmetry is in what
+  each costs to change later: adding a kind to an existing slot is a
+  non-breaking catalog change, while turning `image: string` into a slot
+  is a breaking prop shape that invalidates pages already built against
+  the system. See `_base/AGENTS.md` for the authoring rule.
 - Demo values for block slots must be **inline object literals** in the
   `<Name>Demo` export — the demo extractor reads literals only, so
   don't reference shared constants.
