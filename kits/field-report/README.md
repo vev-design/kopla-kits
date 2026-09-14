@@ -12,7 +12,7 @@ The sequence begins with `StoryToolbar`, a quiet orientation device that remains
 
 ## Catalog
 
-The sections compose three shared editorial primitives: `SectionKicker` for chapter rhythm, `PullQuote` for source-led punctuation, and `EditorialButton` for understated actions. The kit’s base `Button` remains available for any future task that genuinely needs a conventional control, while the report sections deliberately use the lighter editorial action primitive.
+The sections compose three shared editorial primitives: `SectionKicker` for chapter rhythm, `PullQuote` for source-led punctuation, and `EditorialButton` for understated actions. The base `Button` primitive remains reachable at `@/components/ui/button` for any future task that genuinely needs a conventional control, while the report sections deliberately use the lighter editorial action primitive.
 
 ## Brand foundations
 
