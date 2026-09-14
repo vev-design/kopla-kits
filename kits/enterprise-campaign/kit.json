@@ -1,0 +1,10 @@
+{
+  "name": "Enterprise Campaign",
+  "description": "An airy, outcome-led B2B campaign system: expansive white, near-black contrast stages, precise hairlines and compact bursts of coral, lime and lilac, with a native webinar registration form built in.",
+  "whenToUse": "Pick for an enterprise campaign page that asks for a registration rather than a signup: a webinar or event landing page, an ABM or named-account page, a platform launch page, a demand-gen campaign. The chain runs Hero, a high-intent registration form with agenda and in-place confirmation while attention is highest, an editable media feature with native disclosure detail, a card runway of roles and outcomes, a near-black product stage, a customer story, several low-friction next steps, third-party validation, a final statement and a footer. All motion is CSS-only. Prefer SaaS Landing for a self-serve product page with pricing, and Proposal when the page is addressed to one named customer.",
+  "tags": ["Enterprise", "Campaign", "Webinar", "B2B"],
+  "featured": false,
+  "order": 45,
+  "accent": "#F91C81",
+  "thumbnail": null
+}

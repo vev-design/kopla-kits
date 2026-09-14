@@ -1,0 +1,10 @@
+{
+  "name": "Fintech Launch",
+  "description": "A monochrome business-finance product system: deep black stages for the promises, fog-grey working surfaces for the explanations, quiet 18px corners, spacious display type and deliberately plain actions.",
+  "whenToUse": "Pick for a money product that has to feel calm and premium rather than ornamental: a business account, embedded finance, an accounting or invoicing tool, a company-formation service, a fintech waitlist or early-access launch. The chain is a tall full-bleed hero, a dark asymmetrical bento grid of the offer, a credibility row, a lighter invoicing workflow, an integration bridge, a founder milestone, a black immersive customer story, a native email-capture form with its confirmation designed into the same stage, a final action and a footer. Media arrives through editable content slots rather than baked into the layout. Prefer Finance when the page is chart-led and data-forward, and SaaS Landing for general product marketing with pricing.",
+  "tags": ["Fintech", "Finance", "Product", "Launch"],
+  "featured": false,
+  "order": 95,
+  "accent": "#1D1D1B",
+  "thumbnail": null
+}

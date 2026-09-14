@@ -1,0 +1,10 @@
+{
+  "name": "Field Report",
+  "description": "A scroll-first research-publication system: warm paper grounds, near-black report type, hairline rules and oversized graphic letterforms, with lavender, cyan and green appearing only as translucent material signals.",
+  "whenToUse": "Pick for an investigated argument that wants to look researched rather than marketed: a science or sustainability field report, an impact or materials-transition study, a campaign whitepaper, a data-led editorial. The chain is a quiet orientation toolbar, a full-screen typographic cover with faint orbital marks, a two-column reading spread with a sourced quote in the counter-column, a full-bleed chapter divider, an evidence spread pairing report copy with an oversized circular fact set, a calm closing invitation and a source-credit footer. Every section works without JavaScript; the only motion is CSS scroll-entry and one slow orbit, both with a reduced-motion fallback. Prefer Editorial for a magazine feature carried by a serif, and Annual Report for corporate results and financial charts.",
+  "tags": ["Report", "Research", "Sustainability", "Editorial"],
+  "featured": false,
+  "order": 23,
+  "accent": "#8F20C8",
+  "thumbnail": null
+}

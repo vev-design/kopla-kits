@@ -1,0 +1,10 @@
+{
+  "name": "Proposal",
+  "description": "A named-customer proposal deck that reads as a page: deep forest ink on paper off-white, an acid-lime primary and warm peach accents, DM Sans set large, and a fixed thumbnail rail that makes every later beat one click away.",
+  "whenToUse": "Pick for a document addressed to ONE named audience and argued from top to bottom: a client or partner proposal, a programme or benefit pitch, an account plan, a board or steering-group brief, a working-session leave-behind. The chain is a complete narrative — a dark image-led opening, a persistent section rail outside the story flow, a three-pillar argument, an editorial image collage carrying principles as social proof, a dark step-by-step rollout with a sticky image, a high-contrast ask, and a compact sign-off. Human photography rather than product screenshots; practical and collective in voice. Prefer Pitch Deck instead when the piece is a full-viewport slide-per-idea keynote, and SaaS Landing when the goal is self-serve conversion rather than a meeting.",
+  "tags": ["Proposal", "Sales", "Deck"],
+  "featured": false,
+  "order": 35,
+  "accent": "#D8FF57",
+  "thumbnail": null
+}

@@ -1,0 +1,11 @@
+import { Button, Card } from '@/components';
+import type { SectionBaseProps } from '@/types';
+
+/** A soft-grey invoicing feature band that presents operational workflows in calm, oversized product tiles. */
+export interface InvoiceGridProps extends SectionBaseProps {
+  /** Primary statement. 4–9 words, no trailing period. */ headline: string;
+  /** Supporting action. */ action?: { label: string; /** @kind url */ href: string } | null;
+  /** Workflow cards. Exactly 3 items, each with a 3–7 word title and 1–2 sentence description. */ items: { title: string; body: string; detail: string }[];
+}
+export function InvoiceGrid({ id, headline, action, items }: InvoiceGridProps) { return <section id={id ?? undefined} className="bg-background px-5 py-24 sm:px-8 lg:px-12 lg:py-32"><div className="mx-auto max-w-7xl"><div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"><h2 className="max-w-3xl text-[clamp(2.8rem,6vw,6rem)] font-semibold leading-[.93] tracking-[-0.02em]">{headline}</h2>{action ? <Button {...action} variant="outline" className="self-start md:self-auto" /> : null}</div><div className="mt-14 grid gap-4 lg:grid-cols-3">{items.map((item, index) => <Card key={item.title} title={item.title} body={item.body} padding="spacious" className="flex min-h-[25rem] flex-col justify-between"><div className="mt-12 rounded-lg border border-border bg-background p-4 text-sm shadow-sm"><p className="text-muted-foreground">{index === 1 ? 'Qonto assistant' : 'Invoice workspace'}</p><p className="mt-3 font-semibold">{item.detail}</p><div className="mt-4 h-2 w-3/4 rounded-full bg-primary/10" /></div></Card>)}</div></div></section>; }
+export const InvoiceGridDemo: InvoiceGridProps = { id: 'tools', headline: 'Compliant invoicing, without the admin', action: { label: 'Discover invoicing', href: '#integrations' }, items: [{ title: 'Get ready for e-invoicing', body: 'Create compliant invoices in every plan and keep requirements on track.', detail: 'New invoice · Ready to send' }, { title: 'Create unlimited quotes & invoices', body: 'Track status in real time and get paid faster with payment links.', detail: 'How much did I spend by category?' }, { title: 'Supplier invoices in one place', body: 'Auto-import supplier invoices, pay them in one click, and automate reconciliation.', detail: '4 invoices uploaded' }] };
