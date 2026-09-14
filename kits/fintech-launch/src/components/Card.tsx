@@ -1,0 +1,8 @@
+import { cva } from 'class-variance-authority';
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+const cardStyles = cva('rounded-xl p-6 transition-shadow duration-300 ease-out', { variants: { variant: { light: 'bg-card text-card-foreground', dark: 'bg-[var(--dark-surface)] text-primary-foreground', outlined: 'border border-border bg-transparent' }, padding: { compact: 'p-5', comfortable: 'p-8', spacious: 'p-10' } }, defaultVariants: { variant: 'light', padding: 'comfortable' } });
+/** A rounded content surface for product tiles, feature descriptions, and proof points. */
+export interface CardProps { /** Primary label. 2–8 words. */ title: string; /** Supporting copy. 1–2 sentences, 12–28 words. */ body?: string | null; /** Optional composed content, displayed beneath the text. */ children?: ReactNode; /** Surface treatment. */ variant?: 'light' | 'dark' | 'outlined'; /** Interior spacing scale. */ padding?: 'compact' | 'comfortable' | 'spacious'; /** Optional extra classes. */ className?: string; }
+export function Card({ title, body, children, variant = 'light', padding = 'comfortable', className }: CardProps) { return <article className={cn(cardStyles({ variant, padding }), className)}><h3 className="text-xl font-semibold tracking-[-0.01em]">{title}</h3>{body ? <p className="mt-3 max-w-md text-base leading-6 opacity-70">{body}</p> : null}{children}</article>; }
+export const CardShowcase = [{ props: { title: 'Account remuneration', body: 'Earn up to 5% on your Qonto account balance.', variant: 'dark', padding: 'comfortable' } }, { props: { title: 'Built for momentum', body: 'Everything your team needs in one place.', variant: 'light', padding: 'compact' } }];

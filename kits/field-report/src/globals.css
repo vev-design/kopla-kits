@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --radius: 0rem;
+  --background: oklch(from #ffffff l c h);
+  --foreground: oklch(from #000000 l c h);
+  --card: oklch(from #ffffff l c h);
+  --card-foreground: oklch(from #222222 l c h);
+  --popover: oklch(from #ffffff l c h);
+  --popover-foreground: oklch(from #222222 l c h);
+  --primary: oklch(from #222222 l c h);
+  --primary-foreground: oklch(from #ffffff l c h);
+  --secondary: oklch(from #e7e4f6 l c h);
+  --secondary-foreground: oklch(from #222222 l c h);
+  --muted: oklch(from #f5f2ec l c h);
+  --muted-foreground: oklch(from #555555 l c h);
+  --accent: oklch(from #8f20c8 l c h);
+  --accent-foreground: oklch(from #ffffff l c h);
+  --destructive: oklch(from #b42318 l c h);
+  --border: oklch(from #222222 l c h / 0.42);
+  --input: oklch(from #222222 l c h / 0.42);
+  --ring: oklch(from #8f20c8 l c h);
+  --chart-1: oklch(from #8f20c8 l c h);
+  --chart-2: oklch(from #0dbcc7 l c h);
+  --chart-3: oklch(from #78e94d l c h);
+  --chart-4: oklch(from #7d7aaa l c h);
+  --chart-5: oklch(from #0039a6 l c h);
+  --paper: oklch(from #f8f6f1 l c h);
+  --lavender: oklch(from #9694c5 l c h);
+}
+
+@theme inline {
+  --font-sans: 'Figtree', Arial, sans-serif;
+  --font-display: 'Figtree', Arial, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --radius-sm: var(--radius); --radius-md: var(--radius); --radius-lg: var(--radius); --radius-xl: var(--radius);
+  --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground); --color-destructive: var(--destructive); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3); --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground antialiased; font-family: var(--font-sans); }
+}
+
+@keyframes orbit-mark { to { transform: rotate(360deg); } }
+.paper-grain { background-color: var(--paper); background-image: radial-gradient(oklch(from #222222 l c h / .06) .65px, transparent .8px); background-size: 5px 5px; }
+.orbit-mark { animation: orbit-mark 12s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .orbit-mark { animation: none; } }
+
+/* The display role is the LIGHT cut of the family. The system this kit
+   came from carried that cut as a separate family; on a variable face it
+   is a weight, so it is set here rather than in the font stack. Base
+   layer, so a weight utility on the same element still wins. */
+@layer base { .font-display { font-weight: 300; } }

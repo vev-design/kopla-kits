@@ -1,0 +1,8 @@
+import { cva } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+const styles = cva('inline-flex items-center justify-center whitespace-nowrap font-bold transition-[border-radius,background,color,border-color] duration-200 ease-in-out focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-45', { variants: { variant: { solid: 'bg-primary text-primary-foreground hover:bg-[var(--primary-hover)]', outline: 'border border-border bg-background text-foreground hover:border-[var(--disabled)] hover:bg-muted' }, size: { sm: 'h-9 rounded-xl px-4 text-sm', md: 'h-11 rounded-2xl px-6 text-sm', lg: 'h-13 rounded-2xl px-7 text-base' } }, defaultVariants: { variant: 'solid', size: 'md' } });
+/** A rounded action control for app downloads, page actions, and navigation. */
+export interface ButtonProps { /** Visible action label. 1–4 words, sentence case. */ label: string; /** Destination URL for the action. @kind url */ href: string; /** Surface treatment for the button. */ variant?: 'solid' | 'outline'; /** Visual scale of the control. */ size?: 'sm' | 'md' | 'lg'; /** Disables the control while retaining its visible label. */ disabled?: boolean; /** Optional additional utility classes. */ className?: string; }
+export function Button({ label, href, variant = 'solid', size = 'md', disabled, className }: ButtonProps) { return <a href={disabled ? undefined : href} aria-disabled={disabled || undefined} className={cn(styles({ variant, size }), className)}>{label}</a>; }
+export const ButtonShowcase = [{ label: 'Primary action', props: { label: 'Get the app', href: '#', variant: 'solid', size: 'md' } }, { label: 'Outline action', props: { label: 'Learn more', href: '#', variant: 'outline', size: 'md' } }];

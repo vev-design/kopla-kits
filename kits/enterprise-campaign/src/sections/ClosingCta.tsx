@@ -1,0 +1,6 @@
+import { Button } from '@/components';
+import type { SectionBaseProps } from '@/types';
+/** Final full-width ask with the confidence of a platform-scale statement. Use as the ending slide after proof and resources. */
+export interface ClosingCtaProps extends SectionBaseProps { /** Closing platform statement. 8–14 words, no trailing period. */ headline: string; /** Main action. */ cta: { label: string; href: string }; /** Optional fine-print line. 8–18 words. */ note?: string | null; }
+export function ClosingCta({ id, headline, cta, note = null }: ClosingCtaProps) { return <section id={id ?? undefined} className="bg-primary px-5 py-24 text-primary-foreground lg:px-8 lg:py-32"><div className="mx-auto grid max-w-[1400px] items-start gap-12 lg:grid-cols-[1fr_auto]"><div><h2 className="max-w-4xl text-5xl font-[350] leading-[.95] tracking-[-.07em] lg:text-8xl">{headline}</h2>{note && <p className="mt-16 text-sm text-primary-foreground/70">{note}</p>}</div><Button href={cta.href} variant="light" size="lg">{cta.label}</Button></div></section>; }
+export const ClosingCtaDemo: ClosingCtaProps = { id: 'close', headline: 'The only platform that can support your company at any scale', cta: { label: 'Get started', href: '#top' }, note: 'Accurate as of December 2023, includes free and paid users.' };
