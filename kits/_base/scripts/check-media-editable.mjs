@@ -18,6 +18,16 @@
 // as uneditable — worst on exactly the full-bleed heroes where the image IS the
 // section. See AGENTS.md → the `pointer-events-none` rule.
 //
+// A third rule is the same question about a VIDEO, one level up:
+//
+//   3. A hand-written `<video>` (or a provider `<iframe>`) inside a section.
+//      It renders, it publishes, and the clip's playback — autoplay, mute,
+//      loop, the play bar — is then a decision baked into the markup, where the
+//      editor's inspector cannot reach it. The person who wanted the hero to
+//      loop has to ask an agent for that change and every change after it. The
+//      media block owns the element and exposes those four as props; see
+//      AGENTS.md → "A video's PLAYBACK belongs to the block".
+//
 // This runs on the ASSEMBLED workspace, beside extract-design.mjs, so it covers
 // an AI-authored system as well as a shipped kit — the container runs this same
 // build. It WARNS by default and fails only under `--strict`, and that split is
@@ -42,7 +52,7 @@
 //   bun scripts/check-media-editable.mjs [--strict]
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
@@ -105,6 +115,21 @@ function isMediaElement(tag, classes, attrText) {
 
 function hasPointerEventsNone(classes) {
   return /\bpointer-events-none\b/.test(classes);
+}
+
+/** Is this the media block itself? The block is `_base`-owned and is the one
+ *  place a `<video>` belongs, so it is the one place exempt. Matched on the
+ *  directory rather than the filename: a block that grows a second file (an
+ *  `<audio>` one, say) should not have to be added here. */
+function isBlockFile(file) {
+  return relative(ROOT, file).split(sep).includes('blocks');
+}
+
+/** A player element written by hand. The namespace prefix is allowed for the
+ *  reason isMediaElement allows it — a wrapper forwarding to a real element is
+ *  the same problem. */
+function isPlayerElement(tag) {
+  return /(^|\.)(video|iframe)$/.test(tag);
 }
 
 /** The source text of a node — TS7 handles carry positions, not text, so the
@@ -182,6 +207,17 @@ function checkFile(file, source, text, findings) {
             `<${tag}> displays media and carries \`pointer-events-none\`, so the editor's ` +
             'hit test cannot find it — the image cannot be selected or swapped. Move the class ' +
             'to the decorative layers above it.',
+        });
+      }
+      // Rule 3 — a player written by hand, outside the media block.
+      if (isPlayerElement(tag) && !isBlockFile(file)) {
+        findings.push({
+          where: describe(node, file, text),
+          message:
+            `<${tag}> plays media directly, so its playback (autoplay, mute, loop, the play ` +
+            "bar) is baked into the markup and the editor's inspector cannot offer it. Render " +
+            '`<MediaBlock media={…} />` from `@/components/blocks` and type the prop as a slot ' +
+            'instead; the block handles direct files, YouTube and Vimeo alike.',
         });
       }
     }

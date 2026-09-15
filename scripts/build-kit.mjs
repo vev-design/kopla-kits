@@ -40,7 +40,7 @@ async function listKits() {
 
 async function stageExtractor(work) {
   await mkdir(resolve(work, 'scripts/lib'), { recursive: true });
-  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs']) {
+  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs', 'lib/prop-type.mjs']) {
     await cp(resolve(EXTRACTOR_SRC, rel), resolve(work, 'scripts', rel));
   }
 }
