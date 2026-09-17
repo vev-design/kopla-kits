@@ -160,6 +160,19 @@ page agents) can only pick what the kit author enumerated.
 - Demo values for block slots must be **inline object literals** in the
   `<Name>Demo` export — the demo extractor reads literals only, so
   don't reference shared constants.
+- **The video block owns PLAYBACK.** `VideoBlockProps` carries `autoplay`,
+  `muted`, `loop` and `hideControls` — four OPTIONAL booleans, each meaning off
+  when absent, read as `=== true` (an optional prop reaches a section as `null`).
+  Optional is load-bearing rather than polite: a consumer validates a slot value
+  by finding a branch it satisfies with no issues, so a required boolean would
+  fail that check for every video already stored on every page at once. The
+  block applies them to a native `<video>` and maps them onto the YouTube and
+  Vimeo embed parameters, and it forces muting while autoplay is on, because a
+  browser will not start a clip that has sound. `hideControls` rather than
+  `controls` so that every default is false: `design.json` carries no defaults,
+  and a flag whose off state is `true` could not be expressed. A section renders
+  the block and never writes its own `<video>` or provider `<iframe>` — see
+  `_base/AGENTS.md` for why.
 - Blocks must stay static (no client JS) unless documented otherwise; a
   section hosting a block that animates or hydrates must carry the
   `@hydrate` tag itself.

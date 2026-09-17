@@ -273,7 +273,7 @@ for (const slug of kits) {
   // lives in scripts/extractor/, and staging it here is exactly what
   // build-kit.mjs does — the CI check builds the way a real consumer does.
   await mkdir(resolve(work, 'scripts/lib'), { recursive: true });
-  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs']) {
+  for (const rel of ['extract-design.mjs', 'lib/tokens.mjs', 'lib/ts.mjs', 'lib/prop-type.mjs']) {
     await cp(resolve(ROOT, 'scripts/extractor', rel), resolve(work, 'scripts', rel));
   }
 

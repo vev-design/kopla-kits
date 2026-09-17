@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { tsAsync, tsAst } from './lib/ts.mjs';
 
 import { collectTokensFromCss } from './lib/tokens.mjs';
+import { booleanFromLiteralOptions } from './lib/prop-type.mjs';
 
 // Named bindings, destructured rather than imported: lib/ts.mjs decides WHICH
 // typescript these come from (the container's own install, not the
@@ -721,6 +722,10 @@ async function typeToPropType(type, checker, kindOverride, depth = 0, typeNode =
   // ReactNode is itself an aliased union, so check before isUnionType().
   if (await isReactContentType(type)) return { kind: 'richtext' };
   if (depth > MAX_PROP_DEPTH) return { kind: 'string' };
+  // The intrinsic `boolean` carries BOTH the Boolean flag and the Union one, so
+  // it has to be claimed before the union branch or a REQUIRED `flag: boolean`
+  // decomposes into its two literals exactly like an optional one.
+  if (type.flags & TypeFlags.Boolean) return { kind: 'boolean' };
   if (type.isUnionType()) {
     const constituents = await type.getTypes();
     const nonNullish = constituents.filter(
@@ -751,7 +756,10 @@ async function unionToPropType(types, checker, kindOverride, depth = 0) {
   }
   const options = [];
   for (const t of types) options.push(await typeToPropType(t, checker, kindOverride, depth + 1));
-  return { kind: 'union', options };
+  // `boolean` IS `true | false` to the checker, so an optional flag arrives here
+  // as two literals. Left as a union it renders read-only in a consumer's
+  // inspector — see booleanFromLiteralOptions.
+  return booleanFromLiteralOptions(options) ?? { kind: 'union', options };
 }
 
 async function atomicTypeToPropType(type, checker, kindOverride, depth = 0) {
