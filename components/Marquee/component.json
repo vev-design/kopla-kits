@@ -1,8 +1,25 @@
 {
   "name": "Marquee",
-  "description": "An endless horizontal ticker of short text items, scrolling in a seamless loop with faded edges.",
-  "whenToUse": "Social proof and momentum strips — client names, press mentions, ticker headlines, value-prop keywords — when the user asks for a marquee, ticker, or endlessly scrolling strip. Pure CSS animation: works without JavaScript and honors prefers-reduced-motion. NOT for logo images (use a LogoCloud-style section) or content the reader must be able to study.",
-  "tags": ["ticker", "social-proof", "css-only"],
+  "description": "A CSS-only endless horizontal strip of text, logo images, or authored content, with native pause controls and a static reduced-motion layout.",
+  "whenToUse": "Customer-logo rows, client names, press mentions and short ticker items when an endlessly scrolling strip is requested. Preserve source artwork through logos or children and pass its measured sizing and duration. Start from skeleton.marquee.tsx and use MarqueePause for the native pause control. Styling belongs to the section. Not for slides advanced one at a time, multi-row logo grids, or content that needs extended reading.",
+  "tags": [
+    "ticker",
+    "social-proof",
+    "logos",
+    "css-only"
+  ],
   "hydrate": false,
-  "vendor": []
+  "vendor": [],
+  "exports": [
+    "Marquee",
+    "MarqueePause"
+  ],
+  "demo": "Marquee.demo",
+  "implements": [
+    {
+      "token": "marquee",
+      "skeleton": "skeleton.marquee.tsx",
+      "note": "START FROM skeleton.marquee.tsx. Preserve source logo assets through logos or authored children, and keep MarqueePause mounted. Set gap, dimensions and duration from the design; use the default speed where timing is unspecified. Reshape the section styling without rewriting the loop."
+    }
+  ]
 }
