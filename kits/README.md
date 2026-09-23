@@ -70,8 +70,9 @@ authoring rules.
 ## Tokens & schemes
 
 A kit's `src/globals.css` is the source of truth for its tokens.
-`_base/scripts/extract-design.mjs` surfaces them into `design.json.tokens`
-so hosts can read + override them without re-parsing CSS:
+`scripts/extract-design.mjs` — the extractor the compiling host stages, not
+one `_base` ships (CONTRACT.md → "The toolchain travels") — surfaces them into
+`design.json.tokens` so hosts can read + override them without re-parsing CSS:
 
 - `tokens.base` — the always-applied scheme: the `:root` block (brand colors,
   `--radius`) plus the kit's authored `@theme inline` font tokens, plus

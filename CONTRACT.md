@@ -206,10 +206,21 @@ Components are **design-system identity**, so a kit **owns its catalog**:
   the assembled `src/components/index.ts` re-exports.
 - Each component is a named React component with a typed `*Props` interface,
   authored like a section (JSDoc → description, JSDoc per prop → prop docs,
-  `@kind` overrides, `@hydrate` opt-in). **Declare variant axes as explicit
-  string-union props** (e.g. `variant?: 'default' | 'outline'`) — the extractor
-  turns each enum prop into a variant axis for the canvas matrix, so don't hide
-  them behind a library generic (`VariantProps<…>`).
+  `@kind` overrides, `@hydrate` opt-in). The extractor turns each enum prop into
+  a variant axis for the canvas matrix. **Declare them as explicit string-union
+  props** (e.g. `variant?: 'default' | 'outline'`) when you author a component
+  yourself — the order you write is the order the canvas lays out.
+- A **`cva`-declared axis is read too**, so a component whose props come from
+  `VariantProps<typeof xVariants>` — every shadcn registry primitive — is a
+  valid catalog entry as it ships, with no rewrite. A host reads the variants
+  map's key order (the checker alphabetizes a mapped type's properties, which
+  is not what the author wrote) and takes the axis's `defaultValue` from
+  `defaultVariants`. Both reads FAIL CLOSED to the checker's own answer, so
+  spell the keys out: a spread into the variants map or a computed key leaves
+  the axis in whatever order the compiler resolved. Like every other extraction
+  semantic this is the HOST's to implement (above), and `scripts/extractor/`
+  may lag it — which is invisible here, since nothing in this repo reads
+  `axes`.
 - Components must stay **token-themed**: style them with the same token-backed
   utilities sections use (`bg-primary`, `border`, `rounded-*`, `font-*`, …) so a
   component renders in each system's own look with no per-system code. Extracting
@@ -230,8 +241,8 @@ Components are **design-system identity**, so a kit **owns its catalog**:
 `design.json.components`. The agent-facing step-by-step for authoring one
 component (including importing from Figma) is `_base/AGENTS.components.md`, and
 it follows exactly this contract: components declared in `src/components/index.ts`,
-variant axes from explicit string-union props, preview states from
-`<Name>Showcase`. Provenance beyond `origin: generated` (e.g. a Figma
+variant axes from enum props (written unions, or a `cva` variants map), preview
+states from `<Name>Showcase`. Provenance beyond `origin: generated` (e.g. a Figma
 `fileKey`/`nodeId`) is the host import pipeline's concern, not the kit build's.
 
 ## Advanced components (top-level `components/`)
@@ -251,7 +262,7 @@ agent-facing copy-in guide.
   `<Name>.tsx`, the copy-in source. `component.json` is metadata, never
   materialized — same rule as `kit.json`.
 - Components follow the kit component contract above (typed JSDoc'd
-  `*Props`, explicit string-union variant axes, `<Name>Showcase`,
+  `*Props`, enum variant axes, `<Name>Showcase`,
   token-themed styling, `@hydrate` opt-in) so the copied file surfaces
   into `design.json.components` with **no rework**.
 - **No npm dependencies beyond `_base`'s.** A component that needs a
