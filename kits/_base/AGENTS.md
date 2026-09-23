@@ -210,7 +210,7 @@ src/
 Treat the shipped shadcn/ui primitives and Tailwind v4 theme as a head start, not a constraint:
 
 - **Re-skin** the system by editing the `:root` token block in `src/globals.css` — that's how brand color, radius, fonts, etc. flow into every primitive and section. The `@theme inline { ... }` block maps those CSS variables to Tailwind utility tokens (`bg-primary`, `text-muted-foreground`, `rounded-lg`).
-- **Add primitives** with `bun run ui:add <name>` (alias for `bun x shadcn@latest add`). The CLI writes to `src/components/ui/<name>.tsx`, installs Radix deps, and uses the `cn()` helper. Full registry at <https://ui.shadcn.com/docs/components>. Don't hand-roll a primitive that exists in the registry.
+- **Add primitives** with `bun run ui:add <name> --yes` (alias for `bun x shadcn@latest add`). The CLI writes to `src/components/ui/<name>.tsx`, installs Radix deps, and uses the `cn()` helper. Full registry at <https://ui.shadcn.com/docs/components>. Don't hand-roll a primitive that exists in the registry — a registry family arrives complete (`TabsList`/`TabsTrigger`/`TabsContent`), which a hand-written one usually does not. Two things the CLI does NOT do: re-export it from `src/components/index.ts`, and give it a `<Name>Showcase`. Both are on you — see [UI primitives](#ui-primitives). It may also inject its own CSS variables into `src/globals.css`; the theme is this system's, so remove what your design does not use.
 - **Modify** generated primitives in place when the spec needs variants or behavior shadcn defaults don't cover. They're your code now.
 - **Delete** primitives no section in this system uses.
 - **Install** any third-party npm package the spec calls for — chart libraries, date pickers, form helpers, image utilities. `bun add <pkg>` and import normally. Prefer maintained, popular packages; the bundle ships as a single ESM module so tree-shaking matters. The exception is JS animation libraries (`motion`, `framer-motion`, gsap …) — animation is CSS here (see [Motion](#motion--srcmotion)), and importing one pulls sections into the hydration set.
@@ -244,9 +244,10 @@ Add new wrappers under `src/motion/` (class + keyframes in `motion.css`, compone
 ### UI primitives
 
 - **Add via CLI**, edit in place. Don't hand-write a primitive that exists in the shadcn registry.
-- **Variants via `cva`** — shadcn primitives use `class-variance-authority` to define variant maps. Follow that pattern when authoring new ones.
+- **Variants via `cva`** — shadcn primitives use `class-variance-authority` to define variant maps. Follow that pattern when authoring new ones. A primitive you author yourself declares its axes as explicit string unions; one that came from the registry infers them with `VariantProps<…>`, which the extractor reads too — don't convert it (CONTRACT.md → Components).
 - **Use `cn()`** from `@/lib/utils` to merge Tailwind classes. Never concatenate class strings by hand.
-- **Re-export from `components/index.ts`** if you want the single-import surface.
+- **Re-export from `components/index.ts`.** Not a convenience: that barrel IS the component catalog a host compiles, so a primitive on disk and missing from it does not exist to the product — and nothing errors, the build stays green and the catalog is just short. Every primitive you keep, including each sibling part of a registry family.
+- **Give each one a `<Name>Showcase`** — a `{ props, label? }[]` of static literals. A registry component arrives without one and renders as an empty variant grid until you add it. See `AGENTS.components.md`.
 
 ### Styling
 

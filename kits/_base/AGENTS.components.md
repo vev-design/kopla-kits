@@ -12,7 +12,7 @@
 > tokens, follow THOSE instructions where they differ — that build owns
 > `src/globals.css` and the whole catalog, so the "never edit `src/globals.css`"
 > and "only one component" rules under **Never** do not apply. The authoring
-> conventions here (explicit string-union props, `cva`, `<Name>Showcase`, the
+> conventions here (enum variant props, `cva`, `<Name>Showcase`, the
 > catalog barrel, importing a base instead of re-creating it) apply either way.
 
 You are adding a **single component** to this design system's component catalog —
@@ -42,9 +42,13 @@ the extractor (`gen:design`). Another process assembles every component and publ
    interface with **one prop per variant axis**, declared as an **explicit
    string-union of every value** (e.g. `variant?: 'solid' | 'outline'`), plus
    content props. The extractor reads these union props to populate the
-   component's variant axes — so declare them explicitly; do **not** hide them
-   behind a library generic (`VariantProps<…>`). Use `cva` for the *styling* of
-   those variants. Render **every** state (incl. focus / disabled) using each
+   component's variant axes, in the order you write them. Use `cva` for the
+   *styling* of those variants. (A component you did not author by hand — a
+   shadcn registry primitive — infers its axes with `VariantProps<typeof
+   xVariants>` instead, and that is FINE: the extractor reads the `cva` variants
+   map directly. Leave it as it ships rather than converting it. See
+   CONTRACT.md → Components for what that read cannot recover.) Render **every**
+   state (incl. focus / disabled) using each
    variant's exact values; reference colors via the mapped tokens, falling back
    to component-scoped values for unmapped ones. JSDoc the component and each
    prop (the extractor uses it for descriptions).
