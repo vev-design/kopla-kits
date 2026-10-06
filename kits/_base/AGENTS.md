@@ -41,6 +41,10 @@ Pick the section set from the user's prompt: which sections does this system nee
 
   If the block on disk is missing a setting, add it TO THE BLOCK as another optional boolean, read as `=== true` (an optional prop reaches a section as `null`, which a default parameter would not catch). Never make one REQUIRED: every page already built against this system carries a video value without it, and a required prop fails validation for all of them at once.
 
+- **An animation is the `LottieBlock`, and it never imports a player.** A Lottie file (`.json`) goes in a slot's `{ kind: 'lottie' }` branch — union `| LottieBlockProps` into any media frame where an animation belongs — and renders through `<MediaBlock media={…} />` or `<LottieBlock {...media} />`. The block renders an empty, sized element carrying the file's URL; the HOST plays it, loading its player only on pages that have an animation. So never `import lottie-web` (or any player) into a section, and never mark a section `@hydrate` to play one: that ships a player on every page of the site and makes the section's playback invisible to the person editing it. Its settings — `play` (`view` / `load` / `hover`), `playOnce`, `speed` — are optional, like the video block's.
+
+  An ANIMATED ICON is the same block at icon size, usually with `play: 'hover'`: type the prop `icon: LottieBlockProps` (or a union with the section's static icon type) and render `<LottieBlock {...icon} />` inside a fixed-size box, e.g. `size-10`.
+
 - **Sections own their composition.** Inside a section, freely compose shadcn primitives, Tailwind utilities, and motion wrappers. Externally, the only knobs are the documented props.
 - **Sections are fluid.** `width: 100%`, no fixed sizes. Internal layout uses Tailwind's spacing scale and the theme's max-width tokens.
 - **Expose an anchor `id`.** Every section's `*Props` interface must `extends SectionBaseProps` (from `@/types`), and the component must render that `id` on its **root element** (`<section id={id ?? undefined}>`). This makes each section an anchor target so menus, toolbars, and on-page nav can link to it via `#<id>`. Don't redeclare `id` — extending the base exposes it, and it appears in `design.json` for every section automatically. A nav/toolbar that links to other sections uses in-page `#<id>` hrefs (e.g. `{ label: 'Pricing', href: '#pricing' }`).
@@ -276,6 +280,7 @@ Reach for React state only when the platform genuinely can't express the behavio
 | Reveal on hover/focus | `:hover`, `:focus-within`, `:has()` |
 | Jump between panels from a link | `:target` |
 | Video playback (autoplay, mute, loop, hide the play bar) | the media slot's `VideoBlock` props — never a hand-written `<video autoPlay muted loop>` |
+| A Lottie animation, or an animated icon | `LottieBlock` (`{ kind: 'lottie' }`) — never an imported player |
 
 Style the native elements with tokens like anything else — `<summary>` takes `::marker`/`[&::-webkit-details-marker]:hidden`, `<details>` takes `[&[open]]:` variants. Don't add ARIA the element already implies: `<summary>` is a disclosure button that reports its own expanded state, so `aria-expanded` on it is redundant — and keeping it truthful means tracking `open` in React state, which turns a static section into one that ships JS.
 

@@ -1,4 +1,4 @@
-import { MediaBlock, type ImageBlockProps, type VideoBlockProps } from '@/components/blocks';
+import { MediaBlock, type ImageBlockProps, type LottieBlockProps, type VideoBlockProps } from '@/components/blocks';
 import { Badge, Button, Nav } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
@@ -24,7 +24,7 @@ export interface HeroProps extends SectionBaseProps {
   /** Secondary exploration action. */
   secondaryAction?: { label: string; /** @kind url */ href: string } | null;
   /** Hero visual, presented as a full-bleed media frame. */
-  media: ImageBlockProps | VideoBlockProps;
+  media: ImageBlockProps | VideoBlockProps | LottieBlockProps;
   /** Small bottom-right context line. 5–12 words. */
   caption?: string | null;
 }
