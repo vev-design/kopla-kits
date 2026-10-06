@@ -52,7 +52,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: oven-sh/setup-bun@v2
       - run: pnpm install --frozen-lockfile
+      # Render with React's real server JSX runtime, independently of the lab.
+      - run: bun test tests/charts.unit.test.ts
       # Chromium only: these are behaviour and layout invariants, not
       # browser-compatibility checks — the config says the same.
       - run: pnpm exec playwright install --with-deps chromium
