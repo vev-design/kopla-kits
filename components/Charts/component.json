@@ -1,10 +1,26 @@
 {
   "name": "Charts",
-  "description": "Brand-configurable SVG bar, pie/donut and line charts. One copy includes the shared brand specification, deterministic styling, accessible data tables and optional CSS entrance animation.",
-  "exports": ["BarChart", "PieChart", "LineChart"],
+  "description": "Brand-configurable SVG bar, pie/donut, line, scatter and bubble charts. One copy includes the shared brand specification, deterministic styling, accessible data tables and optional CSS entrance animation.",
+  "exports": [
+    "BarChart",
+    "PieChart",
+    "LineChart",
+    "ScatterChart",
+    "BubbleChart"
+  ],
   "demo": "Charts.demo",
-  "whenToUse": "Comparisons, part-to-whole data and trends that must follow a saved brand's chart rules. Copy Charts.tsx once and configure a shared ChartBrand; use BarChart, PieChart or LineChart from sections. Start from skeleton.charts.tsx. Supply stable category/series IDs, a surface name, semantic roles and any highlighted IDs; colors and typography belong in the brand specification. Supports grouped/stacked and horizontal bars, pie/donut, missing line values, background restrictions and optional animation without hydration. NOT a general plotting library, real-time dashboard interaction engine, scatterplot or infographic illustration tool. Font assets are loaded by the consuming design system.",
-  "tags": ["charts", "data-visualization", "brand", "bar", "pie", "donut", "line"],
+  "whenToUse": "Comparisons, part-to-whole data, trends and numeric relationships that must follow a saved brand's chart rules. Copy Charts.tsx once and configure a shared ChartBrand; use BarChart, PieChart, LineChart, ScatterChart or BubbleChart from sections. Start from skeleton.charts.tsx. Supply stable series/observation IDs, a surface name, semantic roles and any highlighted series IDs; styling belongs in the brand specification. Supports grouped/stacked and horizontal bars, pie/donut, missing line values, continuous numeric scatter axes, optional per-series linear fits, area-proportional bubbles with solid or concentric-ring treatments, background restrictions and optional animation without hydration. NOT a general plotting library, real-time interaction engine, packed-bubble layout or infographic illustration tool. Font assets are loaded by the consuming design system.",
+  "tags": [
+    "charts",
+    "data-visualization",
+    "brand",
+    "bar",
+    "pie",
+    "donut",
+    "line",
+    "scatter",
+    "bubble"
+  ],
   "hydrate": false,
   "vendor": []
 }

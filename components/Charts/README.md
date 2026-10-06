@@ -2,7 +2,7 @@
 
 Copy `Charts.tsx` into `src/components/`, then add `export * from './Charts'`
 to the component barrel. This one file exports `BarChart`, `PieChart`,
-`LineChart`, their showcase cases and the shared brand types. No dependencies
+`LineChart`, `ScatterChart`, `BubbleChart`, their showcase cases and the shared brand types. No dependencies
 or hydration are required. `Charts.demo.tsx` is only the lab's example look.
 Use `skeleton.charts.tsx` as a section starting point.
 
@@ -15,7 +15,7 @@ shared chart module:
 import { createBrandedCharts, type ChartBrand } from '@/components/Charts';
 import savedBrand from './chart-brand'; // A module exporting a typed ChartBrand.
 
-export const { BarChart, PieChart, LineChart } = createBrandedCharts(
+export const { BarChart, PieChart, LineChart, ScatterChart, BubbleChart } = createBrandedCharts(
   savedBrand satisfies ChartBrand,
 );
 ```
@@ -45,6 +45,9 @@ inventing another visual treatment.
 | Bar corners, group spacing, separators, stack totals | `bar` |
 | Line weight, points, dash patterns | `line` |
 | Donut thickness, rotation, separators, label placement/content | `pie` |
+| Scatter point radius, opacity, outline, labels and trend weight | `scatter` |
+| Bubble radius ceiling, opacity, outline, ring count, labels and size legend | `bubble` |
+| Approved trend-line color on each background | Surface `trend` |
 | Focal statistic color on each background | Surface `focalText` |
 | Grid, legend, value and endpoint labels | `defaults` |
 | Optional entrance motion | `motion` |
@@ -77,6 +80,36 @@ the saved palettes and inside-label colors during brand setup.
 - Pie data is `{ id, label, value, role? }`. Values must be finite and
   nonnegative. Zeros remain in the legend/table, but have no slice. An all-zero
   dataset displays an empty state. Percentages come from the complete total.
+- Scatter data is `{ id, label, seriesId, x, y }`; bubble data also includes
+  `size`. Declare series with their color IDs and semantic roles exactly as for
+  bars/lines. X and Y are continuous numeric coordinates. Source order does
+  not determine position. Null coordinates/sizes stay in the table and draw no
+  mark; negative or non-finite sizes and non-finite coordinates are rejected.
+- `xAxis` and `yAxis` independently configure labels, number formatting,
+  suffixes, zero inclusion (default true), and optional fixed `domain: [min,max]`.
+  A fixed domain must be finite, increasing, and cover every complete
+  observation; charts never silently clip points outside a requested domain.
+- Bubble **outer disk area** is proportional to size. There is no minimum
+  radius, and zero draws no bubble. The largest complete observation sets the
+  size scale unless `sizeMax` is supplied. Use the same `sizeMax`, brand
+  `maxRadius`, axis domains, and rendered plot dimensions for comparisons
+  across charts or filters. Small bubbles paint last to remain visible where
+  observations overlap; points are never displaced to avoid overlap.
+- Bubble `treatment="rings"` draws decorative concentric circles within the
+  same area-scaled boundary. Ring count is styling, not another measurement.
+  Brand `bubble.labels` and the chart's `labels` can select `inside` (size in
+  display type), `outside` (observation names in a non-overlapping label rail),
+  or `none`. Tiny inside labels are omitted in favor of the table. Optional
+  `bubble.labelHaloWidth` separates ring-label text from lines; it defaults to
+  zero. `sizeLabel`, `sizeNumberFormat`, and `sizeSuffix` format the third
+  measurement independently. The size legend uses the same radius scale as
+  the observations and can be disabled with `sizeLegend={false}`.
+- Scatter `trendLine="linear"` draws one least-squares Y-on-X fit per series,
+  clipped to the observed X range and plot domain. At least two complete
+  observations with distinct X coordinates are required. This is a descriptive
+  line, without confidence intervals, significance tests or extrapolation.
+  The default is `none`. These components do not implement log axes, packed
+  bubbles or freeform infographic positioning.
 - Values use an explicit locale (`en-US` by default) and `numberFormat` options;
   `suffix` appends a literal unit. A percent formatter expects fractional data.
 - Thin grids, labels, legends, titles and a semantic data table are shared.
@@ -88,7 +121,9 @@ the saved palettes and inside-label colors during brand setup.
   accessible region on narrow screens. Dense data and larger outside-label fonts increase the plot size;
   it never overflows the document. Containers and cards belong to the section.
 - `animation="enter"` runs once on insertion: bars grow from zero, solid lines
-  draw on, and pies/points/dashed lines fade in. `animation="none"` overrides
+  draw on, and pies/points/dashed lines fade in. Scatter markers and bubble
+  groups (including rings and inside labels) fade in together; sizes and
+  coordinates are always the final values. `animation="none"` overrides
   the brand's motion default. Durations are capped at two seconds. The final
   geometry is always in the HTML; reduced motion and print are fully static.
   Scroll-triggered playback and animated data updates are not implemented.

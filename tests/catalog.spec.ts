@@ -64,6 +64,9 @@ for (const component of components) {
     });
 
     test('the manifest and the registry agree on its cases', async ({ page }) => {
+      // This check navigates every case sequentially. A growing catalog (the
+      // chart suite now includes five chart families) needs a per-case budget.
+      test.setTimeout(Math.max(30_000, component.cases.length * 2_000));
       // These specs enumerate cases from `manifests.ts`, which is SCANNED from
       // the component's source; the frame renders from `registry.tsx`, which
       // imports the real module. Nothing else makes those two agree, and when

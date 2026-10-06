@@ -6,7 +6,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 export type ChartRole = 'positive' | 'neutral' | 'negative' | 'other';
-export type ChartKind = 'bar' | 'pie' | 'donut' | 'line';
+export type ChartKind = 'bar' | 'pie' | 'donut' | 'line' | 'scatter' | 'bubble';
 
 /** A mark's color and the approved text color when a label is inside it. */
 export interface ChartInk { color: string; labelColor: string }
@@ -20,6 +20,8 @@ export interface ChartSurface {
   mutedText: string;
   axis: string;
   grid: string;
+  /** Optional approved trend-line ink; otherwise each fit uses its series color. */
+  trend?: string;
   categorical: ChartInk[];
   emphasis: { focus: ChartInk; context: ChartInk[] };
   semantic: Record<ChartRole, ChartInk>;
@@ -45,6 +47,8 @@ export interface ChartBrand {
   bar?: { radius?: number; gap?: number; groupGap?: number; separatorWidth?: number; totals?: boolean };
   line?: { width?: number; pointRadius?: number; dashPatterns?: string[] };
   pie?: { innerRadius?: number; startAngle?: number; separatorWidth?: number; labels?: 'inside' | 'outside' | 'none'; insideLabel?: 'percent' | 'value' | 'label-percent' };
+  scatter?: { radius?: number; strokeWidth?: number; fillOpacity?: number; trendWidth?: number; labels?: 'none' | 'outside' };
+  bubble?: { maxRadius?: number; strokeWidth?: number; fillOpacity?: number; ringCount?: number; labelHaloWidth?: number; treatment?: 'solid' | 'rings'; labels?: 'none' | 'inside' | 'outside'; sizeLegend?: boolean };
   defaults?: { grid?: boolean; legend?: boolean; values?: boolean; lineLabels?: 'end' | 'none' };
   motion?: { enabled?: boolean; durationMs?: number; easing?: string };
 }
@@ -77,6 +81,9 @@ const TYPE = {
 const BAR = { radius: 0, gap: 4, groupGap: 0.28, separatorWidth: 0, totals: false };
 const LINE = { width: 2, pointRadius: 0, dashPatterns: [] as string[] };
 const PIE = { innerRadius: 0.6, startAngle: -90, separatorWidth: 0, labels: 'outside' as 'inside' | 'outside' | 'none', insideLabel: 'percent' as 'percent' | 'value' | 'label-percent' };
+const SCATTER = { radius: 4, strokeWidth: 0, fillOpacity: 1, trendWidth: 1.5, labels: 'none' as 'none' | 'outside' };
+const BUBBLE = { maxRadius: 44, strokeWidth: 1, fillOpacity: 0.8, ringCount: 8, labelHaloWidth: 0,
+  treatment: 'solid' as 'solid' | 'rings', labels: 'inside' as 'none' | 'inside' | 'outside', sizeLegend: true };
 const DEFAULTS = { grid: false, legend: true, values: false, lineLabels: 'end' as 'end' | 'none' };
 
 export interface ChartSeries {
@@ -97,7 +104,7 @@ export interface ChartRow {
 
 export interface PieDatum extends ChartSeries { value: number }
 
-/** Shared content and brand inputs for all three chart components. */
+/** Shared content and brand inputs for all chart components. */
 export interface ChartProps {
   /** Chart title and accessible name. */
   title: string;
@@ -171,6 +178,72 @@ export interface LineChartProps extends ChartProps {
   labels?: 'end' | 'none';
 }
 
+/** A continuous numeric axis. Explicit domains must include every plotted point. */
+export interface ChartAxis {
+  label?: string;
+  numberFormat?: Intl.NumberFormatOptions;
+  suffix?: string;
+  /** Default true. Explicit domain takes precedence. */
+  includeZero?: boolean;
+  domain?: [number, number];
+}
+
+export interface ScatterDatum {
+  /** Stable observation ID, unique within the chart. */
+  id: string;
+  label: string;
+  /** Must reference a declared series. Color/meaning belongs to that series. */
+  seriesId: string;
+  /** Null coordinates stay in the data table but do not create a point at zero. */
+  x: number | null;
+  y: number | null;
+}
+
+export interface BubbleDatum extends ScatterDatum {
+  /** Nonnegative measurement encoded by the outer disk's area. Null means missing. */
+  size: number | null;
+}
+
+/** Numeric X/Y inputs shared by scatter and bubble charts. */
+export interface XYChartProps extends ChartProps {
+  /** Shared series identities, labels and semantic roles. */
+  series: ChartSeries[];
+  /** X label, units, formatting and optional fixed domain. */
+  xAxis?: ChartAxis;
+  /** Y label, units, formatting and optional fixed domain. */
+  yAxis?: ChartAxis;
+}
+
+/** Numeric X/Y observations with equal-sized markers and optional per-series least-squares fits. */
+export interface ScatterChartProps extends XYChartProps {
+  /** Observations positioned by their numeric coordinates, never by array order. */
+  data: ScatterDatum[];
+  /** Optional direct labels in a collision-free rail; points retain their true positions. */
+  labels?: 'none' | 'outside';
+  /** Descriptive least-squares fit per series, limited to observed X values. Default none. */
+  trendLine?: 'none' | 'linear';
+}
+
+/** Numeric X/Y observations whose circle areas represent a third measurement. */
+export interface BubbleChartProps extends XYChartProps {
+  /** Zero/missing sizes stay in the table but draw no bubble. Negative sizes are invalid. */
+  data: BubbleDatum[];
+  /** Optional constant size ceiling shared across related charts or filters. Must cover the data. */
+  sizeMax?: number;
+  /** Name of the size measurement, used in the legend and table. Default Size. */
+  sizeLabel?: string;
+  /** Independent size formatting; defaults to numberFormat. */
+  sizeNumberFormat?: Intl.NumberFormatOptions;
+  /** Independent size suffix; defaults to suffix. */
+  sizeSuffix?: string;
+  /** Override the brand's outer-circle treatment. Rings are decorative, not another measurement. */
+  treatment?: 'solid' | 'rings';
+  /** Inside shows the size in display type; outside identifies observations in a label rail. */
+  labels?: 'none' | 'inside' | 'outside';
+  /** Show reference areas and their size values. Defaults to the brand. */
+  sizeLegend?: boolean;
+}
+
 function bounded(value: number | undefined, fallback: number, min: number, max: number) {
   return Number.isFinite(value) ? Math.min(max, Math.max(min, value!)) : fallback;
 }
@@ -193,6 +266,7 @@ function themeFor(props: ChartProps, kind: ChartKind) {
     brand, name, surface, typography,
     allowed: !surface.allowedCharts || surface.allowedCharts.includes(kind),
     bar: { ...BAR, ...brand.bar }, line: { ...LINE, ...brand.line }, pie: { ...PIE, ...brand.pie },
+    scatter: { ...SCATTER, ...brand.scatter }, bubble: { ...BUBBLE, ...brand.bubble },
     defaults: { ...DEFAULTS, ...brand.defaults },
     animate: props.animation ? props.animation === 'enter' : brand.motion?.enabled === true,
     duration: bounded(brand.motion?.durationMs, 700, 0, 2000),
@@ -601,6 +675,188 @@ export function PieChart(props: PieChartProps) {
   </Frame>;
 }
 
+function validateXY(data: ScatterDatum[], series: ChartSeries[], bubble: boolean) {
+  unique(data, 'Observation'); unique(series, 'Series');
+  const known = new Set(series.map((item) => item.id));
+  for (const item of data) {
+    if (!known.has(item.seriesId)) throw new Error(`Unknown series "${item.seriesId}" for observation "${item.id}".`);
+    for (const key of ['x', 'y'] as const) {
+      if (item[key] !== null && (typeof item[key] !== 'number' || !Number.isFinite(item[key]))) {
+        throw new Error(`Observation "${item.id}" requires a finite ${key} coordinate, or null for missing data.`);
+      }
+    }
+    if (bubble) {
+      const size = (item as BubbleDatum).size;
+      if (size !== null && (typeof size !== 'number' || !Number.isFinite(size) || size < 0)) {
+        throw new Error(`Bubble size for "${item.id}" must be finite and nonnegative, or null.`);
+      }
+    }
+  }
+}
+
+function numericAxis(values: number[], axis: ChartAxis | undefined, name: string) {
+  if (!axis?.domain) return scaleFor(values, axis?.includeZero ?? true);
+  const [min, max] = axis.domain;
+  if (axis.domain.length !== 2 || !Number.isFinite(min) || !Number.isFinite(max) || min >= max) {
+    throw new Error(`${name} domain must contain two finite, increasing numbers.`);
+  }
+  if (values.some((value) => value < min || value > max)) {
+    throw new Error(`${name} domain must include every plotted observation.`);
+  }
+  return scaleFor([min, max], false);
+}
+
+// Fit in normalized plot coordinates to avoid overflow in x*x and x*y for
+// otherwise finite inputs. The affine axis mapping preserves the OLS fit.
+function fitLine(points: { u: number; v: number }[]) {
+  if (points.length < 2) return null;
+  const meanX = points.reduce((sum, p) => sum + p.u / points.length, 0);
+  const meanY = points.reduce((sum, p) => sum + p.v / points.length, 0);
+  const variance = points.reduce((sum, p) => sum + (p.u - meanX) ** 2, 0);
+  if (!variance) return null; // A vertical cloud has no finite y-on-x fit.
+  const slope = points.reduce((sum, p) => sum + (p.u - meanX) * (p.v - meanY), 0) / variance;
+  const intercept = meanY - slope * meanX;
+  let from = points.reduce((min, p) => Math.min(min, p.u), 1);
+  let to = points.reduce((max, p) => Math.max(max, p.u), 0);
+  // Clip the fitted segment, not its endpoint Y values independently (which
+  // would change the slope). Never extrapolate beyond the observed X range.
+  if (slope) {
+    const a = -intercept / slope, b = (1 - intercept) / slope;
+    from = Math.max(from, Math.min(a, b));
+    to = Math.min(to, Math.max(a, b));
+  }
+  if (from > to || ![from, to, slope, intercept].every(Number.isFinite)) return null;
+  return { from, to, yFrom: Math.max(0, Math.min(1, slope * from + intercept)), yTo: Math.max(0, Math.min(1, slope * to + intercept)) };
+}
+
+function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; kind: 'scatter' | 'bubble' }) {
+  const bubble = kind === 'bubble';
+  const bubbleProps = props as BubbleChartProps;
+  validateXY(props.data, props.series, bubble);
+  const theme = themeFor(props, kind);
+  const { typography: type, surface } = theme;
+  const labels = props.labels ?? (bubble ? theme.bubble.labels : theme.scatter.labels);
+  const formatX = formatFor({ ...props, numberFormat: props.xAxis?.numberFormat ?? props.numberFormat, suffix: props.xAxis?.suffix ?? props.suffix });
+  const formatY = formatFor({ ...props, numberFormat: props.yAxis?.numberFormat ?? props.numberFormat, suffix: props.yAxis?.suffix ?? props.suffix });
+  const formatSize = formatFor({ ...props, numberFormat: bubbleProps.sizeNumberFormat ?? props.numberFormat, suffix: bubbleProps.sizeSuffix ?? props.suffix });
+  const xName = props.xAxis?.label ?? 'X', yName = props.yAxis?.label ?? 'Y', sizeName = bubbleProps.sizeLabel ?? 'Size';
+  const complete = props.data.filter((item) => item.x !== null && item.y !== null && (!bubble || (item as BubbleDatum).size !== null));
+  const xScale = numericAxis(complete.map((item) => item.x!), props.xAxis, 'X');
+  const yScale = numericAxis(complete.map((item) => item.y!), props.yAxis, 'Y');
+  const observedMax = bubble ? complete.reduce((max, item) => Math.max(max, (item as BubbleDatum).size!), 0) : 0;
+  if (bubble && bubbleProps.sizeMax !== undefined && (!Number.isFinite(bubbleProps.sizeMax) || bubbleProps.sizeMax <= 0 || bubbleProps.sizeMax < observedMax)) {
+    throw new Error('sizeMax must be a positive finite number covering every plotted bubble size.');
+  }
+  const sizeMax = bubbleProps.sizeMax ?? observedMax;
+  const maxRadius = bubble ? bounded(theme.bubble.maxRadius, BUBBLE.maxRadius, 8, 96) : bounded(theme.scatter.radius, SCATTER.radius, 1, 24);
+  const strokeWidth = bubble ? bounded(theme.bubble.strokeWidth, BUBBLE.strokeWidth, 0, 8) : bounded(theme.scatter.strokeWidth, 0, 0, 8);
+  const pad = maxRadius + strokeWidth / 2 + 8;
+  // A shared maximum is a real zero-to-maximum area scale. No minimum radius:
+  // adding one exaggerates small values and turns zero into nonzero area.
+  const radiusFor = (size: number) => sizeMax ? maxRadius * (Math.sqrt(size) / Math.sqrt(sizeMax)) : 0;
+  const seriesMap = new Map(props.series.map((series, index) => [series.id, { series, index }]));
+  const points = complete.filter((item) => !bubble || (item as BubbleDatum).size! > 0).map((item) => {
+    const { series, index } = seriesMap.get(item.seriesId)!;
+    return { item, ink: inkFor(series, index, props, theme), u: xScale.at(item.x!), v: yScale.at(item.y!),
+      radius: bubble ? radiusFor((item as BubbleDatum).size!) : maxRadius };
+  });
+  const outside = labels === 'outside';
+  const axisWidth = Math.max(82, type.labelSize * 8 + 24);
+  const railWidth = outside ? Math.max(160, type.labelSize * 16 + 28) : 28;
+  const width = Math.max(640, axisWidth + railWidth + Math.max(340, type.labelSize * 34) + pad * 2);
+  const plotHeight = Math.max(bounded(props.height, 320, 200, 1200), pad * 2 + type.labelSize * 9 + 64,
+    outside ? points.length * (type.labelSize * 1.6 + 6) + 64 : 0);
+  const left = axisWidth, right = width - railWidth, top = 24, bottom = plotHeight - type.labelSize * 3 - 20;
+  const x = (u: number) => Number((left + pad + u * (right - left - 2 * pad)).toFixed(4));
+  const y = (v: number) => Number((bottom - pad - v * (bottom - top - 2 * pad)).toFixed(4));
+  const refs = [...new Set([sizeMax / 4, sizeMax / 2, sizeMax].filter((value) => value > 0))];
+  const showSizeLegend = bubble && (bubbleProps.sizeLegend ?? theme.bubble.sizeLegend) && points.length > 0;
+  const legendHeight = showSizeLegend ? maxRadius * 2 + type.labelSize * 4 + 28 : 0;
+  const treatment = bubbleProps.treatment ?? theme.bubble.treatment;
+  const ringCount = Math.round(bounded(theme.bubble.ringCount, BUBBLE.ringCount, 2, 16));
+  const fillOpacity = bounded(bubble ? theme.bubble.fillOpacity : theme.scatter.fillOpacity, bubble ? 0.8 : 1, 0, 1);
+  const pointLabels = outside ? spreadLabels(points.map((point) => ({ ...point, y: y(point.v) })), top + type.labelSize, bottom - type.labelSize, type.labelSize * 1.6 + 6) : [];
+  const table = <table data-chart-table=""><caption>{props.title} — data</caption>
+    <thead><tr><th scope="col">Observation</th><th scope="col">Series</th><th scope="col">{xName}</th><th scope="col">{yName}</th>{bubble && <th scope="col">{sizeName}</th>}</tr></thead>
+    <tbody>{props.data.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{seriesMap.get(item.seriesId)!.series.label}</td>
+      <td>{item.x === null ? 'No data' : formatX(item.x)}</td><td>{item.y === null ? 'No data' : formatY(item.y)}</td>
+      {bubble && <td>{(item as BubbleDatum).size === null ? 'No data' : formatSize((item as BubbleDatum).size!)}</td>}
+    </tr>)}</tbody></table>;
+  return <Frame props={props} theme={theme} kind={kind} series={props.series} table={table} empty={!points.length}>
+    <Plot title={props.title} width={width} height={plotHeight + legendHeight} theme={theme}>
+      {xScale.ticks.map((tick, index) => <g key={`x-${index}`}>
+        {theme.defaults.grid && <line x1={x(xScale.at(tick))} x2={x(xScale.at(tick))} y1={top} y2={bottom} stroke={surface.grid} />}
+        <text data-x-tick="" x={x(xScale.at(tick))} y={bottom + type.labelSize + 8} textAnchor="middle" fill={surface.mutedText}>
+          {short(formatX(tick), 10)}<title>{formatX(tick)}</title>
+        </text>
+      </g>)}
+      {yScale.ticks.map((tick, index) => <g key={`y-${index}`}>
+        {theme.defaults.grid && <line x1={left} x2={right} y1={y(yScale.at(tick))} y2={y(yScale.at(tick))} stroke={surface.grid} />}
+        <text data-y-tick="" x={left - 10} y={y(yScale.at(tick)) + type.labelSize / 3} textAnchor="end" fill={surface.mutedText}>
+          {short(formatY(tick), 10)}<title>{formatY(tick)}</title>
+        </text>
+      </g>)}
+      <path d={`M${left},${top} V${bottom} H${right}`} fill="none" stroke={surface.axis} />
+      <text x={(left + right) / 2} y={plotHeight - 6} textAnchor="middle" fill={surface.text}>{short(xName, 40)}<title>{xName}</title></text>
+      <text transform={`translate(${type.labelSize},${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle" fill={surface.text}>
+        {short(yName, Math.max(6, Math.floor((bottom - top) / type.labelSize)))}<title>{yName}</title>
+      </text>
+      {!bubble && (props as ScatterChartProps).trendLine === 'linear' && props.series.map((series, index) => {
+        const fit = fitLine(points.filter((p) => p.item.seriesId === series.id));
+        return fit && <line key={series.id} data-trend-line="" data-series={series.id}
+          x1={x(fit.from)} y1={y(fit.yFrom)} x2={x(fit.to)} y2={y(fit.yTo)}
+          stroke={surface.trend ?? inkFor(series, index, props, theme).color} strokeWidth={bounded(theme.scatter.trendWidth, 1.5, 0.5, 8)}>
+          <title>{`${series.label}: linear least-squares trend`}</title>
+        </line>;
+      })}
+      {/* Paint larger bubbles first so a small observation at the same location
+          is not buried. Resolve colors before sorting and keep table source order. */}
+      {[...points].sort((a, b) => b.radius - a.radius).map((point) => {
+        const px = x(point.u), py = y(point.v);
+        const size = (point.item as BubbleDatum).size;
+        const text = bubble ? formatSize(size!) : '';
+        const textSize = Math.min(type.displaySize, point.radius * 1.6 / Math.max(1, text.length * 0.65));
+        const label = `${point.item.label} — ${xName}: ${formatX(point.item.x!)}; ${yName}: ${formatY(point.item.y!)}${bubble ? `; ${sizeName}: ${text}` : ''}`;
+        return <g key={point.item.id} data-point="" data-observation={point.item.id} data-series={point.item.seriesId}>
+          <title>{label}</title>
+          <circle data-bubble={bubble ? '' : undefined} data-scatter-point={bubble ? undefined : ''}
+            cx={px} cy={py} r={point.radius} fill={bubble && treatment === 'rings' ? 'none' : point.ink.color}
+            fillOpacity={fillOpacity} stroke={point.ink.color} strokeWidth={bubble && treatment === 'rings' ? Math.max(0.5, strokeWidth) : strokeWidth} />
+          {bubble && treatment === 'rings' && Array.from({ length: ringCount - 1 }, (_, index) => <circle key={index}
+            data-bubble-ring="" cx={px} cy={py} r={point.radius * (index + 1) / ringCount} fill="none"
+            stroke={point.ink.color} strokeWidth={Math.max(0.5, strokeWidth)} />)}
+          {bubble && labels === 'inside' && textSize >= Math.max(8, type.labelSize * 0.75) && <text data-bubble-label=""
+            x={px} y={py + textSize / 3} textAnchor="middle" fontFamily={type.displayFamily} fontWeight={type.displayWeight} fontSize={textSize}
+            fill={treatment === 'rings' ? (surface.focalText ?? surface.text) : point.ink.labelColor}
+            stroke={treatment === 'rings' ? surface.background : undefined}
+            strokeWidth={treatment === 'rings' ? bounded(theme.bubble.labelHaloWidth, 0, 0, 8) : undefined} paintOrder="stroke">{text}</text>}
+        </g>;
+      })}
+      {pointLabels.map((point) => <g key={point.item.id}>
+        <path d={`M${x(point.u) + point.radius},${point.y} L${right + 10},${point.labelY} H${right + 16}`} fill="none" stroke={point.ink.color} />
+        <text data-observation-label="" x={right + 22} y={point.labelY + type.labelSize / 3} fill={surface.text}>
+          {short(point.item.label, 20)}<title>{point.item.label}</title>
+        </text>
+      </g>)}
+      {showSizeLegend && <g data-size-legend="" fill={surface.mutedText}>
+        <text x={left} y={plotHeight + type.labelSize + 16}>{short(`${sizeName} (circle area)`, 45)}<title>{`${sizeName}: circle area represents the value`}</title></text>
+        {refs.map((value, index) => {
+          const px = left + (index + 0.5) * (right - left) / refs.length;
+          const floor = plotHeight + type.labelSize * 2 + 20 + maxRadius * 2;
+          const radius = radiusFor(value);
+          return <g key={index}>
+            <circle data-size-reference="" data-size={value} cx={px} cy={floor - radius} r={radius} fill="none" stroke={surface.mutedText} />
+            <text x={px} y={floor + type.labelSize + 6} textAnchor="middle">{short(formatSize(value), 14)}<title>{formatSize(value)}</title></text>
+          </g>;
+        })}
+      </g>}
+    </Plot>
+  </Frame>;
+}
+
+export function ScatterChart(props: ScatterChartProps) { return <XYPlot props={props} kind="scatter" />; }
+export function BubbleChart(props: BubbleChartProps) { return <XYPlot props={props} kind="bubble" />; }
+
 /** Bind the saved configuration once in a design system's chart module.
  * No mutable global state: two brands on the same page remain isolated. */
 export function createBrandedCharts(brand: ChartBrand) {
@@ -608,6 +864,8 @@ export function createBrandedCharts(brand: ChartBrand) {
     BarChart: (props: Omit<BarChartProps, 'brand'>) => <BarChart {...props} brand={brand} />,
     PieChart: (props: Omit<PieChartProps, 'brand'>) => <PieChart {...props} brand={brand} />,
     LineChart: (props: Omit<LineChartProps, 'brand'>) => <LineChart {...props} brand={brand} />,
+    ScatterChart: (props: Omit<ScatterChartProps, 'brand'>) => <ScatterChart {...props} brand={brand} />,
+    BubbleChart: (props: Omit<BubbleChartProps, 'brand'>) => <BubbleChart {...props} brand={brand} />,
   };
 }
 
@@ -632,5 +890,29 @@ export const LineChartShowcase = [
   ] } },
   { label: 'Missing observation', props: { title: 'Observation gaps', series: [{ id: 'value', label: 'Value' }], data: [
     { id: 'q1', label: 'Q1', values: { value: 18 } }, { id: 'q2', label: 'Q2', values: { value: null } }, { id: 'q3', label: 'Q3', values: { value: 24 } },
+  ] } },
+];
+
+export const ScatterChartShowcase = [
+  { label: 'Numeric relationship', props: { title: 'Investment and return', xAxis: { label: 'Investment' }, yAxis: { label: 'Return' },
+    trendLine: 'linear', animation: 'enter', series: [{ id: 'projects', label: 'Projects' }], data: [
+      { id: 'a', label: 'Project A', seriesId: 'projects', x: 10, y: 14 },
+      { id: 'b', label: 'Project B', seriesId: 'projects', x: 30, y: 32 },
+      { id: 'c', label: 'Project C', seriesId: 'projects', x: 90, y: 68 },
+    ] } },
+  { label: 'Direct observation labels', props: { title: 'Regional change', labels: 'outside', series: [{ id: 'regions', label: 'Regions' }], data: [
+    { id: 'a', label: 'Northern region', seriesId: 'regions', x: -5, y: 12 },
+    { id: 'b', label: 'Southern region', seriesId: 'regions', x: 8, y: -3 },
+  ] } },
+];
+export const BubbleChartShowcase = [
+  { label: 'Area-scaled observations', props: { title: 'Markets', xAxis: { label: 'Growth', suffix: '%' }, yAxis: { label: 'Margin', suffix: '%' },
+    sizeLabel: 'Revenue', animation: 'enter', series: [{ id: 'markets', label: 'Markets' }], data: [
+      { id: 'a', label: 'Market A', seriesId: 'markets', x: 10, y: 20, size: 25 },
+      { id: 'b', label: 'Market B', seriesId: 'markets', x: 30, y: 40, size: 100 },
+    ] } },
+  { label: 'Concentric rings', props: { title: 'Markets', treatment: 'rings', labels: 'outside', series: [{ id: 'markets', label: 'Markets' }], data: [
+    { id: 'a', label: 'Market A', seriesId: 'markets', x: 10, y: 20, size: 25 },
+    { id: 'b', label: 'Market B', seriesId: 'markets', x: 30, y: 40, size: 100 },
   ] } },
 ];

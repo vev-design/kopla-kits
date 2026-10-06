@@ -84,11 +84,11 @@ for (const label of ['Ten categories and long label', 'Large outside labels', 'M
   });
 }
 
-for (const label of ['Grouped bars', 'Semantic pie', 'Editorial line']) {
+for (const label of ['Grouped bars', 'Semantic pie', 'Editorial line', 'Scatter with trend', 'Bubble area comparison', 'Bubble concentric rings']) {
   test(`Charts: ${label} animates once and responds to reduced motion live`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await open(page, label);
-    const selector = '[data-bar], [data-line], [data-slice]';
+    const selector = '[data-bar], [data-line], [data-slice], [data-point]';
     await expect.poll(() => page.locator(selector).first().evaluate((el) => getComputedStyle(el).animationName)).not.toBe('none');
     await expect(page.locator(selector).first()).toHaveCSS('animation-iteration-count', '1');
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -123,4 +123,64 @@ test('Charts: kit defaults change with kit tokens', async ({ page }) => {
     fills.push(await page.locator('[data-bar]').first().evaluate((el) => getComputedStyle(el).fill));
   }
   expect(new Set(fills).size).toBeGreaterThan(1);
+});
+
+for (const label of ['Scatter direct labels', 'Bubble concentric rings', 'Bubble large labels']) {
+  test(`Charts: ${label} keeps markers, label rails and size references inside the SVG`, async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 900 });
+    await open(page, label);
+    const measurements = await page.locator('[data-kk-chart] svg').evaluate((el) => {
+      const svg = el as SVGSVGElement;
+      return { width: svg.viewBox.baseVal.width, height: svg.viewBox.baseVal.height,
+        elements: [...svg.querySelectorAll('[data-bubble], [data-scatter-point], [data-observation-label], [data-size-legend] text, [data-size-reference]')].map((mark) => {
+          const box = (mark as SVGGraphicsElement).getBBox();
+          return { x: box.x, y: box.y, width: box.width, height: box.height, label: mark.hasAttribute('data-observation-label') };
+        }),
+      };
+    });
+    for (const box of measurements.elements) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(measurements.width);
+      expect(box.y + box.height).toBeLessThanOrEqual(measurements.height);
+    }
+    const labels = measurements.elements.filter((box) => box.label).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labels.length; i++) expect(labels[i]!.y).toBeGreaterThanOrEqual(labels[i - 1]!.y + labels[i - 1]!.height);
+    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+  });
+}
+
+test('Charts: scatter points use continuous X positions and the branded trend line', async ({ page }) => {
+  await open(page, 'Scatter with trend');
+  const points = page.locator('[data-scatter-point]');
+  const positions = await points.evaluateAll((els) => els.map((el) => Number(el.getAttribute('cx'))));
+  // Input gaps 6 then 12 must not become equal category spacing.
+  const earlyGap = positions[1]! - positions[0]!;
+  const laterGap = positions[9]! - positions[8]!;
+  expect(laterGap / earlyGap).toBeCloseTo(2, 3);
+  await expect(page.locator('[data-trend-line]')).toHaveCSS('stroke', 'rgb(139, 125, 224)');
+  await expect(points.first()).toHaveCSS('fill', 'rgb(204, 0, 51)');
+});
+
+test('Charts: bubbles and their size legend share the same area scale', async ({ page }) => {
+  await open(page, 'Bubble area comparison');
+  const small = Number(await page.locator('[data-observation="a"] [data-bubble]').getAttribute('r'));
+  const large = Number(await page.locator('[data-observation="b"] [data-bubble]').getAttribute('r'));
+  expect((large * large) / (small * small)).toBeCloseTo(4, 8);
+  await expect(page.locator('[data-size-reference][data-size="100"]')).toHaveAttribute('r', String(large));
+  await expect(page.locator('[data-observation="a"] [data-bubble-label]')).toHaveCSS('font-family', 'Georgia, serif');
+  await open(page, 'Bubble concentric rings');
+  await expect(page.locator('[data-bubble-ring]')).toHaveCount(32);
+  await expect(page.locator('[data-bubble]').first()).toHaveAttribute('fill', 'none');
+  await expect(page.locator('[data-kk-chart]')).toHaveCSS('background-color', 'rgb(71, 12, 55)');
+});
+
+test('Charts: scatter restrictions and missing coordinates retain accessible values', async ({ page }) => {
+  await open(page, 'Scatter forbidden background');
+  await expect(page.locator('[data-kk-chart] svg')).toHaveCount(0);
+  await expect(page.getByRole('table')).toBeVisible();
+  await open(page, 'Scatter missing observations');
+  await expect(page.locator('[data-scatter-point]')).toHaveCount(1);
+  await expect(page.getByRole('rowheader', { name: 'Missing X', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'No data', exact: true })).toHaveCount(2);
 });
