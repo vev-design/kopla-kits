@@ -12,6 +12,8 @@ const PORT = Number(process.env.LAB_PORT ?? 4020);
 
 export default defineConfig({
   testDir: './tests',
+  // Unit tests use Bun's runner; Node cannot load their bun:test imports.
+  testIgnore: '**/*.unit.test.ts',
   // The catalog is small and the assertions are cheap; failing fast on CI beats
   // a retry loop that hides a genuinely flaky drag gesture.
   retries: 0,
