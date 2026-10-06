@@ -5,26 +5,26 @@ import { BarChart, PieChart, LineChart, ScatterChart, BubbleChart, createBranded
   type BarChartProps, type PieChartProps, type LineChartProps, type ScatterChartProps, type BubbleChartProps } from '../components/Charts/Charts';
 
 const bar = (props: Partial<BarChartProps> = {}) => renderToStaticMarkup(createElement(BarChart, {
-  title: 'Comparison', series: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
+  sizing: 'scroll', title: 'Comparison', series: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
   data: [{ id: 'one', label: 'One', values: { a: 12, b: -8 } }], ...props,
 }));
 const pie = (props: Partial<PieChartProps> = {}) => renderToStaticMarkup(createElement(PieChart, {
-  title: 'Shares', data: [{ id: 'a', label: 'Alpha', value: 75 }, { id: 'b', label: 'Beta', value: 25 }], ...props,
+  sizing: 'scroll', title: 'Shares', data: [{ id: 'a', label: 'Alpha', value: 75 }, { id: 'b', label: 'Beta', value: 25 }], ...props,
 }));
 const line = (props: Partial<LineChartProps> = {}) => renderToStaticMarkup(createElement(LineChart, {
-  title: 'Trend', series: [{ id: 'a', label: 'Alpha' }], data: [
+  sizing: 'scroll', title: 'Trend', series: [{ id: 'a', label: 'Alpha' }], data: [
     { id: 'one', label: 'One', values: { a: 12 } }, { id: 'two', label: 'Two', values: { a: 20 } },
   ], ...props,
 }));
 const scatter = (props: Partial<ScatterChartProps> = {}) => renderToStaticMarkup(createElement(ScatterChart, {
-  title: 'Relationship', series: [{ id: 'a', label: 'Alpha' }], data: [
+  sizing: 'scroll', title: 'Relationship', series: [{ id: 'a', label: 'Alpha' }], data: [
     { id: 'one', label: 'One', seriesId: 'a', x: 0, y: 10 },
     { id: 'two', label: 'Two', seriesId: 'a', x: 10, y: 20 },
     { id: 'three', label: 'Three', seriesId: 'a', x: 40, y: 50 },
   ], ...props,
 }));
 const bubbles = (props: Partial<BubbleChartProps> = {}) => renderToStaticMarkup(createElement(BubbleChart, {
-  title: 'Opportunities', series: [{ id: 'a', label: 'Alpha' }], data: [
+  sizing: 'scroll', title: 'Opportunities', series: [{ id: 'a', label: 'Alpha' }], data: [
     { id: 'one', label: 'One', seriesId: 'a', x: 10, y: 20, size: 25 },
     { id: 'two', label: 'Two', seriesId: 'a', x: 40, y: 50, size: 100 },
   ], ...props,
@@ -119,8 +119,8 @@ describe('truthful chart geometry and data', () => {
   test('stack totals report each side of zero independently', () => {
     const html = bar({ layout: 'stacked', totals: true });
     expect(marks(html, 'stack-total')).toHaveLength(2);
-    expect(html).toMatch(/data-stack-total=""[^>]*>12<\/text>/);
-    expect(html).toMatch(/data-stack-total=""[^>]*>-8<\/text>/);
+    expect(html).toMatch(/data-stack-total=""[^>]*>12<title>12<\/title><\/text>/);
+    expect(html).toMatch(/data-stack-total=""[^>]*>-8<title>-8<\/title><\/text>/);
   });
   test('full circles use two arcs and zero shares never draw a fake slice', () => {
     for (const variant of ['pie', 'donut'] as const) {
@@ -287,7 +287,7 @@ describe('scatter and bubble measurements', () => {
     }
     const configured = createBrandedCharts({ ...brand, scatter: { radius: 7 }, bubble: { maxRadius: 60, treatment: 'rings', ringCount: 4 } });
     const data = [{ id: 'one', label: 'One', seriesId: 'a', x: 1, y: 2, size: 4 }];
-    const common = { title: 'Bound', series: [{ id: 'a', label: 'A' }], data };
+    const common = { sizing: 'scroll' as const, title: 'Bound', series: [{ id: 'a', label: 'A' }], data };
     expect(n(marks(renderToStaticMarkup(createElement(configured.ScatterChart, common)), 'scatter-point')[0]!, 'r')).toBe(7);
     const circle = renderToStaticMarkup(createElement(configured.BubbleChart, common));
     expect(n(marks(circle, 'bubble')[0]!, 'r')).toBe(60);
@@ -302,4 +302,36 @@ describe('scatter and bubble measurements', () => {
     expect(html).toContain('25.000 people');
     expect(html).toContain('Customers');
   });
+});
+
+
+describe('responsive formatting', () => {
+  test('compact axes keep full fractional values in the data table', () => {
+    const html = bar({ numberFormat: { notation: 'compact' }, data: [{ id: 'one', label: 'Precise', values: { a: 1700000.12345 } }] });
+    expect(html).toContain('1.7M');
+    expect(html).toContain('<td>1,700,000.12345</td>');
+  });
+  test('tiny nonzero and extreme axes use scientific notation instead of zero or enormous strings', () => {
+    const tiny = scatter({ xAxis: { includeZero: false }, data: [
+      { id: 'one', label: 'One', seriesId: 'a', x: .00001, y: .00001 },
+      { id: 'two', label: 'Two', seriesId: 'a', x: .00004, y: .00004 },
+    ] });
+    expect(tiny).toContain('1E-5');
+    const huge = line({ data: [{ id: 'one', label: 'One', values: { a: 1e18 } }] });
+    expect(huge).toContain('1E18');
+  });
+});
+
+
+test('overlapping bubbles retain true coordinates but defer inside labels to the table', () => {
+  const html = bubbles({ data: [
+    { id: 'one', label: 'One', seriesId: 'a', x: 10, y: 20, size: 25 },
+    { id: 'two', label: 'Two', seriesId: 'a', x: 10, y: 20, size: 100 },
+  ] });
+  const circles = marks(html, 'bubble');
+  expect(circles).toHaveLength(2);
+  expect(n(circles[0]!, 'cx')).toBe(n(circles[1]!, 'cx'));
+  expect(marks(html, 'bubble-label')).toHaveLength(0);
+  expect(html).toContain('<td>25</td>');
+  expect(html).toContain('<td>100</td>');
 });

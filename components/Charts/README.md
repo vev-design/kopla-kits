@@ -44,12 +44,12 @@ inventing another visual treatment.
 | Label, value, focal-statistic fonts | `typography` families, sizes, and weights |
 | Bar corners, group spacing, separators, stack totals | `bar` |
 | Line weight, points, dash patterns | `line` |
-| Donut thickness, rotation, separators, label placement/content | `pie` |
+| Donut thickness, rotation, separators, independent category/value labels, pie legend visibility | `pie` |
 | Scatter point radius, opacity, outline, labels and trend weight | `scatter` |
 | Bubble radius ceiling, opacity, outline, ring count, labels and size legend | `bubble` |
 | Approved trend-line color on each background | Surface `trend` |
 | Focal statistic color on each background | Surface `focalText` |
-| Grid, legend, value and endpoint labels | `defaults` |
+| Grid, legend visibility/placement, value and endpoint labels | `defaults` |
 | Optional entrance motion | `motion` |
 
 ## Meaning and color assignment
@@ -117,9 +117,30 @@ the saved palettes and inside-label colors during brand setup.
   screen readers. Plot labels may be shortened; native SVG titles, the legend
   and the table retain complete content. Small inside pie/stack labels defer
   to the table. Outside pie labels and line endpoints avoid collisions.
-- SVGs retain readable coordinate sizes and scroll within a named, keyboard
-  accessible region on narrow screens. Dense data and larger outside-label fonts increase the plot size;
-  it never overflows the document. Containers and cards belong to the section.
+- The default `sizing="responsive"` fits ordinary charts to their container.
+  CSS container queries select one of three server-rendered layouts. Horizontal
+  positions expand with the plot; text, strokes and circle radii stay in CSS
+  pixels. A narrow card on a desktop receives the narrow layout too. Only one
+  SVG is visible and exposed to assistive technology; caption, legend and data
+  table are shared. This requires no measurement hooks or hydration.
+- Numeric axes use locale-aware compact notation (for example `€1.7M`). Tables
+  retain unabbreviated values with the requested number formatting and complete
+  category/series names. Category ticks are thinned as space decreases. Margins
+  budget for configured font sizes; line endpoints and outside pie/observation
+  labels move below the plot on narrow layouts. Labels may be shortened with
+  their full text preserved in SVG titles and the table.
+- Dense plots deliberately scroll in a named, keyboard-accessible region:
+  more than 12 bar categories or 40 line observations reserve minimum spacing.
+  `sizing="scroll"` explicitly requests a wide plot. Unusually large typography,
+  long numeric units or containers below 280px may also require scrolling.
+  The document itself stays within its container. Verify the final font assets:
+  static rendering uses conservative character budgets, not live glyph metrics.
+- Bubble radii are capped to fit each responsive layout. Use matching container
+  sizes/layouts as well as `sizeMax` for visual size comparisons across charts.
+  Small or overlapping inside labels are omitted instead of reduced below 12px
+  or painted over one another; their full values remain in the table.
+  Very long donut center strings are shortened at a minimum 12px; the full
+  strings remain in their native SVG titles.
 - `animation="enter"` runs once on insertion: bars grow from zero, solid lines
   draw on, and pies/points/dashed lines fade in. Scatter markers and bubble
   groups (including rings and inside labels) fade in together; sizes and
@@ -130,6 +151,41 @@ the saved palettes and inside-label colors during brand setup.
 
 The demo's editorial colors and serif display text illustrate the configuration
 capabilities. They are not official brand assets or measured brand guidelines.
+
+## Brand label treatments
+
+A legend is the series/color key. `legendPosition="right"` (or
+`brand.defaults.legendPosition`) places it beside the plot when the container
+is at least 600px wide; it wraps below on smaller containers. `legend={false}`
+suppresses it. Set `brand.pie.legend` to control only pie/donut legends.
+
+Category names and numeric pie labels can be selected independently. For a
+brand treatment with outside names, inside percentages and no repeated key:
+
+```tsx
+const brand: ChartBrand = {
+  version: 1,
+  defaults: { legendPosition: 'right' },
+  pie: {
+    categoryLabels: 'outside',
+    valueLabels: 'inside',
+    valueContent: 'percent',
+    legend: false,
+  },
+};
+```
+
+For names and percentages inside a pie, set both placements to `inside`.
+For a key-only treatment, set both to `none` and enable the legend. These
+settings also exist as chart props. Legacy `labels` / `insideLabel` settings
+remain supported; explicit per-channel props take priority, followed by an
+explicit legacy `labels` prop, then brand settings. Inside labels that cannot
+fit their slice defer to the accessible table.
+
+Simple bars can place values inside using `bar.valueLabels: 'inside'` or the
+`valueLabels` prop. Values use each ink's approved `labelColor`. Crowded labels
+are omitted, while every value remains in the table. Brand-specific typefaces,
+colors and weights are preserved; responsive layout does not replace them.
 
 ## Verify
 

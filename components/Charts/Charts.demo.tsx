@@ -41,10 +41,10 @@ const roundedChartBrand: ChartBrand = {
   defaults: { grid: true, values: false, lineLabels: 'end' },
 };
 type DemoProps = ({ kind: 'bar' } & BarChartProps | { kind: 'pie' } & PieChartProps | { kind: 'line' } & LineChartProps | { kind: 'scatter' } & ScatterChartProps | { kind: 'bubble' } & BubbleChartProps)
-  & { preset?: 'kit' | 'editorial' | 'rounded' };
+  & { preset?: 'kit' | 'editorial' | 'rounded' | 'large-type' };
 
 export function Charts(props: DemoProps) {
-  const brand = props.preset === 'editorial' ? editorialChartBrand : props.preset === 'rounded' ? roundedChartBrand : props.brand;
+  const brand = props.preset === 'large-type' ? { ...editorialChartBrand, typography: { labelFamily: 'Georgia, serif', valueFamily: 'Arial, sans-serif', displayFamily: 'Georgia, serif', labelSize: 19, labelWeight: 700, valueSize: 19, displaySize: 48 } } satisfies ChartBrand : props.preset === 'editorial' ? editorialChartBrand : props.preset === 'rounded' ? roundedChartBrand : props.brand;
   return <div className="p-6" style={{ minWidth: 0 }}>
     {props.kind === 'bar' ? <BarChart {...props} brand={brand} />
       : props.kind === 'pie' ? <PieChart {...props} brand={brand} />
@@ -600,5 +600,636 @@ export const ChartsShowcase = [
     ],
     labels: "outside",
     brand: {version: 1, typography: {labelSize: 24}, bubble: {maxRadius: 60}},
+  } },
+  {
+  label: "Responsive financial bars",
+  props: {
+    preset: "large-type",
+    animation: "none",
+    dataTable: "visible",
+    kind: "bar",
+    title: "Quarterly revenue",
+    layout: "stacked",
+    numberFormat: {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0
+    },
+    data: [
+      {
+        id: "2025-q1",
+        label: "Q1 2025",
+        values: {
+          enterprise: 420000,
+          "mid-market": 280000,
+          "small-business": 160000
+        }
+      },
+      {
+        id: "2025-q2",
+        label: "Q2 2025",
+        values: {
+          enterprise: 480000,
+          "mid-market": 310000,
+          "small-business": 175000
+        }
+      },
+      {
+        id: "2025-q3",
+        label: "Q3 2025",
+        values: {
+          enterprise: 540000,
+          "mid-market": 330000,
+          "small-business": 190000
+        }
+      },
+      {
+        id: "2025-q4",
+        label: "Q4 2025",
+        values: {
+          enterprise: 630000,
+          "mid-market": 355000,
+          "small-business": 210000
+        }
+      },
+      {
+        id: "2026-q1",
+        label: "Q1 2026",
+        values: {
+          enterprise: 690000,
+          "mid-market": 375000,
+          "small-business": 220000
+        }
+      },
+      {
+        id: "2026-q2",
+        label: "Q2 2026",
+        values: {
+          enterprise: 760000,
+          "mid-market": 405000,
+          "small-business": 240000
+        }
+      },
+      {
+        id: "2026-q3",
+        label: "Q3 2026",
+        values: {
+          enterprise: 850000,
+          "mid-market": 430000,
+          "small-business": 255000
+        }
+      },
+      {
+        id: "2026-q4",
+        label: "Q4 2026",
+        values: {
+          enterprise: 960000,
+          "mid-market": 465000,
+          "small-business": 275000
+        }
+      }
+    ],
+    series: [
+      {
+        id: "enterprise",
+        label: "Enterprise customers with annual agreements"
+      },
+      {
+        id: "mid-market",
+        label: "Mid-market"
+      },
+      {
+        id: "small-business",
+        label: "Small business"
+      }
+    ]
+  }
+},
+  {
+  label: "Responsive financial line",
+  props: {
+    preset: "large-type",
+    animation: "none",
+    dataTable: "visible",
+    kind: "line",
+    title: "Revenue trend",
+    numberFormat: {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0
+    },
+    data: [
+      {
+        id: "2025-q1",
+        label: "Q1 2025",
+        values: {
+          enterprise: 420000,
+          "mid-market": 280000,
+          "small-business": 160000
+        }
+      },
+      {
+        id: "2025-q2",
+        label: "Q2 2025",
+        values: {
+          enterprise: 480000,
+          "mid-market": 310000,
+          "small-business": 175000
+        }
+      },
+      {
+        id: "2025-q3",
+        label: "Q3 2025",
+        values: {
+          enterprise: 540000,
+          "mid-market": 330000,
+          "small-business": 190000
+        }
+      },
+      {
+        id: "2025-q4",
+        label: "Q4 2025",
+        values: {
+          enterprise: 630000,
+          "mid-market": 355000,
+          "small-business": 210000
+        }
+      },
+      {
+        id: "2026-q1",
+        label: "Q1 2026",
+        values: {
+          enterprise: 690000,
+          "mid-market": 375000,
+          "small-business": 220000
+        }
+      },
+      {
+        id: "2026-q2",
+        label: "Q2 2026",
+        values: {
+          enterprise: 760000,
+          "mid-market": 405000,
+          "small-business": 240000
+        }
+      },
+      {
+        id: "2026-q3",
+        label: "Q3 2026",
+        values: {
+          enterprise: 850000,
+          "mid-market": 430000,
+          "small-business": 255000
+        }
+      },
+      {
+        id: "2026-q4",
+        label: "Q4 2026",
+        values: {
+          enterprise: 960000,
+          "mid-market": 465000,
+          "small-business": 275000
+        }
+      }
+    ],
+    series: [
+      {
+        id: "enterprise",
+        label: "Enterprise customers with annual agreements"
+      },
+      {
+        id: "mid-market",
+        label: "Mid-market"
+      },
+      {
+        id: "small-business",
+        label: "Small business"
+      }
+    ]
+  }
+},
+  {
+  label: "Responsive donut center",
+  props: {
+    preset: "large-type",
+    animation: "none",
+    dataTable: "visible",
+    kind: "pie",
+    variant: "donut",
+    labels: "outside",
+    title: "Revenue share",
+    centerValue: "€1,700,000",
+    centerLabel: "Total recurring revenue",
+    data: [
+      {
+        id: "a",
+        label: "Enterprise customers with annual agreements",
+        value: 950000
+      },
+      {
+        id: "b",
+        label: "Mid-market customers",
+        value: 530000
+      },
+      {
+        id: "c",
+        label: "Small business customers",
+        value: 220000
+      }
+    ]
+  }
+},
+  {
+  label: "Responsive scatter labels",
+  props: {
+    preset: "large-type",
+    animation: "none",
+    dataTable: "visible",
+    series: [
+      {
+        id: "markets",
+        label: "Markets with a long descriptive legend entry"
+      }
+    ],
+    labels: "outside",
+    xAxis: {
+      label: "Investment in euros",
+      numberFormat: {
+        style: "currency",
+        currency: "EUR",
+        maximumFractionDigits: 0
+      }
+    },
+    yAxis: {
+      label: "Margin",
+      numberFormat: {
+        style: "percent"
+      }
+    },
+    data: [
+      {
+        id: "a",
+        label: "Northern market with a long observation name",
+        seriesId: "markets",
+        x: 120000,
+        y: 0.12,
+        size: 250000
+      },
+      {
+        id: "b",
+        label: "Western market",
+        seriesId: "markets",
+        x: 470000,
+        y: 0.28,
+        size: 1000000
+      },
+      {
+        id: "c",
+        label: "Eastern market",
+        seriesId: "markets",
+        x: 900000,
+        y: 0.5,
+        size: 500000
+      }
+    ],
+    kind: "scatter",
+    title: "Investment and margin",
+    trendLine: "linear"
+  }
+},
+  {
+  label: "Responsive bubble labels",
+  props: {
+    preset: "large-type",
+    animation: "none",
+    dataTable: "visible",
+    series: [
+      {
+        id: "markets",
+        label: "Markets with a long descriptive legend entry"
+      }
+    ],
+    labels: "outside",
+    xAxis: {
+      label: "Investment in euros",
+      numberFormat: {
+        style: "currency",
+        currency: "EUR",
+        maximumFractionDigits: 0
+      }
+    },
+    yAxis: {
+      label: "Margin",
+      numberFormat: {
+        style: "percent"
+      }
+    },
+    data: [
+      {
+        id: "a",
+        label: "Northern market with a long observation name",
+        seriesId: "markets",
+        x: 120000,
+        y: 0.12,
+        size: 250000
+      },
+      {
+        id: "b",
+        label: "Western market",
+        seriesId: "markets",
+        x: 470000,
+        y: 0.28,
+        size: 1000000
+      },
+      {
+        id: "c",
+        label: "Eastern market",
+        seriesId: "markets",
+        x: 900000,
+        y: 0.5,
+        size: 500000
+      }
+    ],
+    kind: "bubble",
+    title: "Market opportunities",
+    sizeLabel: "Revenue",
+    sizeMax: 1000000,
+    sizeNumberFormat: {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0
+    }
+  }
+},
+  {
+  label: "Deliberately scrollable bars",
+  props: {
+    kind: "bar",
+    sizing: "scroll",
+    title: "Monthly performance",
+    data: [
+      {
+        id: "2025-q1",
+        label: "Q1 2025",
+        values: {
+          enterprise: 420000,
+          "mid-market": 280000,
+          "small-business": 160000
+        }
+      },
+      {
+        id: "2025-q2",
+        label: "Q2 2025",
+        values: {
+          enterprise: 480000,
+          "mid-market": 310000,
+          "small-business": 175000
+        }
+      },
+      {
+        id: "2025-q3",
+        label: "Q3 2025",
+        values: {
+          enterprise: 540000,
+          "mid-market": 330000,
+          "small-business": 190000
+        }
+      },
+      {
+        id: "2025-q4",
+        label: "Q4 2025",
+        values: {
+          enterprise: 630000,
+          "mid-market": 355000,
+          "small-business": 210000
+        }
+      },
+      {
+        id: "2026-q1",
+        label: "Q1 2026",
+        values: {
+          enterprise: 690000,
+          "mid-market": 375000,
+          "small-business": 220000
+        }
+      },
+      {
+        id: "2026-q2",
+        label: "Q2 2026",
+        values: {
+          enterprise: 760000,
+          "mid-market": 405000,
+          "small-business": 240000
+        }
+      },
+      {
+        id: "2026-q3",
+        label: "Q3 2026",
+        values: {
+          enterprise: 850000,
+          "mid-market": 430000,
+          "small-business": 255000
+        }
+      },
+      {
+        id: "2026-q4",
+        label: "Q4 2026",
+        values: {
+          enterprise: 960000,
+          "mid-market": 465000,
+          "small-business": 275000
+        }
+      }
+    ],
+    series: [
+      {
+        id: "enterprise",
+        label: "Enterprise customers with annual agreements"
+      },
+      {
+        id: "mid-market",
+        label: "Mid-market"
+      },
+      {
+        id: "small-business",
+        label: "Small business"
+      }
+    ]
+  }
+},
+  {
+  label: "Dense responsive categories",
+  props: {
+    kind: "bar",
+    title: "Detailed monthly performance",
+    data: [
+      {
+        id: "0",
+        label: "Month 1",
+        values: {
+          sales: 4
+        }
+      },
+      {
+        id: "1",
+        label: "Month 2",
+        values: {
+          sales: 11
+        }
+      },
+      {
+        id: "2",
+        label: "Month 3",
+        values: {
+          sales: 18
+        }
+      },
+      {
+        id: "3",
+        label: "Month 4",
+        values: {
+          sales: 25
+        }
+      },
+      {
+        id: "4",
+        label: "Month 5",
+        values: {
+          sales: 32
+        }
+      },
+      {
+        id: "5",
+        label: "Month 6",
+        values: {
+          sales: 9
+        }
+      },
+      {
+        id: "6",
+        label: "Month 7",
+        values: {
+          sales: 16
+        }
+      },
+      {
+        id: "7",
+        label: "Month 8",
+        values: {
+          sales: 23
+        }
+      },
+      {
+        id: "8",
+        label: "Month 9",
+        values: {
+          sales: 30
+        }
+      },
+      {
+        id: "9",
+        label: "Month 10",
+        values: {
+          sales: 7
+        }
+      },
+      {
+        id: "10",
+        label: "Month 11",
+        values: {
+          sales: 14
+        }
+      },
+      {
+        id: "11",
+        label: "Month 12",
+        values: {
+          sales: 21
+        }
+      },
+      {
+        id: "12",
+        label: "Month 13",
+        values: {
+          sales: 28
+        }
+      },
+      {
+        id: "13",
+        label: "Month 14",
+        values: {
+          sales: 5
+        }
+      },
+      {
+        id: "14",
+        label: "Month 15",
+        values: {
+          sales: 12
+        }
+      },
+      {
+        id: "15",
+        label: "Month 16",
+        values: {
+          sales: 19
+        }
+      },
+      {
+        id: "16",
+        label: "Month 17",
+        values: {
+          sales: 26
+        }
+      },
+      {
+        id: "17",
+        label: "Month 18",
+        values: {
+          sales: 33
+        }
+      },
+      {
+        id: "18",
+        label: "Month 19",
+        values: {
+          sales: 10
+        }
+      },
+      {
+        id: "19",
+        label: "Month 20",
+        values: {
+          sales: 17
+        }
+      }
+    ],
+    series: [
+      {
+        id: "sales",
+        label: "Sales"
+      }
+    ]
+  }
+},
+  { label: 'Right-side brand legend', props: {
+    kind: 'bar', preset: 'editorial', title: 'Revenue composition', layout: 'stacked', legendPosition: 'right',
+    series: [{ id: 'revenue', label: 'Recurring revenue' }, { id: 'cost', label: 'Services' }, { id: 'profit', label: 'Other income' }],
+    data: [{ id: 'q1', label: 'Q1', values: { revenue: 24, cost: 8, profit: 3 } }, { id: 'q2', label: 'Q2', values: { revenue: 30, cost: 7, profit: 4 } }],
+  } },
+  { label: 'Donut with split label roles', props: {
+    kind: 'pie', title: 'Response', variant: 'donut', colorMode: 'semantic',
+    brand: { ...editorialChartBrand, pie: { innerRadius: 0.6, categoryLabels: 'outside', valueLabels: 'inside', legend: false } },
+    data: [{ id: 'agree', label: 'Agree', value: 78, role: 'positive' }, { id: 'neutral', label: 'Neutral', value: 14, role: 'neutral' }, { id: 'disagree', label: 'Disagree', value: 8, role: 'negative' }],
+  } },
+  { label: 'Pie with inside labels only', props: {
+    kind: 'pie', title: 'Sentiment', colorMode: 'semantic',
+    brand: { ...editorialChartBrand, pie: { categoryLabels: 'inside', valueLabels: 'inside', legend: false } },
+    data: [{ id: 'positive', label: 'Positive', value: 78, role: 'positive' }, { id: 'negative', label: 'Negative', value: 22, role: 'negative' }],
+  } },
+  { label: 'Simple bars with inside values', props: {
+    kind: 'bar', preset: 'editorial', title: 'Revenue', valueLabels: 'inside', legend: false,
+    series: [{ id: 'revenue', label: 'Revenue' }],
+    data: [{ id: 'q1', label: 'Q1', values: { revenue: 24 } }, { id: 'q2', label: 'Q2', values: { revenue: 40 } }],
   } },
 ];

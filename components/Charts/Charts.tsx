@@ -3,7 +3,7 @@
 // scroll region is keyboard accessible; no keys are rebound. SVG has an image
 // role and a name; its redundant marks are accompanied by a semantic table.
 // All brand decisions live in ChartBrand, never in the data or CSS selectors.
-import type { CSSProperties, ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type CSSProperties, type ReactNode, type ReactElement } from 'react';
 
 export type ChartRole = 'positive' | 'neutral' | 'negative' | 'other';
 export type ChartKind = 'bar' | 'pie' | 'donut' | 'line' | 'scatter' | 'bubble';
@@ -44,12 +44,12 @@ export interface ChartBrand {
     labelSize?: number; valueSize?: number; titleSize?: number; displaySize?: number;
     labelWeight?: number; valueWeight?: number; titleWeight?: number; displayWeight?: number;
   };
-  bar?: { radius?: number; gap?: number; groupGap?: number; separatorWidth?: number; totals?: boolean };
+  bar?: { radius?: number; gap?: number; groupGap?: number; separatorWidth?: number; totals?: boolean; valueLabels?: 'inside' | 'outside' | 'none' };
   line?: { width?: number; pointRadius?: number; dashPatterns?: string[] };
-  pie?: { innerRadius?: number; startAngle?: number; separatorWidth?: number; labels?: 'inside' | 'outside' | 'none'; insideLabel?: 'percent' | 'value' | 'label-percent' };
+  pie?: { innerRadius?: number; startAngle?: number; separatorWidth?: number; labels?: 'inside' | 'outside' | 'none'; insideLabel?: 'percent' | 'value' | 'label-percent'; categoryLabels?: 'inside' | 'outside' | 'none'; valueLabels?: 'inside' | 'outside' | 'none'; valueContent?: 'percent' | 'value'; legend?: boolean };
   scatter?: { radius?: number; strokeWidth?: number; fillOpacity?: number; trendWidth?: number; labels?: 'none' | 'outside' };
   bubble?: { maxRadius?: number; strokeWidth?: number; fillOpacity?: number; ringCount?: number; labelHaloWidth?: number; treatment?: 'solid' | 'rings'; labels?: 'none' | 'inside' | 'outside'; sizeLegend?: boolean };
-  defaults?: { grid?: boolean; legend?: boolean; values?: boolean; lineLabels?: 'end' | 'none' };
+  defaults?: { grid?: boolean; legend?: boolean; legendPosition?: 'bottom' | 'right'; values?: boolean; lineLabels?: 'end' | 'none' };
   motion?: { enabled?: boolean; durationMs?: number; easing?: string };
 }
 
@@ -128,9 +128,13 @@ export interface ChartProps {
   suffix?: string;
   /** Override the brand's legend default. */
   legend?: boolean;
+  /** Preferred legend placement. Right-side legends move below on narrow containers. */
+  legendPosition?: 'bottom' | 'right';
   /** Keep a screen-reader table, or display it below the chart. */
   dataTable?: 'hidden' | 'visible';
-  /** SVG coordinate height. Default 320; charts scroll internally at narrow widths. */
+  /** Responsive by default. Use scroll to retain a wide, detailed plot deliberately. */
+  sizing?: 'responsive' | 'scroll';
+  /** Plot height in CSS pixels. Labels may add height. Default 320. */
   height?: number;
   /** Section-owned layout classes; no card/chrome is imposed. */
   className?: string;
@@ -148,6 +152,8 @@ export interface BarChartProps extends ChartProps {
   layout?: 'grouped' | 'stacked';
   /** Show values on marks; small stacked segments defer to the table. */
   values?: boolean;
+  /** Explicit mark-value placement; takes priority over values and the brand default. */
+  valueLabels?: 'inside' | 'outside' | 'none';
   /** Show positive/negative totals at the ends of stacked bars. Defaults to the brand. */
   totals?: boolean;
 }
@@ -160,6 +166,12 @@ export interface PieChartProps extends ChartProps {
   variant?: 'pie' | 'donut';
   /** Label placement; defaults to the brand. */
   labels?: 'inside' | 'outside' | 'none';
+  /** Category-name placement, independently of the numeric label. */
+  categoryLabels?: 'inside' | 'outside' | 'none';
+  /** Numeric-label placement, independently of the category name. */
+  valueLabels?: 'inside' | 'outside' | 'none';
+  /** Show shares or original values in numeric labels. */
+  valueContent?: 'percent' | 'value';
   /** Focal number or short statistic in a donut. */
   centerValue?: string;
   /** Supporting center label in a donut. */
@@ -293,11 +305,52 @@ function formatFor(props: ChartProps) {
   // A supplied minimum may exceed our default precision. Only an explicitly
   // supplied maximum should be allowed to conflict with it.
   const formatter = new Intl.NumberFormat(props.locale ?? 'en-US', {
-    ...props.numberFormat,
+    ...props.numberFormat, notation: 'standard',
     maximumFractionDigits: props.numberFormat?.maximumFractionDigits
-      ?? Math.max(2, props.numberFormat?.minimumFractionDigits ?? 0),
+      ?? Math.max(20, props.numberFormat?.minimumFractionDigits ?? 0),
   });
   return (value: number) => `${formatter.format(Object.is(value, -0) ? 0 : value)}${props.suffix ?? ''}`;
+}
+
+// Axis notation is independent of the accessible table's precision. Intl keeps
+// currency, percent, locale and unit semantics; only the compact suffix changes.
+function compactFor(props: Pick<ChartProps, 'locale' | 'numberFormat' | 'suffix'>) {
+  const formatter = new Intl.NumberFormat(props.locale ?? 'en-US', {
+    ...props.numberFormat, notation: 'compact', compactDisplay: 'short',
+    minimumFractionDigits: 0, maximumFractionDigits: 1,
+  });
+  const scientific = new Intl.NumberFormat(props.locale ?? 'en-US', {
+    ...props.numberFormat, notation: 'scientific', minimumFractionDigits: 0, maximumFractionDigits: 1,
+  });
+  return (value: number) => {
+    const magnitude = Math.abs(value) * (props.numberFormat?.style === 'percent' ? 100 : 1);
+    const selected = magnitude > 0 && (magnitude < .01 || magnitude >= 1e15) ? scientific : formatter;
+    return `${selected.format(Object.is(value, -0) ? 0 : value)}${props.suffix ?? ''}`;
+  };
+}
+// Fonts load outside this file. Budget a full em per code point, including bold
+// and wide fallback glyphs, rather than assuming a narrow font was available.
+function textWidth(text: string, size: number) { return Array.from(text).length * size; }
+function fitText(text: string, width: number, size: number) {
+  const chars = Math.max(1, Math.floor(width / size));
+  const glyphs = Array.from(text);
+  return glyphs.length <= chars ? text : `${glyphs.slice(0, Math.max(0, chars - 1)).join('')}…`;
+}
+function axisSpace(ticks: number[], format: (n: number) => string, size: number) {
+  return Math.max(...ticks.map((tick) => textWidth(format(tick), size))) + 16;
+}
+function ticksFor(ticks: number[], space: number, labelWidth: number) {
+  const count = Math.max(2, Math.min(ticks.length, Math.floor(space / (labelWidth + 12)) + 1));
+  // Keep both ends of the domain even when only two labels fit. A stride that
+  // exceeds the tick count silently left a financial X axis labelled only 0.
+  return Array.from({ length: count }, (_, index) => ticks[Math.round(index * (ticks.length - 1) / (count - 1))]!);
+}
+function wrappedText(text: string, width: number, size: number): string[] {
+  const words = text.split(/\s+/);
+  if (words.length < 2) return [fitText(text, width, size)];
+  let first = words.shift()!;
+  while (words.length > 1 && textWidth(`${first} ${words[0]}`, size) <= width) first += ` ${words.shift()}`;
+  return [fitText(first, width, size), fitText(words.join(' '), width, size)];
 }
 
 function unique(items: { id: string }[], name: string) {
@@ -343,11 +396,28 @@ function scaleFor(values: number[], includeZero = true) {
 }
 
 const CSS = `
-  [data-kk-chart] { min-width: 0; max-width: 100%; margin: 0; }
+  [data-kk-chart] { container: kk-chart / inline-size; width: 100%; min-width: 0; max-width: 100%; margin: 0; }
   [data-kk-chart] [data-chart-scroll] { max-width: 100%; overflow-x: auto; }
-  [data-kk-chart] svg { display: block; width: 100%; height: auto; }
+  [data-kk-chart] > [data-chart-scroll] > svg { display: block; width: 100%; height: auto; }
+  [data-chart-plot-region] { container: kk-plot / inline-size; min-width: 0; }
+  [data-chart-body] { min-width: 0; }
+  @container kk-chart (min-width: 600px) {
+    [data-chart-body][data-legend-position="right"] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, min(24%, 240px)); gap: 24px; align-items: center; }
+    [data-chart-body][data-legend-position="right"] [data-chart-legend] { flex-direction: column; }
+  }
+  [data-chart-layout] { display: none; }
+  [data-chart-layout="280"] { display: block; }
+  @container kk-plot (min-width: 600px) {
+    [data-chart-layout="280"] { display: none; }
+    [data-chart-layout="600"] { display: block; }
+  }
+  @container kk-plot (min-width: 1000px) {
+    [data-chart-layout="600"] { display: none; }
+    [data-chart-layout="1000"] { display: block; }
+  }
   [data-kk-chart] [data-chart-legend] { display: flex; flex-wrap: wrap; gap: .5em 1.5em; padding: 0; list-style: none; }
-  [data-kk-chart] [data-chart-legend] li { display: flex; gap: .5em; align-items: baseline; min-width: 0; overflow-wrap: anywhere; }
+  [data-kk-chart] [data-chart-legend] li { display: flex; gap: .5em; align-items: baseline; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+  [data-kk-chart] [data-chart-legend] li > span:last-child { min-width: 0; overflow-wrap: anywhere; }
   [data-kk-chart] [data-chart-key] { display: inline-block; flex-shrink: 0; width: .8em; height: .8em; }
   [data-kk-chart] figcaption { overflow-wrap: anywhere; }
   [data-kk-chart] [data-chart-table] { border-collapse: collapse; width: 100%; text-align: start; }
@@ -372,6 +442,7 @@ function Frame({ props, theme, kind, children, series, table, empty, horizontal 
 }) {
   const { typography: type, surface } = theme;
   const showTable = props.dataTable === 'visible' || !theme.allowed;
+  const showLegend = props.legend ?? ((kind === 'pie' || kind === 'donut') ? theme.pie.legend : undefined) ?? theme.defaults.legend;
   return (
     <figure data-kk-chart={kind} data-surface={theme.name} data-animate={theme.animate || undefined}
       data-horizontal={horizontal || undefined} className={props.className}
@@ -385,15 +456,15 @@ function Frame({ props, theme, kind, children, series, table, empty, horizontal 
       </figcaption>
       {!theme.allowed ? <p data-chart-unavailable="">This chart style is not approved for this background. The data is shown below.</p>
         : empty ? <p data-chart-empty="">No data to display.</p>
-        : <>
-          <div data-chart-scroll="" role="region" aria-label={`${props.title} plot`} tabIndex={0}>{children}</div>
-          {(props.legend ?? theme.defaults.legend) && <ul data-chart-legend="" aria-label="Legend">
+        : <div data-chart-body="" data-legend-position={showLegend ? (props.legendPosition ?? theme.defaults.legendPosition ?? 'bottom') : undefined}>
+          <div data-chart-scroll="" data-chart-plot-region="" role="region" aria-label={`${props.title} plot`} tabIndex={0}>{children}</div>
+          {showLegend && <ul data-chart-legend="" aria-label="Legend">
             {series.map((item, index) => <li key={item.id}>
               <span data-chart-key="" aria-hidden="true" style={{ background: inkFor(item, index, props, theme).color }} />
               <span>{item.label}</span>
             </li>)}
           </ul>}
-        </>}
+        </div>}
       <div className={showTable ? undefined : 'sr-only'} data-chart-scroll={showTable ? '' : undefined}
         role={showTable ? 'region' : undefined} aria-label={showTable ? `${props.title} data` : undefined}
         tabIndex={showTable ? 0 : undefined}>{table}</div>
@@ -412,11 +483,45 @@ function RowTable({ props }: { props: BarChartProps | LineChartProps }) {
 
 function short(text: string, length: number) { return text.length <= length ? text : `${text.slice(0, length - 1)}…`; }
 
-function Plot({ title, width, height, theme, children }: { title: string; width: number; height: number; theme: Theme; children: ReactNode }) {
-  return <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}
-    style={{ minWidth: width, fontFamily: theme.typography.labelFamily, fontSize: theme.typography.labelSize,
+// Only the plot is repeated. One caption, legend and data table serve all
+// layouts; display:none removes inactive SVGs from the accessibility tree.
+function ResponsivePlots({ props, render }: { props: ChartProps; render: (width?: number) => ReactNode }) {
+  return props.sizing === 'scroll' ? render() : <>{[280, 600, 1000].map((width) =>
+    <div key={width} data-chart-layout={width}>{render(width)}</div>)}</>;
+}
+
+// Stretch horizontal positions, never typography or circle radii. Paths live in
+// their own coordinate viewport; text and circles remain in CSS pixels. This
+// avoids both 8px phone labels and huge desktop labels from scaling an SVG.
+function fluidNodes(children: ReactNode, width: number, height: number): ReactNode {
+  return Children.map(children, (child) => {
+    if (!isValidElement(child)) return child;
+    const node = child as ReactElement<Record<string, unknown> & { children?: ReactNode; style?: CSSProperties }>;
+    const p = node.props;
+    if (node.type === 'path') return <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none" overflow="visible" aria-hidden="true">
+      {cloneElement(node, { vectorEffect: 'non-scaling-stroke' })}</svg>;
+    const next: Record<string, unknown> = {};
+    for (const key of ['x', 'x1', 'x2', 'cx', ...(node.type === 'rect' ? ['width'] : [])]) {
+      if (typeof p[key] === 'number') next[key] = `${p[key] / width * 100}%`;
+    }
+    if (p.style?.transformOrigin) next.style = { ...p.style,
+      transformOrigin: String(p.style.transformOrigin).replace(/^([\d.e+-]+)px /, (_, x) => `${Number(x) / width * 100}% `) };
+    return cloneElement(node, next, fluidNodes(p.children, width, height));
+  });
+}
+
+function Plot({ title, width, height, theme, fluid = false, fixed = false, children }: {
+  title: string; width: number; height: number; theme: Theme; fluid?: boolean; fixed?: boolean; children: ReactNode;
+}) {
+  return <svg data-chart-plot="" data-coordinate-width={width} xmlns="http://www.w3.org/2000/svg"
+    viewBox={fluid ? undefined : `0 0 ${width} ${height}`} role="img" aria-label={title}
+    style={{ display: 'block', width: '100%', minWidth: width, height: fluid ? height : 'auto', maxWidth: fluid ? undefined : width,
+      fontFamily: theme.typography.labelFamily, fontSize: theme.typography.labelSize,
       fontWeight: theme.typography.labelWeight, color: theme.surface.text }}>
-    <title>{title}</title>{children}
+    <title>{title}</title>{!fluid ? children : fixed
+      ? <svg x="50%" width={width} height={height} overflow="visible"><g transform={`translate(${-width / 2},0)`}>{children}</g></svg>
+      : fluidNodes(children, width, height)}
   </svg>;
 }
 
@@ -427,6 +532,7 @@ export function BarChart(props: BarChartProps) {
   const horizontal = props.orientation === 'horizontal';
   const stacked = props.layout === 'stacked';
   const format = formatFor(props);
+  const compact = compactFor(props);
   const all = props.data.flatMap((row) => props.series.map((s) => row.values[s.id]).filter((v): v is number => v != null));
   const domain = stacked ? props.data.flatMap((row) => {
     const values = props.series.map((s) => row.values[s.id] ?? 0);
@@ -436,73 +542,85 @@ export function BarChart(props: BarChartProps) {
     return [positive, negative];
   }) : all;
   const scale = scaleFor(domain);
-  const height = horizontal ? Math.max(bounded(props.height, 320, 200, 1200), props.data.length * 48 + 60)
-    : bounded(props.height, 320, 200, 1200);
-  const width = horizontal ? 640 : Math.max(640, props.data.length * Math.max(58, (stacked ? 1 : props.series.length) * 22));
-  const left = horizontal ? 160 : 82, top = 26, bottom = height - 48, right = width - 64;
-  const plotWidth = right - left, plotHeight = bottom - top;
-  const valueAt = (v: number) => horizontal ? left + scale.at(v) * plotWidth : bottom - scale.at(v) * plotHeight;
-  const band = (horizontal ? plotHeight : plotWidth) / Math.max(1, props.data.length);
-  const groupWidth = band * (1 - bounded(theme.bar.groupGap, BAR.groupGap, 0, 0.8));
-  const count = stacked ? 1 : Math.max(1, props.series.length);
-  const gap = bounded(theme.bar.gap, BAR.gap, 0, groupWidth / count / 2);
-  const thickness = Math.max(0.5, (groupWidth - gap * (count - 1)) / count);
-  const values = props.values ?? theme.defaults.values;
+  function renderPlot(layoutWidth?: number) {
+    const tickSpace = axisSpace(scale.ticks, compact, type.labelSize);
+    const valueSpace = axisSpace(domain, compact, type.valueSize);
+    const count = stacked ? 1 : Math.max(1, props.series.length);
+    const width = Math.max(layoutWidth ?? 640, tickSpace + 100,
+      !horizontal && props.data.length > 12 ? tickSpace + props.data.length * Math.max(32, count * 12) : 0);
+    const height = horizontal ? Math.max(bounded(props.height, 320, 200, 1200), props.data.length * Math.max(48, count * (type.valueSize + 8), type.labelSize * 1.6) + 80)
+      : Math.max(bounded(props.height, 320, 200, 1200), type.labelSize * 8 + type.valueSize * 3);
+    const left = horizontal ? Math.max(tickSpace / 2, Math.min(width * .35, Math.max(...props.data.map((row) => textWidth(row.label, type.labelSize)), 60))) + 12 : tickSpace;
+    const top = Math.max(24, type.valueSize * 1.5), bottom = height - type.labelSize * (horizontal ? 2 : 3.5) - type.valueSize * 1.5 - 12;
+    const right = width - (horizontal ? Math.max(tickSpace / 2, valueSpace) : Math.max(16, type.labelSize));
+    const plotWidth = right - left, plotHeight = bottom - top;
+    const valueAt = (v: number) => horizontal ? left + scale.at(v) * plotWidth : bottom - scale.at(v) * plotHeight;
+    const band = (horizontal ? plotHeight : plotWidth) / Math.max(1, props.data.length);
+    const groupWidth = band * (1 - bounded(theme.bar.groupGap, BAR.groupGap, 0, 0.8));
+    const gap = bounded(theme.bar.gap, BAR.gap, 0, groupWidth / count / 2);
+    const thickness = Math.max(0.5, (groupWidth - gap * (count - 1)) / count);
+    const placement = props.valueLabels ?? (props.values === false ? 'none' : theme.bar.valueLabels)
+      ?? ((props.values ?? theme.defaults.values) ? (stacked ? 'inside' : 'outside') : 'none');
+    const insideValues = placement === 'inside';
+    const categoryStride = horizontal ? 1 : Math.max(1, Math.ceil(type.labelSize * 4.5 / band));
+    return <Plot title={props.title} width={width} height={height} theme={theme} fluid={layoutWidth !== undefined}>
+        {ticksFor(scale.ticks, horizontal ? plotWidth : plotHeight, horizontal ? tickSpace : type.labelSize).map((tick, i) => <g key={i}>
+          {theme.defaults.grid && <line x1={horizontal ? valueAt(tick) : left} y1={horizontal ? top : valueAt(tick)}
+            x2={horizontal ? valueAt(tick) : right} y2={horizontal ? bottom : valueAt(tick)} stroke={surface.grid} />}
+          <text x={horizontal ? valueAt(tick) : left - 10} y={horizontal ? bottom + type.labelSize + type.valueSize + 10 : valueAt(tick) + 4}
+            fill={surface.mutedText} textAnchor={horizontal ? 'middle' : 'end'}>{compact(tick)}<title>{format(tick)}</title></text>
+        </g>)}
+        <line data-baseline="" x1={horizontal ? valueAt(0) : left} y1={horizontal ? top : valueAt(0)}
+          x2={horizontal ? valueAt(0) : right} y2={horizontal ? bottom : valueAt(0)} stroke={surface.axis} />
+        {props.data.map((row, rowIndex) => {
+          let positive = 0, negative = 0;
+          const groupStart = (horizontal ? top : left) + rowIndex * band + (band - groupWidth) / 2;
+          return <g key={row.id}>
+            {rowIndex % categoryStride === 0 && <text data-category-label="" x={horizontal ? left - 12 : left + (rowIndex + 0.5) * band}
+              y={horizontal ? top + (rowIndex + 0.5) * band + 4 : bottom + type.labelSize + type.valueSize + 10}
+              textAnchor={horizontal ? 'end' : 'middle'} fill={surface.text}>
+              {horizontal ? fitText(row.label, left - 20, type.labelSize) : wrappedText(row.label, band * categoryStride - 8, type.labelSize).map((line, index) =>
+                <tspan key={index} x={left + (rowIndex + .5) * band} dy={index ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{row.label}</title>
+            </text>}
+            {props.series.map((series, index) => {
+              const value = row.values[series.id];
+              if (value == null) return null;
+              const start = stacked ? (value >= 0 ? positive : negative) : 0;
+              const end = start + value;
+              if (value >= 0) positive = end; else negative = end;
+              const ink = inkFor(series, index, props, theme);
+              const length = Math.abs(valueAt(end) - valueAt(start));
+              const cross = groupStart + (stacked ? 0 : index * (thickness + gap));
+              const along = Math.min(valueAt(start), valueAt(end));
+              return <g key={series.id}>
+                <rect data-bar="" data-series={series.id} data-category={row.id} data-value={value}
+                  x={horizontal ? along : cross} y={horizontal ? cross : along}
+                  width={horizontal ? length : thickness} height={horizontal ? thickness : length}
+                  rx={stacked ? 0 : bounded(theme.bar.radius, 0, 0, Math.min(thickness, length) / 2)}
+                  fill={ink.color} stroke={surface.background} strokeWidth={bounded(theme.bar.separatorWidth, 0, 0, 8)}
+                  style={{ transformOrigin: horizontal ? `${valueAt(0)}px 0px` : `0px ${valueAt(0)}px` }}>
+                  <title>{`${row.label} — ${series.label}: ${format(value)}`}</title>
+                </rect>
+                {placement !== 'none' && (horizontal ? thickness >= type.valueSize * 1.2 : thickness >= textWidth(compact(value), type.valueSize)) && (!insideValues || length > type.valueSize * (horizontal ? 4 : 1.5)) && <text
+                  x={horizontal ? (insideValues ? along + length / 2 : valueAt(end) + (value < 0 ? -6 : 6)) : cross + thickness / 2}
+                  y={horizontal ? cross + thickness / 2 + type.valueSize / 3 : (insideValues ? along + length / 2 + type.valueSize / 3 : valueAt(end) + (value < 0 ? type.valueSize + 4 : -6))}
+                  textAnchor={horizontal && !insideValues ? (value < 0 ? 'end' : 'start') : 'middle'}
+                  fill={insideValues ? ink.labelColor : surface.text} fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>{compact(value)}<title>{format(value)}</title></text>}
+              </g>;
+            })}
+            {stacked && (horizontal || groupWidth >= valueSpace) && (props.totals ?? theme.bar.totals) && [positive, negative].filter((total) => total !== 0).map((total) =>
+              <text key={total > 0 ? 'positive' : 'negative'} data-stack-total=""
+                x={horizontal ? valueAt(total) + (total < 0 ? -6 : 6) : groupStart + groupWidth / 2}
+                y={horizontal ? groupStart + groupWidth / 2 + type.valueSize / 3 : valueAt(total) + (total < 0 ? type.valueSize + 4 : -6)}
+                textAnchor={horizontal ? (total < 0 ? 'end' : 'start') : 'middle'} fill={surface.text}
+                fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>{compact(total)}<title>{format(total)}</title></text>)}
+          </g>;
+        })}
+      </Plot>;
+  }
   return <Frame props={props} theme={theme} kind="bar" horizontal={horizontal} series={props.series}
     empty={!all.length} table={<RowTable props={props} />}>
-    <Plot title={props.title} width={width} height={height} theme={theme}>
-      {scale.ticks.map((tick, i) => <g key={i}>
-        {theme.defaults.grid && <line x1={horizontal ? valueAt(tick) : left} y1={horizontal ? top : valueAt(tick)}
-          x2={horizontal ? valueAt(tick) : right} y2={horizontal ? bottom : valueAt(tick)} stroke={surface.grid} />}
-        <text x={horizontal ? valueAt(tick) : left - 10} y={horizontal ? bottom + 22 : valueAt(tick) + 4}
-          fill={surface.mutedText} textAnchor={horizontal ? 'middle' : 'end'}>{short(format(tick), horizontal ? 12 : 10)}<title>{format(tick)}</title></text>
-      </g>)}
-      <line data-baseline="" x1={horizontal ? valueAt(0) : left} y1={horizontal ? top : valueAt(0)}
-        x2={horizontal ? valueAt(0) : right} y2={horizontal ? bottom : valueAt(0)} stroke={surface.axis} />
-      {props.data.map((row, rowIndex) => {
-        let positive = 0, negative = 0;
-        const groupStart = (horizontal ? top : left) + rowIndex * band + (band - groupWidth) / 2;
-        return <g key={row.id}>
-          <text x={horizontal ? left - 12 : left + (rowIndex + 0.5) * band}
-            y={horizontal ? top + (rowIndex + 0.5) * band + 4 : bottom + 24}
-            textAnchor={horizontal ? 'end' : 'middle'} fill={surface.text}>
-            {short(row.label, horizontal ? 20 : Math.max(5, Math.floor(band / (type.labelSize * 0.6))))}<title>{row.label}</title>
-          </text>
-          {props.series.map((series, index) => {
-            const value = row.values[series.id];
-            if (value == null) return null;
-            const start = stacked ? (value >= 0 ? positive : negative) : 0;
-            const end = start + value;
-            if (value >= 0) positive = end; else negative = end;
-            const ink = inkFor(series, index, props, theme);
-            const length = Math.abs(valueAt(end) - valueAt(start));
-            const cross = groupStart + (stacked ? 0 : index * (thickness + gap));
-            const along = Math.min(valueAt(start), valueAt(end));
-            return <g key={series.id}>
-              <rect data-bar="" data-series={series.id} data-category={row.id} data-value={value}
-                x={horizontal ? along : cross} y={horizontal ? cross : along}
-                width={horizontal ? length : thickness} height={horizontal ? thickness : length}
-                rx={stacked ? 0 : bounded(theme.bar.radius, 0, 0, Math.min(thickness, length) / 2)}
-                fill={ink.color} stroke={surface.background} strokeWidth={bounded(theme.bar.separatorWidth, 0, 0, 8)}
-                style={{ transformOrigin: horizontal ? `${valueAt(0)}px 0px` : `0px ${valueAt(0)}px` }}>
-                <title>{`${row.label} — ${series.label}: ${format(value)}`}</title>
-              </rect>
-              {values && (!stacked || length > type.valueSize * (horizontal ? 4 : 1.5)) && <text
-                x={horizontal ? (stacked ? along + length / 2 : valueAt(end) + (value < 0 ? -6 : 6)) : cross + thickness / 2}
-                y={horizontal ? cross + thickness / 2 + type.valueSize / 3 : (stacked ? along + length / 2 + type.valueSize / 3 : valueAt(end) + (value < 0 ? type.valueSize + 4 : -6))}
-                textAnchor={horizontal && !stacked ? (value < 0 ? 'end' : 'start') : 'middle'}
-                fill={stacked ? ink.labelColor : surface.text} fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>{format(value)}</text>}
-            </g>;
-          })}
-          {stacked && (props.totals ?? theme.bar.totals) && [positive, negative].filter((total) => total !== 0).map((total) =>
-            <text key={total > 0 ? 'positive' : 'negative'} data-stack-total=""
-              x={horizontal ? valueAt(total) + (total < 0 ? -6 : 6) : groupStart + groupWidth / 2}
-              y={horizontal ? groupStart + groupWidth / 2 + type.valueSize / 3 : valueAt(total) + (total < 0 ? type.valueSize + 4 : -6)}
-              textAnchor={horizontal ? (total < 0 ? 'end' : 'start') : 'middle'} fill={surface.text}
-              fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>{format(total)}</text>)}
-        </g>;
-      })}
-    </Plot>
+    <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
 
@@ -524,57 +642,77 @@ export function LineChart(props: LineChartProps) {
   const theme = themeFor(props, 'line');
   const { surface, typography: type } = theme;
   const format = formatFor(props);
+  const compact = compactFor(props);
   const all = props.data.flatMap((row) => props.series.map((s) => row.values[s.id]).filter((v): v is number => v != null));
   const scale = scaleFor(all, props.includeZero ?? true);
-  const height = Math.max(bounded(props.height, 320, 200, 1200), props.series.length * (type.labelSize + 6) + 70);
-  const width = Math.max(640, props.data.length * 42);
-  const showLabels = (props.labels ?? theme.defaults.lineLabels) === 'end';
-  const left = 82, right = width - (showLabels ? 156 : 32), top = 24, bottom = height - 44;
-  const x = (index: number) => props.data.length < 2 ? (left + right) / 2 : left + index / (props.data.length - 1) * (right - left);
-  const y = (value: number) => bottom - scale.at(value) * (bottom - top);
-  const lines = props.series.map((series, index) => {
-    const runs: { x: number; y: number; value: number; label: string }[][] = [];
-    let run: typeof runs[number] = [];
-    for (let i = 0; i < props.data.length; i++) {
-      const row = props.data[i]!;
-      const value = row.values[series.id];
-      if (value == null) { if (run.length) runs.push(run); run = []; }
-      else run.push({ x: x(i), y: y(value), value, label: row.label });
-    }
-    if (run.length) runs.push(run);
-    return { series, index, runs, ink: inkFor(series, index, props, theme), end: runs.at(-1)?.at(-1) };
-  });
-  const labels = spreadLabels(lines.filter((line) => line.end).map((line) => ({ ...line, y: line.end!.y })), top, bottom, type.labelSize + 6);
-  return <Frame props={props} theme={theme} kind="line" series={props.series} empty={!all.length} table={<RowTable props={props} />}>
-    <Plot title={props.title} width={width} height={height} theme={theme}>
-      {scale.ticks.map((tick, i) => <g key={i}>
-        {theme.defaults.grid && <line x1={left} y1={y(tick)} x2={right} y2={y(tick)} stroke={surface.grid} />}
-        <text x={left - 10} y={y(tick) + 4} textAnchor="end" fill={surface.mutedText}>{short(format(tick), 10)}<title>{format(tick)}</title></text>
-      </g>)}
-      <line x1={left} y1={bottom} x2={right} y2={bottom} stroke={surface.axis} />
-      {props.data.map((row, index) => <text key={row.id} x={x(index)} y={bottom + 24} textAnchor="middle" fill={surface.mutedText}>
-        {short(row.label, Math.max(4, Math.floor((right - left) / Math.max(props.data.length, 1) / (type.labelSize * 0.6))))}<title>{row.label}</title>
-      </text>)}
-      {lines.map(({ series, index, runs, ink }) => <g key={series.id} data-series={series.id}>
-        {runs.map((run, runIndex) => <g key={runIndex}>
-          <path data-line="" data-solid={!theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)] || undefined}
-            d={run.map((point, i) => `${i ? 'L' : 'M'}${point.x},${point.y}`).join(' ')}
-            fill="none" stroke={ink.color} strokeWidth={bounded(theme.line.width, 2, 0.5, 12)}
-            strokeDasharray={theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)]}
-            pathLength={theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)] ? undefined : 1}>
-            <title>{series.label}</title>
-          </path>
-          {run.map((point, i) => <circle key={i} data-point="" cx={point.x} cy={point.y}
-            r={run.length === 1 ? Math.max(3, bounded(theme.line.pointRadius, 0, 0, 12)) : bounded(theme.line.pointRadius, 0, 0, 12)} fill={ink.color}>
-            <title>{`${point.label} — ${series.label}: ${format(point.value)}`}</title>
-          </circle>)}
+  function renderPlot(layoutWidth?: number) {
+    const tickSpace = axisSpace(scale.ticks, compact, type.labelSize);
+    const width = Math.max(layoutWidth ?? 640, tickSpace + 120,
+      props.data.length > 40 ? tickSpace + props.data.length * 14 : 0);
+    const showLabels = (props.labels ?? theme.defaults.lineLabels) === 'end';
+    const below = layoutWidth !== undefined && layoutWidth < 600;
+    const labelWidth = showLabels && !below ? Math.min(width * .32, Math.max(...props.series.map((series) => textWidth(series.label, type.labelSize)), 0) + 28) : 24;
+    const height = Math.max(bounded(props.height, 320, 200, 1200), props.series.length * (type.labelSize + 8) + 80, type.labelSize * 9);
+    const left = tickSpace, right = width - labelWidth, top = Math.max(24, type.labelSize), bottom = height - type.labelSize * 3.2 - 24;
+    const extraHeight = showLabels && below ? props.series.length * (type.labelSize * 1.6 + 6) : 0;
+    const categoryStride = Math.max(1, Math.ceil(props.data.length * type.labelSize * 4.5 / (right - left)));
+    const x = (index: number) => props.data.length < 2 ? (left + right) / 2 : left + index / (props.data.length - 1) * (right - left);
+    const y = (value: number) => bottom - scale.at(value) * (bottom - top);
+    const lines = props.series.map((series, index) => {
+      const runs: { x: number; y: number; value: number; label: string }[][] = [];
+      let run: typeof runs[number] = [];
+      for (let i = 0; i < props.data.length; i++) {
+        const row = props.data[i]!;
+        const value = row.values[series.id];
+        if (value == null) { if (run.length) runs.push(run); run = []; }
+        else run.push({ x: x(i), y: y(value), value, label: row.label });
+      }
+      if (run.length) runs.push(run);
+      return { series, index, runs, ink: inkFor(series, index, props, theme), end: runs.at(-1)?.at(-1) };
+    });
+    const labels = spreadLabels(lines.filter((line) => line.end).map((line) => ({ ...line, y: line.end!.y })), top, bottom, type.labelSize + 6);
+    return <Plot title={props.title} width={width} height={height + extraHeight} theme={theme} fluid={layoutWidth !== undefined}>
+        {ticksFor(scale.ticks, bottom - top, type.labelSize).map((tick, i) => <g key={i}>
+          {theme.defaults.grid && <line x1={left} y1={y(tick)} x2={right} y2={y(tick)} stroke={surface.grid} />}
+          <text x={left - 10} y={y(tick) + 4} textAnchor="end" fill={surface.mutedText}>{compact(tick)}<title>{format(tick)}</title></text>
         </g>)}
-      </g>)}
-      {showLabels && labels.map((line) => <g key={line.series.id}>
-        <path d={`M${line.end!.x},${line.end!.y} L${right + 12},${line.labelY} L${right + 18},${line.labelY}`} fill="none" stroke={line.ink.color} />
-        <text data-end-label="" x={right + 24} y={line.labelY + 4} fill={surface.text}>{short(line.series.label, 18)}<title>{line.series.label}</title></text>
-      </g>)}
-    </Plot>
+        <line x1={left} y1={bottom} x2={right} y2={bottom} stroke={surface.axis} />
+        {props.data.map((row, index) => index % categoryStride === 0 && <text data-category-label="" key={row.id} x={x(index)} y={bottom + type.labelSize + 12} textAnchor={index === 0 ? 'start' : index === props.data.length - 1 ? 'end' : 'middle'} fill={surface.mutedText}>
+          {wrappedText(row.label, (right - left) / Math.max(1, Math.ceil(props.data.length / categoryStride)) - 8, type.labelSize).map((line, i) =>
+            <tspan key={i} x={x(index)} dy={i ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{row.label}</title>
+        </text>)}
+        {lines.map(({ series, index, runs, ink }) => <g key={series.id} data-series={series.id}>
+          {runs.map((run, runIndex) => <g key={runIndex}>
+            <path data-line="" data-solid={!theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)] || undefined}
+              d={run.map((point, i) => `${i ? 'L' : 'M'}${point.x},${point.y}`).join(' ')}
+              fill="none" stroke={ink.color} strokeWidth={bounded(theme.line.width, 2, 0.5, 12)}
+              strokeDasharray={theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)]}
+              pathLength={theme.line.dashPatterns[index % (theme.line.dashPatterns.length || 1)] ? undefined : 1}>
+              <title>{series.label}</title>
+            </path>
+            {run.map((point, i) => <circle key={i} data-point="" cx={point.x} cy={point.y}
+              r={run.length === 1 ? Math.max(3, bounded(theme.line.pointRadius, 0, 0, 12)) : bounded(theme.line.pointRadius, 0, 0, 12)} fill={ink.color}>
+              <title>{`${point.label} — ${series.label}: ${format(point.value)}`}</title>
+            </circle>)}
+          </g>)}
+        </g>)}
+        {showLabels && !below && labels.map((line) => <g key={line.series.id}>
+          <path d={`M${line.end!.x},${line.end!.y} L${right + 12},${line.labelY} L${right + 18},${line.labelY}`} fill="none" stroke={line.ink.color} />
+          <text data-end-label="" x={right + 24} y={line.labelY + 4} fill={surface.text}>{fitText(line.series.label, labelWidth - 30, type.labelSize)}<title>{line.series.label}</title></text>
+        </g>)}
+        {showLabels && below && lines.filter((line) => line.end).map((line, index) => <g key={line.series.id}>
+          <circle cx={8} cy={height + index * (type.labelSize * 1.6 + 6) + type.labelSize / 2} r={3} fill={line.ink.color} />
+          <text data-end-label="" x={20} y={height + index * (type.labelSize * 1.6 + 6) + type.labelSize} fill={surface.text}>
+            {fitText(line.series.label, width - 40 - textWidth(compact(line.end!.value), type.labelSize), type.labelSize)}<title>{line.series.label}</title>
+          </text>
+          <text data-end-value="" x={width - 8} y={height + index * (type.labelSize * 1.6 + 6) + type.labelSize} textAnchor="end" fill={surface.text}>
+            {compact(line.end!.value)}<title>{format(line.end!.value)}</title>
+          </text>
+        </g>)}
+      </Plot>;
+  }
+  return <Frame props={props} theme={theme} kind="line" series={props.series} empty={!all.length} table={<RowTable props={props} />}>
+    <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
 
@@ -611,67 +749,83 @@ export function PieChart(props: PieChartProps) {
   const max = props.data.reduce((value, item) => Math.max(value, item.value), 0);
   const total = max ? props.data.reduce((sum, item) => sum + item.value / max, 0) : 0;
   const labels = props.labels ?? theme.pie.labels;
-  const labelInset = Math.max(24, type.labelSize * 1.5);
-  const height = Math.max(bounded(props.height, 320, 200, 1200), props.data.length * (type.labelSize + 8) + labelInset * 2);
-  const radius = Math.min(height / 2 - 24, labels === 'outside' ? 145 : 240);
-  const outsideText = (item: PieDatum) => `${short(item.label, 13)} ${percentage.format(total ? (item.value / max) / total : 0)}`;
-  // Font files are owned by the host, so server rendering cannot measure glyphs.
-  // Reserve a generous em per character (including the localized percentage)
-  // and grow the scrollable plot with the brand's type size. A fixed 640px plot
-  // clipped even ordinary region names at 24px. Full labels stay in the table.
-  const labelWidth = props.data.reduce((width, item) => Math.max(width, Array.from(outsideText(item)).length * type.labelSize * 1.1), 0);
-  const width = labels === 'outside' ? Math.max(640, 2 * (radius + 28 + labelWidth + 16)) : 640;
-  const cx = width / 2, cy = height / 2;
-  const inner = kind === 'donut' ? radius * bounded(theme.pie.innerRadius, 0.6, 0.1, 0.9) : 0;
-  let angle = bounded(theme.pie.startAngle, -90, -360, 360) / 180 * Math.PI;
-  const slices = props.data.map((item, index) => {
-    const share = max && total ? (item.value / max) / total : 0;
-    const start = angle; angle += share * Math.PI * 2;
-    const mid = (start + angle) / 2;
-    const edge = polar(cx, cy, radius + 4, mid);
-    return { item, share, start, end: angle, mid, edge, y: edge.y, right: edge.x >= cx, ink: inkFor(item, index, props, theme) };
-  }).filter((slice) => slice.share > 0);
-  const outside = [false, true].flatMap((right) => spreadLabels(slices.filter((s) => s.right === right), labelInset, height - labelInset, type.labelSize + 8));
-  const table = <table data-chart-table=""><caption>{props.title} — data</caption>
+  const categoryLabels = props.categoryLabels ?? (props.labels ? undefined : theme.pie.categoryLabels)
+    ?? (labels === 'outside' ? 'outside' : labels === 'inside' && theme.pie.insideLabel === 'label-percent' ? 'inside' : 'none');
+  const valueLabels = props.valueLabels ?? (props.labels ? undefined : theme.pie.valueLabels) ?? labels;
+  const valueContent = props.valueContent ?? theme.pie.valueContent ?? (theme.pie.insideLabel === 'value' ? 'value' : 'percent');
+  const numericText = (item: PieDatum) => valueContent === 'value' ? compactFor(props)(item.value)
+    : percentage.format(total ? (item.value / max) / total : 0);
+  const hasOutside = categoryLabels === 'outside' || valueLabels === 'outside';
+  const hasInside = categoryLabels === 'inside' || valueLabels === 'inside';
+  const table = <table data-chart-table=""><caption>{props.title} — data{props.centerValue && <> — {props.centerLabel ? `${props.centerLabel}: ` : ''}{props.centerValue}</>}</caption>
     <thead><tr><th scope="col">Category</th><th scope="col">Value</th><th scope="col">Share</th></tr></thead>
     <tbody>{props.data.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{format(item.value)}</td>
       <td>{total ? percentage.format((item.value / max) / total) : '—'}</td></tr>)}</tbody></table>;
-  return <Frame props={props} theme={theme} kind={kind} series={props.data} empty={!total} table={table}>
-    <Plot title={props.title} width={width} height={height} theme={theme}>
-      {slices.map((slice) => {
-        const point = polar(cx, cy, (radius + inner) / 2, slice.mid);
-        return <g key={slice.item.id}>
-          <path data-slice="" data-category={slice.item.id} data-share={slice.share}
-            d={slicePath(cx, cy, radius, inner, slice.start, slice.end)} fill={slice.ink.color}
-            stroke={surface.background} strokeWidth={bounded(theme.pie.separatorWidth, 0, 0, 12)}>
-            <title>{`${slice.item.label}: ${format(slice.item.value)} (${percentage.format(slice.share)})`}</title>
-          </path>
-          {labels === 'inside' && slice.share >= 0.05 && <text x={point.x} y={point.y + type.valueSize / 3} textAnchor="middle"
-            fill={slice.ink.labelColor} fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>
-            {theme.pie.insideLabel === 'value' ? format(slice.item.value) : percentage.format(slice.share)}
-            {theme.pie.insideLabel === 'label-percent' && slice.share >= 0.15 && <tspan x={point.x} dy={type.labelSize + 4}
-              fontFamily={type.labelFamily} fontSize={type.labelSize} fontWeight={type.labelWeight}>{short(slice.item.label, 14)}</tspan>}
+  function renderPlot(layoutWidth?: number) {
+    const labelInset = Math.max(24, type.labelSize * 1.5);
+    const outsideText = (item: PieDatum) => [categoryLabels === 'outside' ? short(item.label, 13) : '', valueLabels === 'outside' ? numericText(item) : ''].filter(Boolean).join(' ');
+    const labelWidth = props.data.reduce((width, item) => Math.max(width, textWidth(outsideText(item), type.labelSize)), 0);
+    const width = Math.max(layoutWidth ?? (hasOutside ? Math.max(640, 2 * (145 + 28 + labelWidth + 16)) : 640),
+      hasOutside ? Math.max(0, ...props.data.map((item) => valueLabels === 'outside' ? textWidth(numericText(item), type.labelSize) : 0)) + type.labelSize * 3 + 32 : 0);
+    const below = hasOutside && layoutWidth !== undefined && width < 2 * (100 + 28 + labelWidth + 16);
+    const height = Math.max(bounded(props.height, 320, 200, 1200), !below && hasOutside ? props.data.length * (type.labelSize + 8) + labelInset * 2 : 0);
+    const radius = Math.max(24, Math.min(height / 2 - 24, width / 2 - 16, hasOutside && !below ? width / 2 - labelWidth - 44 : 240));
+    const cx = width / 2, cy = height / 2;
+    const extraHeight = below ? props.data.length * (type.labelSize * 1.6 + 6) : 0;
+    const inner = kind === 'donut' ? radius * bounded(theme.pie.innerRadius, 0.6, 0.1, 0.9) : 0;
+    let angle = bounded(theme.pie.startAngle, -90, -360, 360) / 180 * Math.PI;
+    const slices = props.data.map((item, index) => {
+      const share = max && total ? (item.value / max) / total : 0;
+      const start = angle; angle += share * Math.PI * 2;
+      const mid = (start + angle) / 2;
+      const edge = polar(cx, cy, radius + 4, mid);
+      return { item, share, start, end: angle, mid, edge, y: edge.y, right: edge.x >= cx, ink: inkFor(item, index, props, theme) };
+    }).filter((slice) => slice.share > 0);
+    const outside = [false, true].flatMap((right) => spreadLabels(slices.filter((s) => s.right === right), labelInset, height - labelInset, type.labelSize + 8));
+    return <Plot title={props.title} width={width} height={height + extraHeight} theme={theme} fluid={layoutWidth !== undefined} fixed>
+        {slices.map((slice) => {
+          const point = polar(cx, cy, (radius + inner) / 2, slice.mid);
+          return <g key={slice.item.id}>
+            <path data-slice="" data-category={slice.item.id} data-share={slice.share}
+              d={slicePath(cx, cy, radius, inner, slice.start, slice.end)} fill={slice.ink.color}
+              stroke={surface.background} strokeWidth={bounded(theme.pie.separatorWidth, 0, 0, 12)}>
+              <title>{`${slice.item.label}: ${format(slice.item.value)} (${percentage.format(slice.share)})`}</title>
+            </path>
+            {hasInside && slice.share >= 0.05 && textWidth(valueLabels === 'inside' ? numericText(slice.item) : fitText(slice.item.label, (radius - inner) * 1.2, type.valueSize), type.valueSize) < (radius - inner) * 1.5 && slice.share * Math.PI * (radius + inner) > type.valueSize * 2 && <text data-pie-inside-label="" x={point.x} y={point.y + type.valueSize / 3} textAnchor="middle"
+              fill={slice.ink.labelColor} fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>
+              {valueLabels === 'inside' ? numericText(slice.item) : fitText(slice.item.label, (radius - inner) * 1.2, type.valueSize)}
+              {categoryLabels === 'inside' && valueLabels === 'inside' && slice.share >= 0.15 && <tspan x={point.x} dy={type.labelSize + 4}
+                fontFamily={type.labelFamily} fontSize={type.labelSize} fontWeight={type.labelWeight}>{fitText(slice.item.label, (radius - inner) * 1.2, type.labelSize)}</tspan>}
+            </text>}
+          </g>;
+        })}
+        {hasOutside && !below && outside.map((slice) => {
+          const x = cx + (slice.right ? 1 : -1) * (radius + 22);
+          return <g key={slice.item.id}>
+            <path d={`M${slice.edge.x},${slice.edge.y} L${x},${slice.labelY}`} stroke={surface.axis} fill="none" />
+            <text data-pie-label="" x={x + (slice.right ? 6 : -6)} y={slice.labelY + 4} fill={surface.text} textAnchor={slice.right ? 'start' : 'end'}>
+              {outsideText(slice.item)}<title>{slice.item.label}</title>
+            </text>
+          </g>;
+        })}
+        {kind === 'donut' && <g textAnchor="middle" fill={surface.focalText ?? surface.text}>
+          {props.centerValue && <text x={cx} y={cy + (props.centerLabel ? -2 : type.displaySize / 3)}
+            fontFamily={type.displayFamily} data-center-value="" fontSize={Math.max(12, Math.min(type.displaySize, inner * 1.5 / Array.from(props.centerValue).length))}
+            fontWeight={type.displayWeight}>{fitText(props.centerValue, inner * 1.5, Math.max(12, Math.min(type.displaySize, inner * 1.5 / Array.from(props.centerValue).length)))}<title>{props.centerValue}</title></text>}
+          {props.centerLabel && <text x={cx} y={cy + (props.centerValue ? Math.min(type.labelSize, Math.max(12, inner / 3)) + 6 : 4)} data-center-label="" fontSize={Math.min(type.labelSize, Math.max(12, inner / 3))} fill={surface.mutedText}>
+            {fitText(props.centerLabel, inner * 1.4, Math.min(type.labelSize, Math.max(12, inner / 3)))}<title>{props.centerLabel}</title>
           </text>}
-        </g>;
-      })}
-      {labels === 'outside' && outside.map((slice) => {
-        const x = cx + (slice.right ? 1 : -1) * (radius + 22);
-        return <g key={slice.item.id}>
-          <path d={`M${slice.edge.x},${slice.edge.y} L${x},${slice.labelY}`} stroke={surface.axis} fill="none" />
-          <text data-pie-label="" x={x + (slice.right ? 6 : -6)} y={slice.labelY + 4} fill={surface.text} textAnchor={slice.right ? 'start' : 'end'}>
-            {outsideText(slice.item)}<title>{slice.item.label}</title>
+        </g>}
+        {below && slices.map((slice, index) => <g key={slice.item.id}>
+          <circle cx={8} cy={height + index * (type.labelSize * 1.6 + 6) + type.labelSize / 2} r={4} fill={slice.ink.color} />
+          <text data-pie-label="" x={20} y={height + index * (type.labelSize * 1.6 + 6) + type.labelSize} fill={surface.text}>
+            {categoryLabels === 'outside' && fitText(slice.item.label, width - 32 - (valueLabels === 'outside' ? textWidth(numericText(slice.item), type.labelSize) : 0), type.labelSize)} {valueLabels === 'outside' && numericText(slice.item)}<title>{slice.item.label}</title>
           </text>
-        </g>;
-      })}
-      {kind === 'donut' && <g textAnchor="middle" fill={surface.focalText ?? surface.text}>
-        {props.centerValue && <text x={cx} y={cy + (props.centerLabel ? -2 : type.displaySize / 3)}
-          fontFamily={type.displayFamily} fontSize={Math.min(type.displaySize, inner * 1.7 / (props.centerValue.length * 0.6))}
-          fontWeight={type.displayWeight}>{props.centerValue}</text>}
-        {props.centerLabel && <text x={cx} y={cy + (props.centerValue ? type.labelSize + 6 : 4)} fontSize={type.labelSize} fill={surface.mutedText}>
-          {short(props.centerLabel, Math.max(5, Math.floor(inner * 1.7 / (type.labelSize * 0.6))))}<title>{props.centerLabel}</title>
-        </text>}
-      </g>}
-    </Plot>
+        </g>)}
+      </Plot>;
+  }
+  return <Frame props={props} theme={theme} kind={kind} series={props.data} empty={!total} table={table}>
+    <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
 
@@ -739,6 +893,9 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
   const formatX = formatFor({ ...props, numberFormat: props.xAxis?.numberFormat ?? props.numberFormat, suffix: props.xAxis?.suffix ?? props.suffix });
   const formatY = formatFor({ ...props, numberFormat: props.yAxis?.numberFormat ?? props.numberFormat, suffix: props.yAxis?.suffix ?? props.suffix });
   const formatSize = formatFor({ ...props, numberFormat: bubbleProps.sizeNumberFormat ?? props.numberFormat, suffix: bubbleProps.sizeSuffix ?? props.suffix });
+  const compactX = compactFor({ ...props, numberFormat: props.xAxis?.numberFormat ?? props.numberFormat, suffix: props.xAxis?.suffix ?? props.suffix });
+  const compactY = compactFor({ ...props, numberFormat: props.yAxis?.numberFormat ?? props.numberFormat, suffix: props.yAxis?.suffix ?? props.suffix });
+  const compactSize = compactFor({ ...props, numberFormat: bubbleProps.sizeNumberFormat ?? props.numberFormat, suffix: bubbleProps.sizeSuffix ?? props.suffix });
   const xName = props.xAxis?.label ?? 'X', yName = props.yAxis?.label ?? 'Y', sizeName = bubbleProps.sizeLabel ?? 'Size';
   const complete = props.data.filter((item) => item.x !== null && item.y !== null && (!bubble || (item as BubbleDatum).size !== null));
   const xScale = numericAxis(complete.map((item) => item.x!), props.xAxis, 'X');
@@ -748,109 +905,127 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
     throw new Error('sizeMax must be a positive finite number covering every plotted bubble size.');
   }
   const sizeMax = bubbleProps.sizeMax ?? observedMax;
-  const maxRadius = bubble ? bounded(theme.bubble.maxRadius, BUBBLE.maxRadius, 8, 96) : bounded(theme.scatter.radius, SCATTER.radius, 1, 24);
-  const strokeWidth = bubble ? bounded(theme.bubble.strokeWidth, BUBBLE.strokeWidth, 0, 8) : bounded(theme.scatter.strokeWidth, 0, 0, 8);
-  const pad = maxRadius + strokeWidth / 2 + 8;
-  // A shared maximum is a real zero-to-maximum area scale. No minimum radius:
-  // adding one exaggerates small values and turns zero into nonzero area.
-  const radiusFor = (size: number) => sizeMax ? maxRadius * (Math.sqrt(size) / Math.sqrt(sizeMax)) : 0;
-  const seriesMap = new Map(props.series.map((series, index) => [series.id, { series, index }]));
-  const points = complete.filter((item) => !bubble || (item as BubbleDatum).size! > 0).map((item) => {
-    const { series, index } = seriesMap.get(item.seriesId)!;
-    return { item, ink: inkFor(series, index, props, theme), u: xScale.at(item.x!), v: yScale.at(item.y!),
-      radius: bubble ? radiusFor((item as BubbleDatum).size!) : maxRadius };
-  });
-  const outside = labels === 'outside';
-  const axisWidth = Math.max(82, type.labelSize * 8 + 24);
-  const railWidth = outside ? Math.max(160, type.labelSize * 16 + 28) : 28;
-  const width = Math.max(640, axisWidth + railWidth + Math.max(340, type.labelSize * 34) + pad * 2);
-  const plotHeight = Math.max(bounded(props.height, 320, 200, 1200), pad * 2 + type.labelSize * 9 + 64,
-    outside ? points.length * (type.labelSize * 1.6 + 6) + 64 : 0);
-  const left = axisWidth, right = width - railWidth, top = 24, bottom = plotHeight - type.labelSize * 3 - 20;
-  const x = (u: number) => Number((left + pad + u * (right - left - 2 * pad)).toFixed(4));
-  const y = (v: number) => Number((bottom - pad - v * (bottom - top - 2 * pad)).toFixed(4));
-  const refs = [...new Set([sizeMax / 4, sizeMax / 2, sizeMax].filter((value) => value > 0))];
-  const showSizeLegend = bubble && (bubbleProps.sizeLegend ?? theme.bubble.sizeLegend) && points.length > 0;
-  const legendHeight = showSizeLegend ? maxRadius * 2 + type.labelSize * 4 + 28 : 0;
-  const treatment = bubbleProps.treatment ?? theme.bubble.treatment;
-  const ringCount = Math.round(bounded(theme.bubble.ringCount, BUBBLE.ringCount, 2, 16));
-  const fillOpacity = bounded(bubble ? theme.bubble.fillOpacity : theme.scatter.fillOpacity, bubble ? 0.8 : 1, 0, 1);
-  const pointLabels = outside ? spreadLabels(points.map((point) => ({ ...point, y: y(point.v) })), top + type.labelSize, bottom - type.labelSize, type.labelSize * 1.6 + 6) : [];
   const table = <table data-chart-table=""><caption>{props.title} — data</caption>
     <thead><tr><th scope="col">Observation</th><th scope="col">Series</th><th scope="col">{xName}</th><th scope="col">{yName}</th>{bubble && <th scope="col">{sizeName}</th>}</tr></thead>
-    <tbody>{props.data.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{seriesMap.get(item.seriesId)!.series.label}</td>
+    <tbody>{props.data.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{props.series.find((series) => series.id === item.seriesId)!.label}</td>
       <td>{item.x === null ? 'No data' : formatX(item.x)}</td><td>{item.y === null ? 'No data' : formatY(item.y)}</td>
       {bubble && <td>{(item as BubbleDatum).size === null ? 'No data' : formatSize((item as BubbleDatum).size!)}</td>}
     </tr>)}</tbody></table>;
-  return <Frame props={props} theme={theme} kind={kind} series={props.series} table={table} empty={!points.length}>
-    <Plot title={props.title} width={width} height={plotHeight + legendHeight} theme={theme}>
-      {xScale.ticks.map((tick, index) => <g key={`x-${index}`}>
-        {theme.defaults.grid && <line x1={x(xScale.at(tick))} x2={x(xScale.at(tick))} y1={top} y2={bottom} stroke={surface.grid} />}
-        <text data-x-tick="" x={x(xScale.at(tick))} y={bottom + type.labelSize + 8} textAnchor="middle" fill={surface.mutedText}>
-          {short(formatX(tick), 10)}<title>{formatX(tick)}</title>
+  function renderPlot(layoutWidth?: number) {
+    const axisWidth = axisSpace(yScale.ticks, compactY, type.labelSize) + type.labelSize * 1.5;
+    const below = layoutWidth !== undefined && layoutWidth < 600;
+    const outside = labels === 'outside';
+    const railWidth = outside && !below ? Math.min((layoutWidth ?? 640) * .3, Math.max(160, type.labelSize * 16 + 28)) : 20;
+    const width = Math.max(layoutWidth ?? 640, axisWidth + railWidth + 140);
+    const configuredRadius = bubble ? bounded(theme.bubble.maxRadius, BUBBLE.maxRadius, 8, 96) : bounded(theme.scatter.radius, SCATTER.radius, 1, 24);
+    const maxRadius = Math.min(configuredRadius, Math.max(8, (width - axisWidth - railWidth) / 6));
+    const strokeWidth = bubble ? bounded(theme.bubble.strokeWidth, BUBBLE.strokeWidth, 0, 8) : bounded(theme.scatter.strokeWidth, 0, 0, 8);
+    const pad = maxRadius + strokeWidth / 2 + 8;
+    // A shared maximum is a real zero-to-maximum area scale. No minimum radius:
+    // adding one exaggerates small values and turns zero into nonzero area.
+    const radiusFor = (size: number) => sizeMax ? maxRadius * (Math.sqrt(size) / Math.sqrt(sizeMax)) : 0;
+    const seriesMap = new Map(props.series.map((series, index) => [series.id, { series, index }]));
+    const points = complete.filter((item) => !bubble || (item as BubbleDatum).size! > 0).map((item) => {
+      const { series, index } = seriesMap.get(item.seriesId)!;
+      return { item, ink: inkFor(series, index, props, theme), u: xScale.at(item.x!), v: yScale.at(item.y!),
+        radius: bubble ? radiusFor((item as BubbleDatum).size!) : maxRadius };
+    });
+    const plotHeight = Math.max(bounded(props.height, 320, 200, 1200), pad * 2 + type.labelSize * 9 + 64,
+      outside && !below ? points.length * (type.labelSize * 1.6 + 6) + 64 : 0);
+    const left = axisWidth, right = width - railWidth, top = 24, bottom = plotHeight - type.labelSize * 3 - 20;
+    const x = (u: number) => Number((left + pad + u * (right - left - 2 * pad)).toFixed(4));
+    const y = (v: number) => Number((bottom - pad - v * (bottom - top - 2 * pad)).toFixed(4));
+    const refs = [...new Set([sizeMax / 4, sizeMax / 2, sizeMax].filter((value) => value > 0))];
+    const showSizeLegend = bubble && (bubbleProps.sizeLegend ?? theme.bubble.sizeLegend) && points.length > 0;
+    const rowHeight = Math.max(maxRadius * 2 + 12, type.labelSize * 1.6 + 8);
+    const legendHeight = showSizeLegend ? (below ? refs.length * rowHeight + type.labelSize * 2 + 24 : maxRadius * 2 + type.labelSize * 4 + 28) : 0;
+    const labelHeight = outside && below ? points.length * (type.labelSize * 1.6 + 6) : 0;
+    const treatment = bubbleProps.treatment ?? theme.bubble.treatment;
+    const ringCount = Math.round(bounded(theme.bubble.ringCount, BUBBLE.ringCount, 2, 16));
+    const fillOpacity = bounded(bubble ? theme.bubble.fillOpacity : theme.scatter.fillOpacity, bubble ? 0.8 : 1, 0, 1);
+    const pointLabels = outside && !below ? spreadLabels(points.map((point) => ({ ...point, y: y(point.v) })), top + type.labelSize, bottom - type.labelSize, type.labelSize * 1.6 + 6) : [];
+    return <Plot title={props.title} width={width} height={plotHeight + legendHeight + labelHeight} theme={theme} fluid={layoutWidth !== undefined}>
+        {ticksFor(xScale.ticks, right - left - 2 * pad, axisSpace(xScale.ticks, compactX, type.labelSize)).map((tick, index) => <g key={`x-${index}`}>
+          {theme.defaults.grid && <line x1={x(xScale.at(tick))} x2={x(xScale.at(tick))} y1={top} y2={bottom} stroke={surface.grid} />}
+          <text data-x-tick="" x={x(xScale.at(tick))} y={bottom + type.labelSize + 8} textAnchor="middle" fill={surface.mutedText}>
+            {compactX(tick)}<title>{formatX(tick)}</title>
+          </text>
+        </g>)}
+        {ticksFor(yScale.ticks, bottom - top - 2 * pad, type.labelSize).map((tick, index) => <g key={`y-${index}`}>
+          {theme.defaults.grid && <line x1={left} x2={right} y1={y(yScale.at(tick))} y2={y(yScale.at(tick))} stroke={surface.grid} />}
+          <text data-y-tick="" x={left - 10} y={y(yScale.at(tick)) + type.labelSize / 3} textAnchor="end" fill={surface.mutedText}>
+            {compactY(tick)}<title>{formatY(tick)}</title>
+          </text>
+        </g>)}
+        <path d={`M${left},${top} V${bottom} H${right}`} fill="none" stroke={surface.axis} />
+        <text x={(left + right) / 2} y={plotHeight - 6} textAnchor="middle" fill={surface.text}>{fitText(xName, right - left, type.labelSize)}<title>{xName}</title></text>
+        <text transform={`translate(${type.labelSize},${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle" fill={surface.text}>
+          {short(yName, Math.max(6, Math.floor((bottom - top) / type.labelSize)))}<title>{yName}</title>
         </text>
-      </g>)}
-      {yScale.ticks.map((tick, index) => <g key={`y-${index}`}>
-        {theme.defaults.grid && <line x1={left} x2={right} y1={y(yScale.at(tick))} y2={y(yScale.at(tick))} stroke={surface.grid} />}
-        <text data-y-tick="" x={left - 10} y={y(yScale.at(tick)) + type.labelSize / 3} textAnchor="end" fill={surface.mutedText}>
-          {short(formatY(tick), 10)}<title>{formatY(tick)}</title>
-        </text>
-      </g>)}
-      <path d={`M${left},${top} V${bottom} H${right}`} fill="none" stroke={surface.axis} />
-      <text x={(left + right) / 2} y={plotHeight - 6} textAnchor="middle" fill={surface.text}>{short(xName, 40)}<title>{xName}</title></text>
-      <text transform={`translate(${type.labelSize},${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle" fill={surface.text}>
-        {short(yName, Math.max(6, Math.floor((bottom - top) / type.labelSize)))}<title>{yName}</title>
-      </text>
-      {!bubble && (props as ScatterChartProps).trendLine === 'linear' && props.series.map((series, index) => {
-        const fit = fitLine(points.filter((p) => p.item.seriesId === series.id));
-        return fit && <line key={series.id} data-trend-line="" data-series={series.id}
-          x1={x(fit.from)} y1={y(fit.yFrom)} x2={x(fit.to)} y2={y(fit.yTo)}
-          stroke={surface.trend ?? inkFor(series, index, props, theme).color} strokeWidth={bounded(theme.scatter.trendWidth, 1.5, 0.5, 8)}>
-          <title>{`${series.label}: linear least-squares trend`}</title>
-        </line>;
-      })}
-      {/* Paint larger bubbles first so a small observation at the same location
-          is not buried. Resolve colors before sorting and keep table source order. */}
-      {[...points].sort((a, b) => b.radius - a.radius).map((point) => {
-        const px = x(point.u), py = y(point.v);
-        const size = (point.item as BubbleDatum).size;
-        const text = bubble ? formatSize(size!) : '';
-        const textSize = Math.min(type.displaySize, point.radius * 1.6 / Math.max(1, text.length * 0.65));
-        const label = `${point.item.label} — ${xName}: ${formatX(point.item.x!)}; ${yName}: ${formatY(point.item.y!)}${bubble ? `; ${sizeName}: ${text}` : ''}`;
-        return <g key={point.item.id} data-point="" data-observation={point.item.id} data-series={point.item.seriesId}>
-          <title>{label}</title>
-          <circle data-bubble={bubble ? '' : undefined} data-scatter-point={bubble ? undefined : ''}
-            cx={px} cy={py} r={point.radius} fill={bubble && treatment === 'rings' ? 'none' : point.ink.color}
-            fillOpacity={fillOpacity} stroke={point.ink.color} strokeWidth={bubble && treatment === 'rings' ? Math.max(0.5, strokeWidth) : strokeWidth} />
-          {bubble && treatment === 'rings' && Array.from({ length: ringCount - 1 }, (_, index) => <circle key={index}
-            data-bubble-ring="" cx={px} cy={py} r={point.radius * (index + 1) / ringCount} fill="none"
-            stroke={point.ink.color} strokeWidth={Math.max(0.5, strokeWidth)} />)}
-          {bubble && labels === 'inside' && textSize >= Math.max(8, type.labelSize * 0.75) && <text data-bubble-label=""
-            x={px} y={py + textSize / 3} textAnchor="middle" fontFamily={type.displayFamily} fontWeight={type.displayWeight} fontSize={textSize}
-            fill={treatment === 'rings' ? (surface.focalText ?? surface.text) : point.ink.labelColor}
-            stroke={treatment === 'rings' ? surface.background : undefined}
-            strokeWidth={treatment === 'rings' ? bounded(theme.bubble.labelHaloWidth, 0, 0, 8) : undefined} paintOrder="stroke">{text}</text>}
-        </g>;
-      })}
-      {pointLabels.map((point) => <g key={point.item.id}>
-        <path d={`M${x(point.u) + point.radius},${point.y} L${right + 10},${point.labelY} H${right + 16}`} fill="none" stroke={point.ink.color} />
-        <text data-observation-label="" x={right + 22} y={point.labelY + type.labelSize / 3} fill={surface.text}>
-          {short(point.item.label, 20)}<title>{point.item.label}</title>
-        </text>
-      </g>)}
-      {showSizeLegend && <g data-size-legend="" fill={surface.mutedText}>
-        <text x={left} y={plotHeight + type.labelSize + 16}>{short(`${sizeName} (circle area)`, 45)}<title>{`${sizeName}: circle area represents the value`}</title></text>
-        {refs.map((value, index) => {
-          const px = left + (index + 0.5) * (right - left) / refs.length;
-          const floor = plotHeight + type.labelSize * 2 + 20 + maxRadius * 2;
-          const radius = radiusFor(value);
-          return <g key={index}>
-            <circle data-size-reference="" data-size={value} cx={px} cy={floor - radius} r={radius} fill="none" stroke={surface.mutedText} />
-            <text x={px} y={floor + type.labelSize + 6} textAnchor="middle">{short(formatSize(value), 14)}<title>{formatSize(value)}</title></text>
+        {!bubble && (props as ScatterChartProps).trendLine === 'linear' && props.series.map((series, index) => {
+          const fit = fitLine(points.filter((p) => p.item.seriesId === series.id));
+          return fit && <line key={series.id} data-trend-line="" data-series={series.id}
+            x1={x(fit.from)} y1={y(fit.yFrom)} x2={x(fit.to)} y2={y(fit.yTo)}
+            stroke={surface.trend ?? inkFor(series, index, props, theme).color} strokeWidth={bounded(theme.scatter.trendWidth, 1.5, 0.5, 8)}>
+            <title>{`${series.label}: linear least-squares trend`}</title>
+          </line>;
+        })}
+        {/* Paint larger bubbles first so a small observation at the same location
+            is not buried. Resolve colors before sorting and keep table source order. */}
+        {[...points].sort((a, b) => b.radius - a.radius).map((point) => {
+          const px = x(point.u), py = y(point.v);
+          const size = (point.item as BubbleDatum).size;
+          const text = bubble ? compactSize(size!) : '';
+          const textSize = Math.min(type.displaySize, point.radius * 1.6 / Math.max(1, text.length * 0.65));
+          // Coordinates must remain truthful. When bubbles overlap, defer their
+          // inside labels to the table rather than displacing or overprinting them.
+          const isolated = points.every((other) => other === point || Math.hypot(x(other.u) - px, y(other.v) - py) > other.radius + point.radius + 2);
+          const label = `${point.item.label} — ${xName}: ${formatX(point.item.x!)}; ${yName}: ${formatY(point.item.y!)}${bubble ? `; ${sizeName}: ${formatSize(size!)}` : ''}`;
+          return <g key={point.item.id} data-point="" data-observation={point.item.id} data-series={point.item.seriesId}>
+            <title>{label}</title>
+            <circle data-bubble={bubble ? '' : undefined} data-scatter-point={bubble ? undefined : ''}
+              cx={px} cy={py} r={point.radius} fill={bubble && treatment === 'rings' ? 'none' : point.ink.color}
+              fillOpacity={fillOpacity} stroke={point.ink.color} strokeWidth={bubble && treatment === 'rings' ? Math.max(0.5, strokeWidth) : strokeWidth} />
+            {bubble && treatment === 'rings' && Array.from({ length: ringCount - 1 }, (_, index) => <circle key={index}
+              data-bubble-ring="" cx={px} cy={py} r={point.radius * (index + 1) / ringCount} fill="none"
+              stroke={point.ink.color} strokeWidth={Math.max(0.5, strokeWidth)} />)}
+            {bubble && labels === 'inside' && isolated && textSize >= Math.max(12, type.labelSize * 0.75) && <text data-bubble-label=""
+              x={px} y={py + textSize / 3} textAnchor="middle" fontFamily={type.displayFamily} fontWeight={type.displayWeight} fontSize={textSize}
+              fill={treatment === 'rings' ? (surface.focalText ?? surface.text) : point.ink.labelColor}
+              stroke={treatment === 'rings' ? surface.background : undefined}
+              strokeWidth={treatment === 'rings' ? bounded(theme.bubble.labelHaloWidth, 0, 0, 8) : undefined} paintOrder="stroke">{text}</text>}
           </g>;
         })}
-      </g>}
-    </Plot>
+        {pointLabels.map((point) => <g key={point.item.id}>
+          <path d={`M${x(point.u) + point.radius},${point.y} L${right + 10},${point.labelY} H${right + 16}`} fill="none" stroke={point.ink.color} />
+          <text data-observation-label="" x={right + 22} y={point.labelY + type.labelSize / 3} fill={surface.text}>
+            {fitText(point.item.label, railWidth - 28, type.labelSize)}<title>{point.item.label}</title>
+          </text>
+        </g>)}
+        {showSizeLegend && <g data-size-legend="" fill={surface.mutedText}>
+          <text x={8} y={plotHeight + type.labelSize + 12}>{fitText(`${sizeName} (circle area)`, width - 16, type.labelSize)}<title>{`${sizeName}: circle area represents the value`}</title></text>
+          {refs.map((value, index) => {
+            const px = below ? maxRadius + 12 : (index + 0.5) * width / refs.length;
+            const floor = plotHeight + type.labelSize * 2 + 20 + (below ? (index + 1) * rowHeight : maxRadius * 2);
+            const radius = radiusFor(value);
+            return <g key={index}>
+              <circle data-size-reference="" data-size={value} cx={px} cy={floor - radius} r={radius} fill="none" stroke={surface.mutedText} />
+              <text x={below ? maxRadius * 2 + 24 : px} y={below ? floor - maxRadius + type.labelSize / 3 : floor + type.labelSize + 6} textAnchor={below ? 'start' : 'middle'}>
+                {compactSize(value)}<title>{formatSize(value)}</title>
+              </text>
+            </g>;
+          })}
+        </g>}
+        {outside && below && points.map((point, index) => <g key={point.item.id}>
+          <circle cx={8} cy={plotHeight + legendHeight + index * (type.labelSize * 1.6 + 6) + type.labelSize / 2} r={3} fill={point.ink.color} />
+          <text data-observation-label="" x={20} y={plotHeight + legendHeight + index * (type.labelSize * 1.6 + 6) + type.labelSize} fill={surface.text}>
+            {fitText(point.item.label, width - 28, type.labelSize)}<title>{point.item.label}</title>
+          </text>
+        </g>)}
+      </Plot>;
+  }
+  return <Frame props={props} theme={theme} kind={kind} series={props.series} table={table} empty={!complete.some((item) => !bubble || (item as BubbleDatum).size! > 0)}>
+    <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
 
