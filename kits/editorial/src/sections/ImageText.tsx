@@ -1,7 +1,7 @@
 import { Reveal } from '@/motion';
 import { cn } from '@/lib/utils';
 import { MediaBlock } from '@/components/blocks';
-import type { ChartBlockProps, ImageBlockProps, VideoBlockProps } from '@/components/blocks';
+import type { ChartBlockProps, ImageBlockProps, LottieBlockProps, VideoBlockProps } from '@/components/blocks';
 import { Eyebrow, Figure } from '@/components';
 import type { SectionBaseProps } from '@/types';
 
@@ -28,7 +28,7 @@ export interface ImageTextProps extends SectionBaseProps {
    * the beat makes a numeric point. Prefer photographs; reach for a chart
    * only when the body copy cites figures the reader should see.
    */
-  media: ImageBlockProps | VideoBlockProps | ChartBlockProps;
+  media: ImageBlockProps | VideoBlockProps | ChartBlockProps | LottieBlockProps;
   /** Caption under the media. 1 sentence, 5–16 words, no trailing period. */
   caption?: string | null;
   /** Which side the media sits on. `image-left` puts it first; `image-right` puts the text first. */

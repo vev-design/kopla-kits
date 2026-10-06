@@ -5,4 +5,5 @@
 export * from './Image';
 export * from './Chart';
 export * from './Video';
+export * from './Lottie';
 export * from './Media';
