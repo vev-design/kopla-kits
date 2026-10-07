@@ -24,6 +24,8 @@ interface Props {
   /** Index into the component's showcase cases. */
   index: number;
   reducedMotion: boolean;
+  /** Lab-only chart override; absent preserves the authored example. */
+  animation?: 'enter' | 'none';
 }
 
 /**
@@ -51,7 +53,7 @@ function StageError({ children }: { children: ReactNode }) {
   );
 }
 
-export function ComponentStage({ dir, index, reducedMotion }: Props) {
+export function ComponentStage({ dir, index, reducedMotion, animation }: Props) {
   const entry = registry[dir];
 
   if (!entry) return <StageError>No component named “{dir}” in the catalog.</StageError>;
@@ -97,7 +99,7 @@ export function ComponentStage({ dir, index, reducedMotion }: Props) {
       {reducedMotion ? (
         <style>{`*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;scroll-behavior:auto!important}`}</style>
       ) : null}
-      <Component {...active.props} />
+      <Component {...active.props} {...(dir === 'Charts' && animation ? { animation } : {})} />
     </div>
   );
 }

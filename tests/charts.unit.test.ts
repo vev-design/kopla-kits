@@ -335,3 +335,29 @@ test('overlapping bubbles retain true coordinates but defer inside labels to the
   expect(html).toContain('<td>25</td>');
   expect(html).toContain('<td>100</td>');
 });
+
+test('pie annotations retain their complete text and label anchors stay within their slices', () => {
+  const data = [
+    { id: 'a', label: 'Alpha', value: 75, labelAngle: 0, annotation: 'A complete explanation of the largest allocation.' },
+    { id: 'b', label: 'Beta', value: 25 },
+  ];
+  const html = pie({ data, labels: 'inside', legend: false });
+  expect(html).toContain('data-pie-annotation');
+  expect(html).toContain('<th scope="col">Notes</th>');
+  expect(html).toContain(data[0]!.annotation!);
+  expect(marks(html, 'slice').map(mark => attr(mark, 'd'))).toEqual(marks(pie({ data: data.map(({ labelAngle, ...item }) => item), labels: 'inside' }), 'slice').map(mark => attr(mark, 'd')));
+  expect(() => pie({ data: [{ ...data[0]!, labelAngle: 225 }, data[1]!] })).toThrow('within its slice');
+  expect(() => pie({ data: [{ ...data[0]!, labelAngle: Infinity }, data[1]!] })).toThrow('finite');
+});
+
+test('direct line labels and single-series XY plots omit redundant keys while honoring overrides', () => {
+  expect(marks(line(), 'chart-legend')).toHaveLength(0);
+  expect(marks(line(), 'end-value')).toHaveLength(1);
+  expect(marks(scatter(), 'chart-legend')).toHaveLength(0);
+  expect(marks(bubbles(), 'chart-legend')).toHaveLength(0);
+  expect(marks(line({ legend: true }), 'chart-legend')).toHaveLength(1);
+  expect(marks(scatter({ brand: { version: 1, defaults: { legend: true } } }), 'chart-legend')).toHaveLength(1);
+  const series = [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }];
+  expect(marks(line({ series, labels: 'none' }), 'chart-legend')).toHaveLength(1);
+  expect(scatter({ series })).toContain('data-legend-position="right"');
+});

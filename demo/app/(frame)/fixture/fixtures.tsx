@@ -51,6 +51,8 @@ import {
   useStepFlow,
 } from '../../../../components/StepFlow/StepFlow';
 
+import { LargePieLabels, MaximumPieLabels, TenPieCategories } from './chart-stress';
+
 const SLIDES = ['One', 'Two', 'Three', 'Four', 'Five'];
 
 function PeekCarousel() {
@@ -326,6 +328,9 @@ const FIXTURES: Record<string, () => React.ReactNode> = {
   'peek-carousel': PeekCarousel,
   'mid-deck-hero': MidDeckHero,
   'card-quiz': CardQuiz,
+  'chart-large-pie-labels': LargePieLabels,
+  'chart-max-pie-labels': MaximumPieLabels,
+  'chart-ten-pie-categories': TenPieCategories,
 };
 
 export function FixtureStage({ name }: { name: string }) {

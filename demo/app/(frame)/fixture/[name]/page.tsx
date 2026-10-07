@@ -14,7 +14,7 @@ import { FixtureStage } from '../fixtures';
 // Kept in step with FIXTURES in fixtures.tsx — the server side cannot read a
 // client module's object, so the valid names live twice, and an unknown name
 // 404s here rather than rendering an empty stage.
-const NAMES = ['peek-carousel', 'mid-deck-hero', 'card-quiz'];
+const NAMES = ['peek-carousel', 'mid-deck-hero', 'card-quiz', 'chart-large-pie-labels', 'chart-max-pie-labels', 'chart-ten-pie-categories'];
 
 export function generateStaticParams() {
   return NAMES.map((name) => ({ name }));

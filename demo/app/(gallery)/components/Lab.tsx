@@ -2,7 +2,7 @@
 
 // The component lab's controls and its viewport.
 //
-// Five controls, and each one exists because it answers a question you cannot
+// Controls exist because each answers a question you cannot
 // answer by reading the source:
 //
 //   width          — a CSS transform lies to media queries, so the frame is a
@@ -19,8 +19,10 @@
 //                    precompiled stylesheet the frame links server-side, so
 //                    "scripts off" and "theme" compose — the no-JS render is
 //                    styled in all of them.
+//   chart browser  — type, treatment and example keep the chart catalog small
+//                    enough to browse; play/replay previews entry animations.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './lab.css';
 import type { CatalogComponent } from '../../../components.gen/manifests';
 // The showcase case LABELS, read from the same registry the frame renders from
@@ -28,6 +30,7 @@ import type { CatalogComponent } from '../../../components.gen/manifests';
 // client component, so importing it here is free of the server/client boundary;
 // the registry imports no CSS, so no component styling leaks into the gallery.
 import { registry } from '../../../components.gen/registry';
+import { chartNavigation, chartTypes } from './chart-navigation';
 
 const WIDTHS = [360, 768, 1440] as const;
 
@@ -44,21 +47,41 @@ export default function Lab({ components, themes, defaultTheme }: Props) {
   const [scripts, setScripts] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [theme, setTheme] = useState(defaultTheme);
+  const [animate, setAnimate] = useState(false);
+  const [replay, setReplay] = useState(0);
+  const [systemReducedMotion, setSystemReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setSystemReducedMotion(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
 
   const active = components.find((c) => c.dir === dir);
   const cases = (registry[dir]?.cases ?? []).map((c) => c.label);
+  const isCharts = dir === 'Charts';
+  const chartCases = useMemo(() => chartNavigation(registry.Charts?.cases ?? []), []);
+  const currentChart = chartCases.find((item) => item.index === caseIndex) ?? chartCases[0];
+  const family = chartCases.filter((item) => item.type === currentChart?.type);
+  const treatments = [...new Set(family.map((item) => item.treatment))];
+  const examples = family.filter((item) => item.treatment === currentChart?.treatment);
+  const exampleIndex = examples.findIndex((item) => item.index === caseIndex);
+  const motionDisabled = reducedMotion || systemReducedMotion;
 
   const src = useMemo(() => {
     const params = new URLSearchParams({ case: String(caseIndex), theme });
     if (reducedMotion) params.set('motion', 'reduce');
+    if (isCharts) params.set('animation', animate ? 'enter' : 'none');
     return `/component/${dir}?${params.toString()}`;
-  }, [dir, caseIndex, theme, reducedMotion]);
+  }, [dir, caseIndex, theme, reducedMotion, isCharts, animate]);
 
-  // Remounting on every control change is deliberate: a component holding its
+  // Remounting on content or playback changes is deliberate: a component holding its
   // own state (a deck mid-shuffle, a quiz on question 3) must not carry that
-  // state across a width or content change, or you are looking at a state the
+  // state across a content change, or you are looking at a state the
   // new configuration never produced.
-  const frameKey = `${src}|${scripts ? 'js' : 'nojs'}`;
+  const frameKey = `${src}|${scripts ? 'js' : 'nojs'}|${replay}`;
 
   return (
     <div className="lab">
@@ -91,6 +114,59 @@ export default function Lab({ components, themes, defaultTheme }: Props) {
       </aside>
 
       <main className="lab__main">
+        {isCharts && currentChart && <section className="lab__chart-nav" aria-label="Chart browser">
+          <div className="lab__chart-row">
+            <span className="lab__control-label" id="chart-type-label">Chart type</span>
+            <div className="lab__segments" role="group" aria-labelledby="chart-type-label">
+              {chartTypes.map(({ id, label }) => <button key={id} type="button"
+                aria-pressed={currentChart.type === id}
+                onClick={() => {
+                  const next = chartCases.find((item) => item.type === id && item.treatment === currentChart.treatment)
+                    ?? chartCases.find((item) => item.type === id);
+                  if (next) setCaseIndex(next.index);
+                }}>{label}</button>)}
+            </div>
+          </div>
+          <div className="lab__chart-row">
+            <span className="lab__control-label" id="chart-treatment-label">Treatment</span>
+            <div className="lab__segments" role="group" aria-labelledby="chart-treatment-label">
+              {treatments.map((treatment) => <button key={treatment} type="button"
+                aria-pressed={currentChart.treatment === treatment}
+                onClick={() => setCaseIndex(family.find((item) => item.treatment === treatment)!.index)}>
+                {treatment}
+              </button>)}
+            </div>
+          </div>
+          <div className="lab__chart-row">
+            <label className="lab__control-label" htmlFor="chart-example">Example</label>
+            <div className="lab__example-controls">
+              <select id="chart-example" value={caseIndex} onChange={(event) => setCaseIndex(Number(event.target.value))}>
+                {examples.map((item) => <option key={item.index} value={item.index}>{item.label}</option>)}
+              </select>
+              <div className="lab__example-stepper">
+                <button type="button" aria-label="Previous example" disabled={exampleIndex <= 0}
+                  onClick={() => setCaseIndex(examples[exampleIndex - 1]!.index)}>←</button>
+                <span aria-live="polite">{exampleIndex + 1} / {examples.length}</span>
+                <button type="button" aria-label="Next example" disabled={exampleIndex >= examples.length - 1}
+                  onClick={() => setCaseIndex(examples[exampleIndex + 1]!.index)}>→</button>
+              </div>
+            </div>
+          </div>
+          <div className="lab__chart-motion">
+            <label className="lab__toggle">
+              <input type="checkbox" checked={animate} disabled={motionDisabled}
+                onChange={(event) => setAnimate(event.target.checked)} />
+              <span>Animate</span>
+            </label>
+            <button className="lab__play" type="button" disabled={motionDisabled}
+              onClick={() => { setAnimate(true); setReplay((value) => value + 1); }}>
+              <span aria-hidden="true">▶</span> {animate ? 'Replay animation' : 'Play animation'}
+            </button>
+            <span className="lab__motion-hint">{motionDisabled
+              ? 'Animation is off while reduced motion is enabled.'
+              : 'Play once, or replay to compare treatments.'}</span>
+          </div>
+        </section>}
         <div className="lab__controls">
           <div className="lab__group" role="group" aria-label="Width">
             {WIDTHS.map((w) => (
@@ -117,7 +193,7 @@ export default function Lab({ components, themes, defaultTheme }: Props) {
             </label>
           </div>
 
-          <label className="lab__field">
+          {!isCharts && <label className="lab__field">
             <span>Content</span>
             <select
               value={caseIndex}
@@ -134,11 +210,11 @@ export default function Lab({ components, themes, defaultTheme }: Props) {
                 ))
               )}
             </select>
-          </label>
+          </label>}
 
           <label className="lab__field">
-            <span>Theme</span>
-            <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+            <span>{isCharts ? 'Brand' : 'Theme'}</span>
+            <select aria-label={isCharts ? 'Brand' : 'Theme'} value={theme} onChange={(e) => setTheme(e.target.value)}>
               {themes.map((slug) => (
                 <option key={slug} value={slug}>
                   {slug}
@@ -146,6 +222,8 @@ export default function Lab({ components, themes, defaultTheme }: Props) {
               ))}
             </select>
           </label>
+
+
 
           <label className="lab__toggle">
             <input

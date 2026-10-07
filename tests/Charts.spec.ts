@@ -4,6 +4,12 @@ import { documentOverflow } from './helpers';
 
 const catalog = components.find((component) => component.name === 'Charts')!;
 function url(label: string, theme = 'blank') {
+  const stress: Record<string, string> = {
+    'Large outside labels': 'chart-large-pie-labels',
+    'Maximum size outside labels': 'chart-max-pie-labels',
+    'Ten categories and long label': 'chart-ten-pie-categories',
+  };
+  if (stress[label]) return `/fixture/${stress[label]}?theme=${theme}`;
   const index = catalog.cases.indexOf(label);
   if (index < 0) throw new Error(`Missing chart case: ${label}`);
   return `/component/Charts?case=${index}&theme=${theme}`;
@@ -13,14 +19,25 @@ async function open(page: Page, label: string) {
   await expect(page.locator('[data-kk-chart]')).toBeVisible();
 }
 
+async function themeValue(page: Page, value: string, property = 'color') {
+  return page.evaluate(({ value, property }) => {
+    const probe = document.createElement('span');
+    probe.style.setProperty(property, value);
+    document.body.append(probe);
+    const result = getComputedStyle(probe).getPropertyValue(property);
+    probe.remove();
+    return result;
+  }, { value, property });
+}
+
 test('Charts: the surface selects approved colors and font roles', async ({ page }) => {
-  await open(page, 'Donut on dark');
+  await open(page, 'Fundraising goal');
   const chart = page.locator('[data-kk-chart]');
-  await expect(chart).toHaveCSS('background-color', 'rgb(71, 12, 55)');
-  await expect(page.locator('[data-chart-plot]:visible [data-slice][data-category="agree"]')).toHaveCSS('fill', 'rgb(255, 40, 84)');
+  await expect(chart).toHaveCSS('background-color', await themeValue(page, 'var(--foreground)'));
+  await expect(page.locator('[data-chart-plot]:visible [data-slice][data-category="raised"]')).toHaveCSS('fill', await themeValue(page, 'var(--chart-1)'));
   const focal = page.locator('[data-chart-plot]:visible [data-center-value]');
-  await expect(focal).toHaveCSS('font-family', 'Georgia, serif');
-  await expect(focal).toHaveCSS('fill', 'rgb(255, 255, 255)');
+  await expect(focal).toHaveCSS('font-family', await themeValue(page, 'var(--font-display, var(--font-sans, sans-serif))', 'font-family'));
+  await expect(focal).toHaveCSS('fill', await themeValue(page, 'var(--background)'));
 });
 
 test('Charts: prohibited combinations retain the data in a visible table', async ({ page }) => {
@@ -44,7 +61,7 @@ test('Charts: negative stacks meet the zero baseline without overlapping', async
 });
 
 test('Charts: full-circle SVG actually paints and missing observations are not connected', async ({ page }) => {
-  await open(page, 'Full circle');
+  await open(page, 'Training completion');
   await expect(page.locator('[data-chart-plot]:visible [data-slice]')).toHaveCount(1);
   const bounds = await page.locator('[data-chart-plot]:visible [data-slice]').evaluate((el) => {
     const box = (el as SVGGraphicsElement).getBBox();
@@ -58,9 +75,9 @@ test('Charts: full-circle SVG actually paints and missing observations are not c
   expect(radii.some((r) => r > 0)).toBe(true);
 });
 
-for (const label of ['Ten categories and long label', 'Large outside labels', 'Maximum size outside labels']) {
-  test(`Charts: ${label} avoids collisions and stays within its SVG`, async ({ page }) => {
-    await page.setViewportSize({ width: 900, height: 900 });
+for (const width of [360, 768, 1440]) for (const label of ['Ten categories and long label', 'Large outside labels', 'Maximum size outside labels']) {
+  test(`Charts: ${label} avoids collisions and stays within its SVG at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
     await open(page, label);
     const plot = await page.locator('[data-chart-plot]:visible').evaluate((el) => {
       const box = el.getBoundingClientRect();
@@ -159,8 +176,8 @@ test('Charts: scatter points use continuous X positions and the branded trend li
   const earlyGap = positions[1]! - positions[0]!;
   const laterGap = positions[9]! - positions[8]!;
   expect(laterGap / earlyGap).toBeCloseTo(2, 3);
-  await expect(page.locator('[data-chart-plot]:visible [data-trend-line]')).toHaveCSS('stroke', 'rgb(139, 125, 224)');
-  await expect(points.first()).toHaveCSS('fill', 'rgb(204, 0, 51)');
+  await expect(page.locator('[data-chart-plot]:visible [data-trend-line]')).toHaveCSS('stroke', await themeValue(page, 'var(--chart-2)'));
+  await expect(points.first()).toHaveCSS('fill', await themeValue(page, 'var(--chart-1)'));
 });
 
 test('Charts: bubbles and their size legend share the same area scale', async ({ page }) => {
@@ -169,11 +186,11 @@ test('Charts: bubbles and their size legend share the same area scale', async ({
   const large = Number(await page.locator('[data-chart-plot]:visible [data-observation="b"] [data-bubble]').getAttribute('r'));
   expect((large * large) / (small * small)).toBeCloseTo(4, 8);
   await expect(page.locator('[data-chart-plot]:visible [data-size-reference][data-size="100"]')).toHaveAttribute('r', String(large));
-  await expect(page.locator('[data-chart-plot]:visible [data-observation="a"] [data-bubble-label]')).toHaveCSS('font-family', 'Georgia, serif');
+  await expect(page.locator('[data-chart-plot]:visible [data-observation="a"] [data-bubble-label]')).toHaveCSS('font-family', await themeValue(page, 'var(--font-display, var(--font-sans, sans-serif))', 'font-family'));
   await open(page, 'Bubble concentric rings');
   await expect(page.locator('[data-chart-plot]:visible [data-bubble-ring]')).toHaveCount(32);
   await expect(page.locator('[data-chart-plot]:visible [data-bubble]').first()).toHaveAttribute('fill', 'none');
-  await expect(page.locator('[data-kk-chart]')).toHaveCSS('background-color', 'rgb(71, 12, 55)');
+  await expect(page.locator('[data-kk-chart]')).toHaveCSS('background-color', await themeValue(page, 'var(--foreground)'));
 });
 
 test('Charts: scatter restrictions and missing coordinates retain accessible values', async ({ page }) => {
@@ -186,7 +203,7 @@ test('Charts: scatter restrictions and missing coordinates retain accessible val
   await expect(page.getByRole('cell', { name: 'No data', exact: true })).toHaveCount(2);
 });
 
-const responsiveCases = ['Responsive financial bars', 'Responsive financial line', 'Responsive donut center',
+const responsiveCases = ['Responsive financial bars', 'Responsive financial line', 'Revenue by customer segment',
   'Responsive scatter labels', 'Responsive bubble labels'];
 for (const width of [360, 768, 1440]) {
   for (const label of responsiveCases) {
@@ -271,6 +288,33 @@ test('Charts: dense data deliberately scrolls while ordinary categories fit', as
 });
 
 for (const width of [360, 768, 1440]) {
+  test(`Charts: bar title, legend and category spacing stay coherent at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const label of ['Grouped bars', 'Bottom bar legend']) {
+      await open(page, label);
+      const title = (await page.locator('[data-chart-caption]').boundingBox())!;
+      const legend = (await page.locator('[data-chart-legend]').boundingBox())!;
+      const plot = page.locator('[data-chart-plot]:visible');
+      const plotBox = (await plot.boundingBox())!;
+      const valueTicks = await plot.locator('[data-value-tick]').all();
+      for (const tick of valueTicks) expect((await tick.boundingBox())!.x).toBeCloseTo(title.x, 1);
+      if (label === 'Grouped bars' && width >= 600) {
+        expect(legend.x - (plotBox.x + plotBox.width)).toBeCloseTo(24, 1);
+        expect(legend.y + legend.height / 2).toBeCloseTo(plotBox.y + plotBox.height / 2, 1);
+      } else {
+        expect(legend.x).toBeCloseTo(title.x, 1);
+        expect(legend.y - (plotBox.y + plotBox.height)).toBeGreaterThanOrEqual(8);
+        expect(legend.y - (plotBox.y + plotBox.height)).toBeLessThanOrEqual(16);
+      }
+      const baseline = (await plot.locator('[data-baseline]').boundingBox())!;
+      const category = (await plot.locator('[data-category-label]').first().boundingBox())!;
+      expect(category.y - baseline.y).toBeGreaterThanOrEqual(6);
+      expect(category.y - baseline.y).toBeLessThanOrEqual(14);
+      expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+    }
+  });
+
   test(`Charts: right-side legend adapts at ${width}px without squeezing the plot`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await open(page, 'Right-side brand legend');
@@ -284,19 +328,44 @@ for (const width of [360, 768, 1440]) {
 }
 
 for (const width of [360, 768, 1440]) {
+  test(`Charts: pie and donut titles center over the plot with default side legends at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    for (const label of ['Semantic pie', 'Fundraising goal', 'Electricity from renewable sources']) {
+      await open(page, label);
+      const caption = page.locator('[data-chart-caption]');
+      await expect(caption).toHaveCSS('text-align', 'center');
+      const title = (await caption.boundingBox())!;
+      const plot = (await page.locator('[data-chart-plot]:visible').boundingBox())!;
+      expect(title.x + title.width / 2).toBeCloseTo(plot.x + plot.width / 2, 1);
+      expect(title.y + title.height).toBeLessThanOrEqual(plot.y);
+      if (label !== 'Electricity from renewable sources') {
+        const legend = (await page.locator('[data-chart-legend]').boundingBox())!;
+        if (width === 360) expect(legend.y).toBeGreaterThanOrEqual(plot.y + plot.height);
+        else {
+          expect(legend.x).toBeGreaterThanOrEqual(plot.x + plot.width);
+          const sliceRight = await page.locator('[data-chart-plot]:visible [data-slice]').evaluateAll((slices) =>
+            Math.max(...slices.map((slice) => slice.getBoundingClientRect().right)));
+          expect(legend.x - sliceRight).toBeGreaterThanOrEqual(24);
+          expect(legend.x - sliceRight).toBeLessThanOrEqual(64);
+        }
+      }
+      expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+    }
+  });
+
   test(`Charts: brand pie label roles avoid redundant legends at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await open(page, 'Donut with split label roles');
+    await open(page, 'Customer acquisition channels');
     const plot = page.locator('[data-chart-plot]:visible');
     await expect(page.locator('[data-chart-legend]')).toHaveCount(0);
     await expect(plot.locator('[data-pie-inside-label]')).toHaveCount(3);
     const outside = await plot.locator('[data-pie-label]').evaluateAll((els) => els.map((el) => el.childNodes[0]?.textContent?.trim()));
-    expect(outside.sort()).toEqual(['Agree', 'Disagree', 'Neutral']);
-    await open(page, 'Pie with inside labels only');
+    expect(outside.sort()).toEqual(['Organic search', 'Paid campaigns', 'Referrals']);
+    await open(page, 'Electricity from renewable sources');
     await expect(plot.locator('[data-pie-label]')).toHaveCount(0);
     await expect(plot.locator('[data-pie-inside-label]')).toHaveCount(2);
     await expect(page.locator('[data-chart-legend]')).toHaveCount(0);
-    await expect(plot.locator('[data-pie-inside-label]').first()).toContainText('78%Positive');
+    await expect(plot.locator('[data-pie-inside-label]').first()).toContainText('78%Renewable');
   });
 }
 
@@ -304,7 +373,7 @@ test('Charts: simple bar values use the approved inside ink', async ({ page }) =
   await open(page, 'Simple bars with inside values');
   const plot = page.locator('[data-chart-plot]:visible');
   const label = plot.locator('text').filter({ hasText: /^24/ });
-  await expect(label).toHaveCSS('fill', 'rgb(255, 255, 255)');
+  await expect(label).toHaveCSS('fill', await themeValue(page, 'oklch(from var(--chart-1) clamp(0, (0.6 - l) * 1000, 1) 0 0)'));
   const rect = (await plot.locator('[data-bar]').first().boundingBox())!;
   const text = (await label.boundingBox())!;
   expect(text.y).toBeGreaterThan(rect.y);
@@ -321,5 +390,121 @@ for (const width of [360, 768, 1440]) {
     expect(chart.width).toBeCloseTo(width, 0);
     await expect(page.locator('[data-chart-plot]:visible')).toHaveCount(1);
     expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+  });
+}
+
+for (const width of [360, 768, 1440]) {
+  test(`Charts: reference pie treatments preserve their labels and callouts at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const plot = page.locator('[data-chart-plot]:visible');
+    await open(page, 'Survey agreement — outside names');
+    await expect(page.locator('[data-chart-legend]')).toHaveCount(0);
+    await expect(plot.locator('[data-pie-inside-label]')).toHaveText(['78%', '14%', '8%']);
+    expect((await plot.locator('[data-pie-label] title').allTextContents()).sort()).toEqual(['Agree', 'Disagree', 'Neutral']);
+
+    await open(page, 'Survey sentiment — emphasized majority');
+    const majority = plot.locator('[data-pie-inside-label][data-category="positive"]');
+    const minority = plot.locator('[data-pie-inside-label][data-category="negative"]');
+    await expect(majority).toHaveText('78%Positive');
+    await expect(minority).toHaveText('22%Negative');
+    const size = async (locator: typeof majority) => locator.evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+    expect(await size(majority)).toBeGreaterThan(await size(minority) * 1.5);
+
+    await open(page, 'Household spending — outside names');
+    await expect(plot.locator('[data-pie-label]')).toHaveCount(5);
+    await expect(page.locator('[data-chart-legend]')).toHaveCount(0);
+    await expect(plot.locator('[data-pie-inside-label]')).toHaveText(['30%', '25%', '20%', '15%', '10%']);
+    expect((await plot.locator('[data-pie-label] title').allTextContents()).sort()).toEqual(['Food', 'Housing', 'Other', 'Savings', 'Transport']);
+    if (width >= 768) await expect(plot.locator('[data-pie-label][data-category]')).toHaveCount(5);
+
+    await open(page, 'Project funding — detailed legend');
+    await expect(page.locator('[data-chart-legend] li')).toHaveCount(9);
+    await expect(plot.locator('[data-center-value]')).toContainText('$10M');
+    const inks = await page.locator('[data-chart-key]').evaluateAll(keys => keys.map(key => getComputedStyle(key).backgroundColor));
+    expect(new Set(inks).size).toBe(9);
+
+    await open(page, 'Investment priorities — annotated donut');
+    await expect(page.locator('[data-pie-annotation]:visible')).toHaveCount(3);
+    for (const annotation of await page.locator('[data-pie-annotation]:visible').all()) {
+      const text = await annotation.textContent();
+      await expect(page.getByRole('table').getByRole('cell', { name: text!, exact: true })).toHaveCount(1);
+      const fits = await annotation.evaluate(el => {
+        const parent = el.getBoundingClientRect();
+        const child = (el.firstElementChild ?? el).getBoundingClientRect();
+        return child.bottom <= parent.bottom + 1 && child.right <= parent.right + 1;
+      });
+      expect(fits).toBe(true);
+    }
+    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+  });
+}
+
+for (const width of [360, 768, 1440]) {
+  test(`Charts: line and XY layouts share aligned titles and responsive keys at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const label of ['Editorial line', 'Rounded line', 'Scatter with trend', 'Bubble area comparison']) {
+      await open(page, label);
+      const caption = (await page.locator('[data-chart-caption]').boundingBox())!;
+      const plot = page.locator('[data-chart-plot]:visible');
+      const plotBox = (await plot.boundingBox())!;
+      for (const tick of await plot.locator('[data-value-tick], [data-y-tick]').all()) {
+        expect((await tick.boundingBox())!.x).toBeCloseTo(caption.x, 1);
+      }
+      const legend = page.locator('[data-chart-legend]');
+      if (label === 'Editorial line' || label === 'Scatter with trend') {
+        await expect(legend).toHaveCount(0);
+      } else {
+        const key = (await legend.boundingBox())!;
+        if (width === 360) expect(key.y - plotBox.y - plotBox.height).toBeCloseTo(12, 1);
+        else expect(key.x - plotBox.x - plotBox.width).toBeCloseTo(24, 1);
+      }
+      if (label === 'Editorial line') {
+        await expect(plot.locator('[data-end-value]')).toHaveCount(3);
+        const baseline = (await plot.locator('[data-baseline]').boundingBox())!;
+        const category = (await plot.locator('[data-category-label]').first().boundingBox())!;
+        expect(category.y - baseline.y).toBeGreaterThanOrEqual(6);
+        expect(category.y - baseline.y).toBeLessThanOrEqual(14);
+      }
+      if (label === 'Bubble area comparison') {
+        const bottoms = await plot.locator('[data-size-reference]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().bottom));
+        expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(1);
+        await expect(plot.locator('[data-x-axis-label]')).not.toContainText('…');
+        await expect(plot.locator('[data-y-axis-label]')).not.toHaveAttribute('transform');
+      }
+      expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+    }
+  });
+}
+
+test('Charts: themes without chart tokens still distinguish pie slices', async ({ page }) => {
+  await page.goto(url('Household spending — outside names', 'fintech-launch'));
+  const slices = page.locator('[data-chart-plot]:visible [data-slice]');
+  await expect(slices).toHaveCount(5);
+  await expect.poll(() => slices.evaluateAll(elements => new Set(elements.map(element => getComputedStyle(element).fill)).size)).toBe(5);
+});
+
+for (const theme of ['blank', 'proposal', 'enterprise-campaign']) {
+  test(`Charts: outside pie and donut leaders meet the label center in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1000 });
+    for (const label of ['Household spending — outside names', 'Survey agreement — outside names']) {
+      await page.goto(url(label, theme));
+      const plot = page.locator('[data-chart-plot]:visible');
+      await expect(plot.locator('[data-pie-label]').first()).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      const alignments = await plot.evaluate((svg) => [...svg.querySelectorAll<SVGPathElement>('[data-pie-leader]')].map((leader) => {
+        const text = svg.querySelector<SVGTextElement>(`[data-pie-label][data-category="${leader.dataset.category}"]`)!;
+        const end = leader.getPointAtLength(leader.getTotalLength());
+        const point = new DOMPoint(end.x, end.y).matrixTransform(leader.getScreenCTM()!);
+        const bounds = text.getBoundingClientRect();
+        return { vertical: Math.abs(point.y - (bounds.y + bounds.height / 2)),
+          gap: Math.min(Math.abs(point.x - bounds.x), Math.abs(point.x - bounds.right)) };
+      }));
+      for (const alignment of alignments) {
+        expect(alignment.vertical).toBeLessThanOrEqual(1);
+        expect(alignment.gap).toBeCloseTo(6, 0);
+      }
+    }
   });
 }
