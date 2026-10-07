@@ -114,12 +114,8 @@ function normalizeImplements(value) {
 /**
  * The showcase CASES, read out of the source text.
  *
- * Deliberately a source scan rather than an import: the Playwright specs
- * enumerate cases at collection time, and importing the component graph into the
- * test process drags `@/…` alias resolution and React into a place that has
- * neither. Labels are all the specs need — every assertion about CONTENT is made
- * against the rendered page, not against the props — so a scan that can only get
- * a test NAME wrong is the cheap side of that trade.
+ * Read labels without importing the component graph into the generator, which
+ * has no React or consumer alias resolution. The rendered lab uses the registry.
  *
  * Order matters and is preserved: the index is what `?case=` addresses.
  *
@@ -127,10 +123,9 @@ function normalizeImplements(value) {
  * the nesting the contract puts them. A flat `/label:/` sweep looked equivalent
  * and was not: a component whose showcase data happens to contain a `label`
  * field — a quiz's answer options, a chart's series — turned every one of them
- * into a phantom case, and since the specs read this file while the lab renders
- * from the registry, the two disagreed about how many cases exist. The specs then
- * addressed `?case=` numbers past the end, which the frame clamps, so the run
- * went green while testing the last case over and over.
+ * into a phantom case, making the manifest disagree with the rendered registry.
+ * Incorrect indices address `?case=` numbers past the end, which the frame
+ * clamps to the final example.
  *
  * The rule here mirrors `read()` in registry.tsx deliberately: an entry counts
  * when it has `props`, and its name is its `label` or `Case N`. Two readers of
@@ -230,9 +225,8 @@ function readString(source, i) {
   return { value, end: source.length };
 }
 
-// Kit slugs, hoisted above the manifests write: specs sweep the catalog across
-// every theme, and manifests.ts is the one generated module the test process can
-// import — themes.ts carries CSS-importing loader thunks Playwright cannot load.
+// Keep the available kit slugs in the manifest as well as the theme loaders so
+// metadata consumers can enumerate themes without importing their stylesheets.
 const kitSlugs = (await readdir(KITS, { withFileTypes: true }))
   .filter((e) => e.isDirectory() && e.name !== '_base')
   .map((e) => e.name)

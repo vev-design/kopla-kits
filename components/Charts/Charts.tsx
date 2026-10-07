@@ -49,7 +49,7 @@ export interface ChartBrand {
   pie?: { innerRadius?: number; startAngle?: number; separatorWidth?: number; labels?: 'inside' | 'outside' | 'none'; insideLabel?: 'percent' | 'value' | 'label-percent'; categoryLabels?: 'inside' | 'outside' | 'none'; valueLabels?: 'inside' | 'outside' | 'none'; valueContent?: 'percent' | 'value'; legend?: boolean };
   scatter?: { radius?: number; strokeWidth?: number; fillOpacity?: number; trendWidth?: number; labels?: 'none' | 'outside' };
   bubble?: { maxRadius?: number; strokeWidth?: number; fillOpacity?: number; ringCount?: number; labelHaloWidth?: number; treatment?: 'solid' | 'rings'; labels?: 'none' | 'inside' | 'outside'; sizeLegend?: boolean };
-  defaults?: { grid?: boolean; legend?: boolean; legendPosition?: 'bottom' | 'right'; values?: boolean; lineLabels?: 'end' | 'none' };
+  defaults?: { grid?: boolean; legend?: boolean; legendPosition?: 'top' | 'bottom' | 'right'; legendMarker?: 'square' | 'circle'; values?: boolean; lineLabels?: 'end' | 'none' };
   motion?: { enabled?: boolean; durationMs?: number; easing?: string };
 }
 
@@ -102,7 +102,13 @@ export interface ChartRow {
   values: Record<string, number | null>;
 }
 
-export interface PieDatum extends ChartSeries { value: number }
+export interface PieDatum extends ChartSeries {
+  value: number;
+  /** Optional explanatory callout, rendered beside this slice and in the data table. */
+  annotation?: string;
+  /** Optional outside-label anchor in degrees; must fall within this slice. */
+  labelAngle?: number;
+}
 
 /** Shared content and brand inputs for all chart components. */
 export interface ChartProps {
@@ -114,7 +120,7 @@ export interface ChartProps {
   brand?: ChartBrand;
   /** Named approved background; defaults to the brand's defaultSurface. */
   surface?: string;
-  /** IDs to emphasize. Semantic mode keeps semantic colors; it never silently reassigns meanings. */
+  /** IDs to emphasize. Pie inside values also use display typography. Semantic colors keep their meaning. */
   highlight?: string[];
   /** Categorical, focus/context, or explicit positive/neutral/negative/other roles. */
   colorMode?: 'categorical' | 'emphasis' | 'semantic';
@@ -128,8 +134,8 @@ export interface ChartProps {
   suffix?: string;
   /** Override the brand's legend default. */
   legend?: boolean;
-  /** Preferred legend placement. Right-side legends move below on narrow containers. */
-  legendPosition?: 'bottom' | 'right';
+  /** Legends default to the right and move below on narrow containers. */
+  legendPosition?: 'top' | 'bottom' | 'right';
   /** Keep a screen-reader table, or display it below the chart. */
   dataTable?: 'hidden' | 'visible';
   /** Responsive by default. Use scroll to retain a wide, detailed plot deliberately. */
@@ -172,6 +178,10 @@ export interface PieChartProps extends ChartProps {
   valueLabels?: 'inside' | 'outside' | 'none';
   /** Show shares or original values in numeric labels. */
   valueContent?: 'percent' | 'value';
+  /** Outside category/value labels on one line or on separate lines. */
+  outsideLabelStyle?: 'inline' | 'stacked';
+  /** Align outside labels in side columns or around the slice edges. */
+  outsideLabelLayout?: 'columns' | 'radial';
   /** Focal number or short statistic in a donut. */
   centerValue?: string;
   /** Supporting center label in a donut. */
@@ -279,7 +289,7 @@ function themeFor(props: ChartProps, kind: ChartKind) {
     allowed: !surface.allowedCharts || surface.allowedCharts.includes(kind),
     bar: { ...BAR, ...brand.bar }, line: { ...LINE, ...brand.line }, pie: { ...PIE, ...brand.pie },
     scatter: { ...SCATTER, ...brand.scatter }, bubble: { ...BUBBLE, ...brand.bubble },
-    defaults: { ...DEFAULTS, ...brand.defaults },
+    defaults: { ...DEFAULTS, grid: kind !== 'pie' && kind !== 'donut', ...brand.defaults },
     animate: props.animation ? props.animation === 'enter' : brand.motion?.enabled === true,
     duration: bounded(brand.motion?.durationMs, 700, 0, 2000),
     easing: brand.motion?.easing ?? 'ease-out',
@@ -346,6 +356,7 @@ function ticksFor(ticks: number[], space: number, labelWidth: number) {
   return Array.from({ length: count }, (_, index) => ticks[Math.round(index * (ticks.length - 1) / (count - 1))]!);
 }
 function wrappedText(text: string, width: number, size: number): string[] {
+  if (textWidth(text, size) <= width) return [text];
   const words = text.split(/\s+/);
   if (words.length < 2) return [fitText(text, width, size)];
   let first = words.shift()!;
@@ -401,9 +412,27 @@ const CSS = `
   [data-kk-chart] > [data-chart-scroll] > svg { display: block; width: 100%; height: auto; }
   [data-chart-plot-region] { container: kk-plot / inline-size; min-width: 0; }
   [data-chart-body] { min-width: 0; }
+  [data-chart-legend-region] { min-width: 0; }
+  [data-kk-chart="pie"] [data-chart-caption], [data-kk-chart="donut"] [data-chart-caption] { text-align: center; margin-bottom: 12px; }
+  [data-kk-chart] [data-chart-caption] { margin-bottom: 12px; line-height: 1.35; }
+  [data-kk-chart] [data-chart-caption] p { margin: 6px 0 0; }
+  [data-kk-chart] [data-chart-legend] { margin: 0; line-height: 1.5; }
+  [data-kk-chart] [data-chart-legend-region] { padding-top: 12px; }
+  [data-kk-chart] [data-legend-position="top"] > [data-chart-legend-region] { padding-top: 0; padding-bottom: 12px; }
   @container kk-chart (min-width: 600px) {
+    /* Center the caption over the pie's column, excluding the side legend. */
+    [data-kk-chart="pie"][data-legend-position="right"] > [data-chart-caption],
+    [data-kk-chart="donut"][data-legend-position="right"] > [data-chart-caption] { margin-right: calc(min(24cqw, 240px) + 24px); }
     [data-chart-body][data-legend-position="right"] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, min(24%, 240px)); gap: 24px; align-items: center; }
+    /* A circle does not stretch to fill its column. Keep its legend beside the
+       compact plot instead of beyond a wide, empty SVG margin. Outside slice
+       labels retain their full-width layout and room for leader lines. */
+    [data-compact-pie] [data-chart-body][data-legend-position="right"] {
+      grid-template-columns: minmax(0, min(var(--kk-pie-width), calc(100% - min(24%, 240px) - 24px))) minmax(0, min(24%, 240px));
+      justify-content: center;
+    }
     [data-chart-body][data-legend-position="right"] [data-chart-legend] { flex-direction: column; }
+    [data-kk-chart] [data-legend-position="right"] > [data-chart-legend-region] { padding-top: 0; }
   }
   [data-chart-layout] { display: none; }
   [data-chart-layout="280"] { display: block; }
@@ -436,34 +465,39 @@ const CSS = `
   @media print { [data-kk-chart] * { animation: none !important; } }
 `;
 
-function Frame({ props, theme, kind, children, series, table, empty, horizontal = false }: {
+function Frame({ props, theme, kind, children, series, table, empty, horizontal = false, compactPie = false, defaultLegend }: {
   props: ChartProps; theme: Theme; kind: ChartKind; children: ReactNode;
-  series: ChartSeries[]; table: ReactNode; empty: boolean; horizontal?: boolean;
+  series: ChartSeries[]; table: ReactNode; empty: boolean; horizontal?: boolean; compactPie?: boolean; defaultLegend?: boolean;
 }) {
   const { typography: type, surface } = theme;
   const showTable = props.dataTable === 'visible' || !theme.allowed;
-  const showLegend = props.legend ?? ((kind === 'pie' || kind === 'donut') ? theme.pie.legend : undefined) ?? theme.defaults.legend;
+  const showLegend = props.legend ?? ((kind === 'pie' || kind === 'donut') ? theme.pie.legend : undefined) ?? props.brand?.defaults?.legend ?? defaultLegend ?? theme.defaults.legend;
+  const legendPosition = showLegend ? (props.legendPosition ?? theme.defaults.legendPosition ?? 'right') : undefined;
+  const legend = showLegend && <div data-chart-legend-region=""><ul data-chart-legend="" aria-label="Legend">
+    {series.map((item, index) => <li key={item.id}>
+      <span data-chart-key="" aria-hidden="true" style={{ background: inkFor(item, index, props, theme).color, borderRadius: theme.defaults.legendMarker === 'circle' ? '50%' : undefined }} />
+      <span>{item.label}</span>
+    </li>)}
+  </ul></div>;
   return (
     <figure data-kk-chart={kind} data-surface={theme.name} data-animate={theme.animate || undefined}
-      data-horizontal={horizontal || undefined} className={props.className}
+      data-compact-pie={compactPie || undefined}
+      data-horizontal={horizontal || undefined} data-legend-position={theme.allowed && !empty ? legendPosition : undefined} className={props.className}
       style={{ background: surface.background, color: surface.text, fontFamily: type.labelFamily,
         fontSize: type.labelSize, fontWeight: type.labelWeight,
-        '--kk-chart-duration': `${theme.duration}ms`, '--kk-chart-easing': theme.easing } as CSSProperties}>
+        '--kk-chart-duration': `${theme.duration}ms`, '--kk-chart-easing': theme.easing,
+        '--kk-pie-width': `${bounded(props.height, 320, 280, 512)}px` } as CSSProperties}>
       <style>{CSS}</style>
-      <figcaption>
+      <figcaption data-chart-caption="">
         <div style={{ fontSize: type.titleSize, fontWeight: type.titleWeight }}>{props.title}</div>
         {props.description && <p style={{ color: surface.mutedText }}>{props.description}</p>}
       </figcaption>
       {!theme.allowed ? <p data-chart-unavailable="">This chart style is not approved for this background. The data is shown below.</p>
         : empty ? <p data-chart-empty="">No data to display.</p>
-        : <div data-chart-body="" data-legend-position={showLegend ? (props.legendPosition ?? theme.defaults.legendPosition ?? 'bottom') : undefined}>
+        : <div data-chart-body="" data-legend-position={legendPosition}>
+          {legendPosition === 'top' && legend}
           <div data-chart-scroll="" data-chart-plot-region="" role="region" aria-label={`${props.title} plot`} tabIndex={0}>{children}</div>
-          {showLegend && <ul data-chart-legend="" aria-label="Legend">
-            {series.map((item, index) => <li key={item.id}>
-              <span data-chart-key="" aria-hidden="true" style={{ background: inkFor(item, index, props, theme).color }} />
-              <span>{item.label}</span>
-            </li>)}
-          </ul>}
+          {legendPosition !== 'top' && legend}
         </div>}
       <div className={showTable ? undefined : 'sr-only'} data-chart-scroll={showTable ? '' : undefined}
         role={showTable ? 'region' : undefined} aria-label={showTable ? `${props.title} data` : undefined}
@@ -542,45 +576,59 @@ export function BarChart(props: BarChartProps) {
     return [positive, negative];
   }) : all;
   const scale = scaleFor(domain);
-  function renderPlot(layoutWidth?: number) {
-    const tickSpace = axisSpace(scale.ticks, compact, type.labelSize);
-    const valueSpace = axisSpace(domain, compact, type.valueSize);
-    const count = stacked ? 1 : Math.max(1, props.series.length);
+  const tickSpace = axisSpace(scale.ticks, compact, type.labelSize);
+  const count = stacked ? 1 : Math.max(1, props.series.length);
+  function plotInsets(layoutWidth?: number) {
     const width = Math.max(layoutWidth ?? 640, tickSpace + 100,
       !horizontal && props.data.length > 12 ? tickSpace + props.data.length * Math.max(32, count * 12) : 0);
+    const left = horizontal ? Math.max(tickSpace / 2, Math.min(width * .35, Math.max(...props.data.map((row) => textWidth(row.label, type.labelSize)), 60))) + 12 : tickSpace;
+    return { width, left };
+  }
+  function renderPlot(layoutWidth?: number) {
+    const { width, left } = plotInsets(layoutWidth);
+    const valueSpace = axisSpace(domain, compact, type.valueSize);
     const height = horizontal ? Math.max(bounded(props.height, 320, 200, 1200), props.data.length * Math.max(48, count * (type.valueSize + 8), type.labelSize * 1.6) + 80)
       : Math.max(bounded(props.height, 320, 200, 1200), type.labelSize * 8 + type.valueSize * 3);
-    const left = horizontal ? Math.max(tickSpace / 2, Math.min(width * .35, Math.max(...props.data.map((row) => textWidth(row.label, type.labelSize)), 60))) + 12 : tickSpace;
-    const top = Math.max(24, type.valueSize * 1.5), bottom = height - type.labelSize * (horizontal ? 2 : 3.5) - type.valueSize * 1.5 - 12;
     const right = width - (horizontal ? Math.max(tickSpace / 2, valueSpace) : Math.max(16, type.labelSize));
-    const plotWidth = right - left, plotHeight = bottom - top;
-    const valueAt = (v: number) => horizontal ? left + scale.at(v) * plotWidth : bottom - scale.at(v) * plotHeight;
-    const band = (horizontal ? plotHeight : plotWidth) / Math.max(1, props.data.length);
-    const groupWidth = band * (1 - bounded(theme.bar.groupGap, BAR.groupGap, 0, 0.8));
-    const gap = bounded(theme.bar.gap, BAR.gap, 0, groupWidth / count / 2);
-    const thickness = Math.max(0.5, (groupWidth - gap * (count - 1)) / count);
+    const plotWidth = right - left;
+    const band = (horizontal ? height : plotWidth) / Math.max(1, props.data.length);
     const placement = props.valueLabels ?? (props.values === false ? 'none' : theme.bar.valueLabels)
       ?? ((props.values ?? theme.defaults.values) ? (stacked ? 'inside' : 'outside') : 'none');
     const insideValues = placement === 'inside';
     const categoryStride = horizontal ? 1 : Math.max(1, Math.ceil(type.labelSize * 4.5 / band));
+    // Keep ticks close to their axis. Reserve a second line only when a
+    // category wraps, and extra clearance only for actual negative value labels.
+    const labelLines = horizontal ? 1 : Math.max(1, ...props.data.filter((_, index) => index % categoryStride === 0)
+      .map((row) => wrappedText(row.label, band * categoryStride - 8, type.labelSize).length));
+    const negativeLabels = !horizontal && domain.some((value) => value < 0)
+      && (placement === 'outside' || (stacked && (props.totals ?? theme.bar.totals)));
+    const labelOffset = 8 + type.labelSize + (negativeLabels ? type.valueSize + 8 : 0);
+    const top = Math.max(16, type.labelSize, placement === 'outside' || (stacked && (props.totals ?? theme.bar.totals)) ? type.valueSize * 1.5 + 6 : 0);
+    const bottom = height - labelOffset - (labelLines - 1) * type.labelSize * 1.2 - 6;
+    const plotHeight = bottom - top;
+    const valueAt = (v: number) => horizontal ? left + scale.at(v) * plotWidth : bottom - scale.at(v) * plotHeight;
+    const categoryBand = (horizontal ? plotHeight : plotWidth) / Math.max(1, props.data.length);
+    const groupWidth = categoryBand * (1 - bounded(theme.bar.groupGap, BAR.groupGap, 0, 0.8));
+    const gap = bounded(theme.bar.gap, BAR.gap, 0, groupWidth / count / 2);
+    const thickness = Math.max(0.5, (groupWidth - gap * (count - 1)) / count);
     return <Plot title={props.title} width={width} height={height} theme={theme} fluid={layoutWidth !== undefined}>
         {ticksFor(scale.ticks, horizontal ? plotWidth : plotHeight, horizontal ? tickSpace : type.labelSize).map((tick, i) => <g key={i}>
           {theme.defaults.grid && <line x1={horizontal ? valueAt(tick) : left} y1={horizontal ? top : valueAt(tick)}
             x2={horizontal ? valueAt(tick) : right} y2={horizontal ? bottom : valueAt(tick)} stroke={surface.grid} />}
-          <text x={horizontal ? valueAt(tick) : left - 10} y={horizontal ? bottom + type.labelSize + type.valueSize + 10 : valueAt(tick) + 4}
-            fill={surface.mutedText} textAnchor={horizontal ? 'middle' : 'end'}>{compact(tick)}<title>{format(tick)}</title></text>
+          {/* Anchor the numeric gutter to the caption's left edge; a percentage
+              inset drifts as the responsive plot grows beside its legend. */}
+          <text data-value-tick="" x={horizontal ? valueAt(tick) : 0} y={horizontal ? bottom + labelOffset : valueAt(tick) + 4}
+            fill={surface.mutedText} textAnchor={horizontal ? 'middle' : 'start'}>{compact(tick)}<title>{format(tick)}</title></text>
         </g>)}
-        <line data-baseline="" x1={horizontal ? valueAt(0) : left} y1={horizontal ? top : valueAt(0)}
-          x2={horizontal ? valueAt(0) : right} y2={horizontal ? bottom : valueAt(0)} stroke={surface.axis} />
         {props.data.map((row, rowIndex) => {
           let positive = 0, negative = 0;
-          const groupStart = (horizontal ? top : left) + rowIndex * band + (band - groupWidth) / 2;
+          const groupStart = (horizontal ? top : left) + rowIndex * categoryBand + (categoryBand - groupWidth) / 2;
           return <g key={row.id}>
-            {rowIndex % categoryStride === 0 && <text data-category-label="" x={horizontal ? left - 12 : left + (rowIndex + 0.5) * band}
-              y={horizontal ? top + (rowIndex + 0.5) * band + 4 : bottom + type.labelSize + type.valueSize + 10}
+            {rowIndex % categoryStride === 0 && <text data-category-label="" x={horizontal ? left - 12 : left + (rowIndex + 0.5) * categoryBand}
+              y={horizontal ? top + (rowIndex + 0.5) * categoryBand + 4 : bottom + labelOffset}
               textAnchor={horizontal ? 'end' : 'middle'} fill={surface.text}>
               {horizontal ? fitText(row.label, left - 20, type.labelSize) : wrappedText(row.label, band * categoryStride - 8, type.labelSize).map((line, index) =>
-                <tspan key={index} x={left + (rowIndex + .5) * band} dy={index ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{row.label}</title>
+                <tspan key={index} x={left + (rowIndex + .5) * categoryBand} dy={index ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{row.label}</title>
             </text>}
             {props.series.map((series, index) => {
               const value = row.values[series.id];
@@ -616,6 +664,9 @@ export function BarChart(props: BarChartProps) {
                 fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>{compact(total)}<title>{format(total)}</title></text>)}
           </g>;
         })}
+        {/* SVG paint order keeps the baseline in front of the bars and their strokes. */}
+        <line data-baseline="" x1={horizontal ? valueAt(0) : left} y1={horizontal ? top : valueAt(0)}
+          x2={horizontal ? valueAt(0) : right} y2={horizontal ? bottom : valueAt(0)} stroke={surface.axis} />
       </Plot>;
   }
   return <Frame props={props} theme={theme} kind="bar" horizontal={horizontal} series={props.series}
@@ -651,11 +702,15 @@ export function LineChart(props: LineChartProps) {
       props.data.length > 40 ? tickSpace + props.data.length * 14 : 0);
     const showLabels = (props.labels ?? theme.defaults.lineLabels) === 'end';
     const below = layoutWidth !== undefined && layoutWidth < 600;
-    const labelWidth = showLabels && !below ? Math.min(width * .32, Math.max(...props.series.map((series) => textWidth(series.label, type.labelSize)), 0) + 28) : 24;
+    const endValues = props.series.map((series) => props.data.map((row) => row.values[series.id]).filter((value) => value != null).at(-1));
+    const labelWidth = showLabels && !below ? Math.min(width * .38, Math.max(...props.series.map((series, i) => textWidth(series.label, type.labelSize) + textWidth(compact(endValues[i] ?? 0), type.labelSize) + 48), 0)) : 24;
     const height = Math.max(bounded(props.height, 320, 200, 1200), props.series.length * (type.labelSize + 8) + 80, type.labelSize * 9);
-    const left = tickSpace, right = width - labelWidth, top = Math.max(24, type.labelSize), bottom = height - type.labelSize * 3.2 - 24;
-    const extraHeight = showLabels && below ? props.series.length * (type.labelSize * 1.6 + 6) : 0;
+    const left = tickSpace, right = width - labelWidth, top = Math.max(16, type.labelSize);
     const categoryStride = Math.max(1, Math.ceil(props.data.length * type.labelSize * 4.5 / (right - left)));
+    const categoryWidth = (right - left) / Math.max(1, Math.ceil(props.data.length / categoryStride)) - 8;
+    const categoryLines = Math.max(1, ...props.data.map((row) => wrappedText(row.label, categoryWidth, type.labelSize).length));
+    const bottom = height - (categoryLines * type.labelSize * 1.2 + 20);
+    const extraHeight = showLabels && below ? props.series.length * (type.labelSize * 1.6 + 6) : 0;
     const x = (index: number) => props.data.length < 2 ? (left + right) / 2 : left + index / (props.data.length - 1) * (right - left);
     const y = (value: number) => bottom - scale.at(value) * (bottom - top);
     const lines = props.series.map((series, index) => {
@@ -674,11 +729,11 @@ export function LineChart(props: LineChartProps) {
     return <Plot title={props.title} width={width} height={height + extraHeight} theme={theme} fluid={layoutWidth !== undefined}>
         {ticksFor(scale.ticks, bottom - top, type.labelSize).map((tick, i) => <g key={i}>
           {theme.defaults.grid && <line x1={left} y1={y(tick)} x2={right} y2={y(tick)} stroke={surface.grid} />}
-          <text x={left - 10} y={y(tick) + 4} textAnchor="end" fill={surface.mutedText}>{compact(tick)}<title>{format(tick)}</title></text>
+          <text data-value-tick="" x={0} y={y(tick) + 4} textAnchor="start" fill={surface.mutedText}>{compact(tick)}<title>{format(tick)}</title></text>
         </g>)}
-        <line x1={left} y1={bottom} x2={right} y2={bottom} stroke={surface.axis} />
-        {props.data.map((row, index) => index % categoryStride === 0 && <text data-category-label="" key={row.id} x={x(index)} y={bottom + type.labelSize + 12} textAnchor={index === 0 ? 'start' : index === props.data.length - 1 ? 'end' : 'middle'} fill={surface.mutedText}>
-          {wrappedText(row.label, (right - left) / Math.max(1, Math.ceil(props.data.length / categoryStride)) - 8, type.labelSize).map((line, i) =>
+        <line data-baseline="" x1={left} y1={bottom} x2={right} y2={bottom} stroke={surface.axis} />
+        {props.data.map((row, index) => index % categoryStride === 0 && <text data-category-label="" key={row.id} x={x(index)} y={bottom + type.labelSize + 8} textAnchor={index === 0 ? 'start' : index === props.data.length - 1 ? 'end' : 'middle'} fill={surface.mutedText}>
+          {wrappedText(row.label, categoryWidth, type.labelSize).map((line, i) =>
             <tspan key={i} x={x(index)} dy={i ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{row.label}</title>
         </text>)}
         {lines.map(({ series, index, runs, ink }) => <g key={series.id} data-series={series.id}>
@@ -698,7 +753,10 @@ export function LineChart(props: LineChartProps) {
         </g>)}
         {showLabels && !below && labels.map((line) => <g key={line.series.id}>
           <path d={`M${line.end!.x},${line.end!.y} L${right + 12},${line.labelY} L${right + 18},${line.labelY}`} fill="none" stroke={line.ink.color} />
-          <text data-end-label="" x={right + 24} y={line.labelY + 4} fill={surface.text}>{fitText(line.series.label, labelWidth - 30, type.labelSize)}<title>{line.series.label}</title></text>
+          <text data-end-label="" x={right + 24} y={line.labelY + 4} fill={surface.text}>{fitText(line.series.label, labelWidth - 40 - textWidth(compact(line.end!.value), type.labelSize), type.labelSize)}
+            <tspan data-end-value="" dx={8} fontWeight={type.valueWeight}>{compact(line.end!.value)}</tspan>
+            <title>{`${line.series.label}: ${format(line.end!.value)}`}</title>
+          </text>
         </g>)}
         {showLabels && below && lines.filter((line) => line.end).map((line, index) => <g key={line.series.id}>
           <circle cx={8} cy={height + index * (type.labelSize * 1.6 + 6) + type.labelSize / 2} r={3} fill={line.ink.color} />
@@ -711,7 +769,8 @@ export function LineChart(props: LineChartProps) {
         </g>)}
       </Plot>;
   }
-  return <Frame props={props} theme={theme} kind="line" series={props.series} empty={!all.length} table={<RowTable props={props} />}>
+  return <Frame props={props} theme={theme} kind="line" series={props.series}
+    defaultLegend={(props.labels ?? theme.defaults.lineLabels) === 'none' && props.series.length > 1} empty={!all.length} table={<RowTable props={props} />}>
     <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
@@ -755,57 +814,112 @@ export function PieChart(props: PieChartProps) {
   const valueContent = props.valueContent ?? theme.pie.valueContent ?? (theme.pie.insideLabel === 'value' ? 'value' : 'percent');
   const numericText = (item: PieDatum) => valueContent === 'value' ? compactFor(props)(item.value)
     : percentage.format(total ? (item.value / max) / total : 0);
-  const hasOutside = categoryLabels === 'outside' || valueLabels === 'outside';
+  const hasAnnotations = props.data.some((item) => item.annotation);
+  const hasOutside = hasAnnotations || categoryLabels === 'outside' || valueLabels === 'outside';
   const hasInside = categoryLabels === 'inside' || valueLabels === 'inside';
   const table = <table data-chart-table=""><caption>{props.title} — data{props.centerValue && <> — {props.centerLabel ? `${props.centerLabel}: ` : ''}{props.centerValue}</>}</caption>
-    <thead><tr><th scope="col">Category</th><th scope="col">Value</th><th scope="col">Share</th></tr></thead>
+    <thead><tr><th scope="col">Category</th><th scope="col">Value</th><th scope="col">Share</th>{hasAnnotations && <th scope="col">Notes</th>}</tr></thead>
     <tbody>{props.data.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{format(item.value)}</td>
-      <td>{total ? percentage.format((item.value / max) / total) : '—'}</td></tr>)}</tbody></table>;
+      <td>{total ? percentage.format((item.value / max) / total) : '—'}</td>{hasAnnotations && <td>{item.annotation}</td>}</tr>)}</tbody></table>;
   function renderPlot(layoutWidth?: number) {
-    const labelInset = Math.max(24, type.labelSize * 1.5);
-    const outsideText = (item: PieDatum) => [categoryLabels === 'outside' ? short(item.label, 13) : '', valueLabels === 'outside' ? numericText(item) : ''].filter(Boolean).join(' ');
-    const labelWidth = props.data.reduce((width, item) => Math.max(width, textWidth(outsideText(item), type.labelSize)), 0);
+    const stackedLabels = props.outsideLabelStyle === 'stacked';
+    const labelInset = Math.max(24, type.labelSize * (stackedLabels ? 3 : 1.5));
+    const lineHeight = type.labelSize * 1.5;
+    const noteWidth = Math.max(144, type.labelSize * 13);
+    const wrapNote = (text: string, width: number) => {
+      const lines: string[] = [];
+      let line = '';
+      for (const word of text.split(/\s+/)) {
+        if (line && textWidth(`${line} ${word}`, type.labelSize) > width) { lines.push(line); line = ''; }
+        // Split an unbroken URL/word too; callouts must not overflow a phone.
+        for (const char of Array.from(word)) {
+          if (textWidth(line + char, type.labelSize) > width) { lines.push(line); line = ''; }
+          line += char;
+        }
+        line += ' ';
+      }
+      if (line.trim()) lines.push(line.trim());
+      return lines;
+    };
+    const outsideText = (item: PieDatum) => [categoryLabels === 'outside' ? short(item.label, 20) : '', valueLabels === 'outside' ? numericText(item) : ''].filter(Boolean).join(' ');
+    const labelWidth = props.data.reduce((width, item) => Math.max(width, item.annotation ? noteWidth : textWidth(outsideText(item), type.labelSize)), 0);
     const width = Math.max(layoutWidth ?? (hasOutside ? Math.max(640, 2 * (145 + 28 + labelWidth + 16)) : 640),
       hasOutside ? Math.max(0, ...props.data.map((item) => valueLabels === 'outside' ? textWidth(numericText(item), type.labelSize) : 0)) + type.labelSize * 3 + 32 : 0);
     const below = hasOutside && layoutWidth !== undefined && width < 2 * (100 + 28 + labelWidth + 16);
-    const height = Math.max(bounded(props.height, 320, 200, 1200), !below && hasOutside ? props.data.length * (type.labelSize + 8) + labelInset * 2 : 0);
-    const radius = Math.max(24, Math.min(height / 2 - 24, width / 2 - 16, hasOutside && !below ? width / 2 - labelWidth - 44 : 240));
+    const outsideItems = props.data.filter((item) => item.value > 0 && (categoryLabels === 'outside' || valueLabels === 'outside' || item.annotation));
+    // Conservative row heights reserve enough room; HTML inside foreignObject
+    // performs the actual paragraph wrapping with the loaded font.
+    const notesFor = (item: PieDatum) => item.annotation ? wrapNote(item.annotation, below ? width - 32 : noteWidth) : [];
+    const rowHeight = (item: PieDatum) => lineHeight * (1 + (stackedLabels && categoryLabels === 'outside' && valueLabels === 'outside' ? 1 : 0) + notesFor(item).length) + 12;
+    const labelGap = Math.max(type.labelSize + 8, ...outsideItems.map(rowHeight));
+    const height = Math.max(below && hasAnnotations ? Math.min(width, bounded(props.height, 320, 200, 1200)) : bounded(props.height, 320, 200, 1200), !below && hasOutside ? outsideItems.length * labelGap + labelInset * 2 : 0);
+    const radius = Math.max(24, Math.min(height / 2 - labelInset - (!below && props.outsideLabelLayout === 'radial' ? labelGap : 0), width / 2 - 16, hasOutside && !below ? width / 2 - labelWidth - 44 : 240));
     const cx = width / 2, cy = height / 2;
-    const extraHeight = below ? props.data.length * (type.labelSize * 1.6 + 6) : 0;
+    const extraHeight = below && !hasAnnotations ? outsideItems.reduce((sum, item) => sum + rowHeight(item), 0) : 0;
     const inner = kind === 'donut' ? radius * bounded(theme.pie.innerRadius, 0.6, 0.1, 0.9) : 0;
     let angle = bounded(theme.pie.startAngle, -90, -360, 360) / 180 * Math.PI;
     const slices = props.data.map((item, index) => {
       const share = max && total ? (item.value / max) / total : 0;
       const start = angle; angle += share * Math.PI * 2;
       const mid = (start + angle) / 2;
-      const edge = polar(cx, cy, radius + 4, mid);
-      return { item, share, start, end: angle, mid, edge, y: edge.y, right: edge.x >= cx, ink: inkFor(item, index, props, theme) };
+      let anchor = mid;
+      if (item.labelAngle !== undefined) {
+        if (!Number.isFinite(item.labelAngle)) throw new Error('Pie labelAngle must be finite.');
+        anchor = start + (((item.labelAngle * Math.PI / 180 - start) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        if (share > 0 && anchor > angle + 1e-8) throw new Error('Pie labelAngle must fall within its slice.');
+      }
+      const edge = polar(cx, cy, radius + 4, anchor);
+      const radial = polar(cx, cy, radius + 28, anchor);
+      return { item, share, start, end: angle, mid, edge, radial, y: props.outsideLabelLayout === 'radial' ? radial.y : edge.y, right: edge.x >= cx, ink: inkFor(item, index, props, theme) };
     }).filter((slice) => slice.share > 0);
-    const outside = [false, true].flatMap((right) => spreadLabels(slices.filter((s) => s.right === right), labelInset, height - labelInset, type.labelSize + 8));
-    return <Plot title={props.title} width={width} height={height + extraHeight} theme={theme} fluid={layoutWidth !== undefined} fixed>
+    const outside = [false, true].flatMap((right) => spreadLabels(slices.filter((s) => s.right === right && outsideItems.includes(s.item)), labelInset, height - labelInset - labelGap + type.labelSize, labelGap));
+    return <><Plot title={props.title} width={width} height={height + extraHeight} theme={theme} fluid={layoutWidth !== undefined} fixed>
         {slices.map((slice) => {
           const point = polar(cx, cy, (radius + inner) / 2, slice.mid);
+          const insideText = valueLabels === 'inside' ? numericText(slice.item) : fitText(slice.item.label, (radius - inner) * 1.2, type.valueSize);
+          const emphasized = valueLabels === 'inside' && props.highlight?.includes(slice.item.id);
+          const valueSize = emphasized ? Math.max(type.valueSize, Math.min(type.displaySize, (radius - inner) * 1.4 / Math.max(1, Array.from(insideText).length))) : type.valueSize;
+          const secondLine = categoryLabels === 'inside' && valueLabels === 'inside' && slice.share >= 0.15;
           return <g key={slice.item.id}>
             <path data-slice="" data-category={slice.item.id} data-share={slice.share}
               d={slicePath(cx, cy, radius, inner, slice.start, slice.end)} fill={slice.ink.color}
               stroke={surface.background} strokeWidth={bounded(theme.pie.separatorWidth, 0, 0, 12)}>
               <title>{`${slice.item.label}: ${format(slice.item.value)} (${percentage.format(slice.share)})`}</title>
             </path>
-            {hasInside && slice.share >= 0.05 && textWidth(valueLabels === 'inside' ? numericText(slice.item) : fitText(slice.item.label, (radius - inner) * 1.2, type.valueSize), type.valueSize) < (radius - inner) * 1.5 && slice.share * Math.PI * (radius + inner) > type.valueSize * 2 && <text data-pie-inside-label="" x={point.x} y={point.y + type.valueSize / 3} textAnchor="middle"
-              fill={slice.ink.labelColor} fontFamily={type.valueFamily} fontSize={type.valueSize} fontWeight={type.valueWeight}>
-              {valueLabels === 'inside' ? numericText(slice.item) : fitText(slice.item.label, (radius - inner) * 1.2, type.valueSize)}
-              {categoryLabels === 'inside' && valueLabels === 'inside' && slice.share >= 0.15 && <tspan x={point.x} dy={type.labelSize + 4}
+            {hasInside && slice.share >= 0.05 && textWidth(insideText, valueSize) < (radius - inner) * 1.5 && slice.share * Math.PI * (radius + inner) > valueSize * 2 && <text data-pie-inside-label="" data-category={slice.item.id}
+              x={point.x} y={point.y + valueSize / 3 - (secondLine ? (type.labelSize + 4) / 2 : 0)} textAnchor="middle"
+              fill={slice.ink.labelColor} fontFamily={emphasized ? type.displayFamily : type.valueFamily}
+              fontSize={valueSize} fontWeight={emphasized ? type.displayWeight : type.valueWeight}>
+              {insideText}
+              {secondLine && <tspan x={point.x} dy={type.labelSize + 4}
                 fontFamily={type.labelFamily} fontSize={type.labelSize} fontWeight={type.labelWeight}>{fitText(slice.item.label, (radius - inner) * 1.2, type.labelSize)}</tspan>}
             </text>}
           </g>;
         })}
         {hasOutside && !below && outside.map((slice) => {
-          const x = cx + (slice.right ? 1 : -1) * (radius + 22);
+          const note = notesFor(slice.item);
+          const x = note.length ? cx + (slice.right ? 1 : -1) * (radius + 28)
+            : props.outsideLabelLayout === 'radial' ? slice.radial.x : cx + (slice.right ? 1 : -1) * (radius + 22);
+          const leaderEnd = x + (note.length ? 0 : slice.right ? 8 : -8);
+          const textX = leaderEnd + (slice.right ? 6 : -6);
+          const heading = note.length ? slice.item.label : stackedLabels && categoryLabels === 'outside' ? short(slice.item.label, 20) : outsideText(slice.item);
           return <g key={slice.item.id}>
-            <path d={`M${slice.edge.x},${slice.edge.y} L${x},${slice.labelY}`} stroke={surface.axis} fill="none" />
-            <text data-pie-label="" x={x + (slice.right ? 6 : -6)} y={slice.labelY + 4} fill={surface.text} textAnchor={slice.right ? 'start' : 'end'}>
-              {outsideText(slice.item)}<title>{slice.item.label}</title>
+            {/* Leaders carry the label-to-slice relationship, so use readable
+                secondary text ink rather than the theme's faint border ink. */}
+            <path data-pie-leader="" data-category={slice.item.id}
+              d={`M${slice.edge.x},${slice.edge.y} L${x},${slice.labelY}${note.length ? ` h${slice.right ? noteWidth : -noteWidth}` : ` H${leaderEnd}`}`}
+              stroke={surface.mutedText} strokeWidth={1.5} vectorEffect="non-scaling-stroke" fill="none" />
+            {/* A font-independent center baseline keeps the horizontal end of
+                the leader aligned when the theme changes its font metrics. */}
+            <text data-pie-label="" data-category={slice.item.id} x={textX} y={slice.labelY + (note.length ? -8 : 0)}
+              dominantBaseline={note.length ? undefined : 'central'}
+              fill={surface.text} textAnchor={slice.right ? 'start' : 'end'} fontWeight={stackedLabels || note.length ? type.valueWeight : type.labelWeight}>
+              {heading}<title>{slice.item.label}</title>
+              {stackedLabels && valueLabels === 'outside' && categoryLabels === 'outside' && <tspan x={textX} dy={lineHeight} fontWeight={type.labelWeight}>{numericText(slice.item)}</tspan>}
             </text>
+            {note.length > 0 && <foreignObject data-pie-annotation="" x={slice.right ? textX : textX - noteWidth} y={slice.labelY + 8} width={noteWidth} height={note.length * lineHeight}>
+              <div style={{ color: surface.mutedText, fontSize: type.labelSize, lineHeight: `${lineHeight}px`, overflowWrap: 'anywhere' }}>{slice.item.annotation}</div>
+            </foreignObject>}
           </g>;
         })}
         {kind === 'donut' && <g textAnchor="middle" fill={surface.focalText ?? surface.text}>
@@ -813,18 +927,37 @@ export function PieChart(props: PieChartProps) {
             fontFamily={type.displayFamily} data-center-value="" fontSize={Math.max(12, Math.min(type.displaySize, inner * 1.5 / Array.from(props.centerValue).length))}
             fontWeight={type.displayWeight}>{fitText(props.centerValue, inner * 1.5, Math.max(12, Math.min(type.displaySize, inner * 1.5 / Array.from(props.centerValue).length)))}<title>{props.centerValue}</title></text>}
           {props.centerLabel && <text x={cx} y={cy + (props.centerValue ? Math.min(type.labelSize, Math.max(12, inner / 3)) + 6 : 4)} data-center-label="" fontSize={Math.min(type.labelSize, Math.max(12, inner / 3))} fill={surface.mutedText}>
-            {fitText(props.centerLabel, inner * 1.4, Math.min(type.labelSize, Math.max(12, inner / 3)))}<title>{props.centerLabel}</title>
+            {wrappedText(props.centerLabel, inner * 1.6, Math.min(type.labelSize, Math.max(12, inner / 3))).map((line, index) => <tspan key={index} x={cx} dy={index ? type.labelSize * 1.3 : 0}>{line}</tspan>)}<title>{props.centerLabel}</title>
           </text>}
         </g>}
-        {below && slices.map((slice, index) => <g key={slice.item.id}>
-          <circle cx={8} cy={height + index * (type.labelSize * 1.6 + 6) + type.labelSize / 2} r={4} fill={slice.ink.color} />
-          <text data-pie-label="" x={20} y={height + index * (type.labelSize * 1.6 + 6) + type.labelSize} fill={surface.text}>
-            {categoryLabels === 'outside' && fitText(slice.item.label, width - 32 - (valueLabels === 'outside' ? textWidth(numericText(slice.item), type.labelSize) : 0), type.labelSize)} {valueLabels === 'outside' && numericText(slice.item)}<title>{slice.item.label}</title>
-          </text>
-        </g>)}
-      </Plot>;
+        {below && !hasAnnotations && outsideItems.map((item, index) => {
+          const y = height + outsideItems.slice(0, index).reduce((sum, row) => sum + rowHeight(row), 0);
+          const slice = slices.find((slice) => slice.item === item)!;
+          const note = notesFor(item);
+          return <g key={item.id}>
+            <circle cx={8} cy={y + type.labelSize / 2} r={4} fill={slice.ink.color} />
+            <text data-pie-label="" x={20} y={y + type.labelSize} fill={surface.text}>
+              {(categoryLabels === 'outside' || item.annotation) && fitText(item.label, width - 32 - (valueLabels === 'outside' ? textWidth(numericText(item), type.labelSize) : 0), type.labelSize)} {valueLabels === 'outside' && numericText(item)}<title>{item.label}</title>
+            </text>
+            {note.length > 0 && <foreignObject data-pie-annotation="" x={20} y={y + type.labelSize + 8} width={width - 32} height={note.length * lineHeight}>
+              <div style={{ color: surface.mutedText, fontSize: type.labelSize, lineHeight: `${lineHeight}px`, overflowWrap: 'anywhere' }}>{item.annotation}</div>
+            </foreignObject>}
+          </g>;
+        })}
+      </Plot>
+      {below && hasAnnotations && <ul data-pie-callouts="" style={{ listStyle: 'none', margin: 0, padding: '12px 8px', display: 'grid', gap: 16 }}>
+        {outsideItems.map((item) => <li key={item.id} style={{ display: 'grid', gridTemplateColumns: '8px minmax(0, 1fr)', gap: 8 }}>
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', marginTop: type.labelSize / 2, background: slices.find(slice => slice.item === item)!.ink.color }} />
+          <div>
+            <div style={{ fontWeight: type.valueWeight }}>{item.label}{valueLabels === 'outside' && ` — ${numericText(item)}`}</div>
+            {item.annotation && <p data-pie-annotation="" style={{ margin: '4px 0 0', lineHeight: 1.5, color: surface.mutedText, overflowWrap: 'anywhere' }}>{item.annotation}</p>}
+          </div>
+        </li>)}
+      </ul>}
+      </>;
   }
-  return <Frame props={props} theme={theme} kind={kind} series={props.data} empty={!total} table={table}>
+  return <Frame props={props} theme={theme} kind={kind} series={props.data} empty={!total} table={table}
+    compactPie={!hasOutside && props.sizing !== 'scroll'}>
     <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }
@@ -912,7 +1045,7 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
       {bubble && <td>{(item as BubbleDatum).size === null ? 'No data' : formatSize((item as BubbleDatum).size!)}</td>}
     </tr>)}</tbody></table>;
   function renderPlot(layoutWidth?: number) {
-    const axisWidth = axisSpace(yScale.ticks, compactY, type.labelSize) + type.labelSize * 1.5;
+    const axisWidth = axisSpace(yScale.ticks, compactY, type.labelSize);
     const below = layoutWidth !== undefined && layoutWidth < 600;
     const outside = labels === 'outside';
     const railWidth = outside && !below ? Math.min((layoutWidth ?? 640) * .3, Math.max(160, type.labelSize * 16 + 28)) : 20;
@@ -932,13 +1065,18 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
     });
     const plotHeight = Math.max(bounded(props.height, 320, 200, 1200), pad * 2 + type.labelSize * 9 + 64,
       outside && !below ? points.length * (type.labelSize * 1.6 + 6) + 64 : 0);
-    const left = axisWidth, right = width - railWidth, top = 24, bottom = plotHeight - type.labelSize * 3 - 20;
+    const left = axisWidth, right = width - railWidth, top = type.labelSize * 2 + 12;
+    const xLabelLines = wrappedText(xName, right - left, type.labelSize);
+    const bottom = plotHeight - type.labelSize * 2.5 - 16 - (xLabelLines.length - 1) * type.labelSize * 1.2;
     const x = (u: number) => Number((left + pad + u * (right - left - 2 * pad)).toFixed(4));
     const y = (v: number) => Number((bottom - pad - v * (bottom - top - 2 * pad)).toFixed(4));
     const refs = [...new Set([sizeMax / 4, sizeMax / 2, sizeMax].filter((value) => value > 0))];
     const showSizeLegend = bubble && (bubbleProps.sizeLegend ?? theme.bubble.sizeLegend) && points.length > 0;
+    // Keep reference circles on one row whenever their true diameters and
+    // formatted values fit. A phone should not get three chart-height rows.
+    const stackedSizeKey = width / refs.length < Math.max(maxRadius * 2, ...refs.map((value) => textWidth(compactSize(value), type.labelSize))) + 16;
     const rowHeight = Math.max(maxRadius * 2 + 12, type.labelSize * 1.6 + 8);
-    const legendHeight = showSizeLegend ? (below ? refs.length * rowHeight + type.labelSize * 2 + 24 : maxRadius * 2 + type.labelSize * 4 + 28) : 0;
+    const legendHeight = showSizeLegend ? (stackedSizeKey ? refs.length * rowHeight + type.labelSize * 2 + 24 : maxRadius * 2 + type.labelSize * 3.5 + 28) : 0;
     const labelHeight = outside && below ? points.length * (type.labelSize * 1.6 + 6) : 0;
     const treatment = bubbleProps.treatment ?? theme.bubble.treatment;
     const ringCount = Math.round(bounded(theme.bubble.ringCount, BUBBLE.ringCount, 2, 16));
@@ -953,14 +1091,16 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
         </g>)}
         {ticksFor(yScale.ticks, bottom - top - 2 * pad, type.labelSize).map((tick, index) => <g key={`y-${index}`}>
           {theme.defaults.grid && <line x1={left} x2={right} y1={y(yScale.at(tick))} y2={y(yScale.at(tick))} stroke={surface.grid} />}
-          <text data-y-tick="" x={left - 10} y={y(yScale.at(tick)) + type.labelSize / 3} textAnchor="end" fill={surface.mutedText}>
+          <text data-y-tick="" x={0} y={y(yScale.at(tick)) + type.labelSize / 3} textAnchor="start" fill={surface.mutedText}>
             {compactY(tick)}<title>{formatY(tick)}</title>
           </text>
         </g>)}
         <path d={`M${left},${top} V${bottom} H${right}`} fill="none" stroke={surface.axis} />
-        <text x={(left + right) / 2} y={plotHeight - 6} textAnchor="middle" fill={surface.text}>{fitText(xName, right - left, type.labelSize)}<title>{xName}</title></text>
-        <text transform={`translate(${type.labelSize},${(top + bottom) / 2}) rotate(-90)`} textAnchor="middle" fill={surface.text}>
-          {short(yName, Math.max(6, Math.floor((bottom - top) / type.labelSize)))}<title>{yName}</title>
+        <text data-x-axis-label="" x={(left + right) / 2} y={plotHeight - 6 - (xLabelLines.length - 1) * type.labelSize * 1.2} textAnchor="middle" fill={surface.text}>
+          {xLabelLines.map((line, index) => <tspan key={index} x={(left + right) / 2} dy={index ? type.labelSize * 1.2 : 0}>{line}</tspan>)}<title>{xName}</title>
+        </text>
+        <text data-y-axis-label="" x={0} y={type.labelSize} fill={surface.text}>
+          {fitText(yName, right, type.labelSize)}<title>{yName}</title>
         </text>
         {!bubble && (props as ScatterChartProps).trendLine === 'linear' && props.series.map((series, index) => {
           const fit = fitLine(points.filter((p) => p.item.seriesId === series.id));
@@ -1003,14 +1143,14 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
           </text>
         </g>)}
         {showSizeLegend && <g data-size-legend="" fill={surface.mutedText}>
-          <text x={8} y={plotHeight + type.labelSize + 12}>{fitText(`${sizeName} (circle area)`, width - 16, type.labelSize)}<title>{`${sizeName}: circle area represents the value`}</title></text>
+          <text x={0} y={plotHeight + type.labelSize + 12}>{fitText(sizeName, width - 16, type.labelSize)}<title>{`${sizeName}: circle area represents the value`}</title></text>
           {refs.map((value, index) => {
-            const px = below ? maxRadius + 12 : (index + 0.5) * width / refs.length;
-            const floor = plotHeight + type.labelSize * 2 + 20 + (below ? (index + 1) * rowHeight : maxRadius * 2);
+            const px = stackedSizeKey ? maxRadius + 12 : (index + 0.5) * width / refs.length;
+            const floor = plotHeight + type.labelSize * 2 + 20 + (stackedSizeKey ? (index + 1) * rowHeight : maxRadius * 2);
             const radius = radiusFor(value);
             return <g key={index}>
               <circle data-size-reference="" data-size={value} cx={px} cy={floor - radius} r={radius} fill="none" stroke={surface.mutedText} />
-              <text x={below ? maxRadius * 2 + 24 : px} y={below ? floor - maxRadius + type.labelSize / 3 : floor + type.labelSize + 6} textAnchor={below ? 'start' : 'middle'}>
+              <text x={stackedSizeKey ? maxRadius * 2 + 24 : px} y={stackedSizeKey ? floor - maxRadius + type.labelSize / 3 : floor + type.labelSize + 6} textAnchor={stackedSizeKey ? 'start' : 'middle'}>
                 {compactSize(value)}<title>{formatSize(value)}</title>
               </text>
             </g>;
@@ -1024,7 +1164,7 @@ function XYPlot({ props, kind }: { props: ScatterChartProps | BubbleChartProps; 
         </g>)}
       </Plot>;
   }
-  return <Frame props={props} theme={theme} kind={kind} series={props.series} table={table} empty={!complete.some((item) => !bubble || (item as BubbleDatum).size! > 0)}>
+  return <Frame props={props} theme={theme} kind={kind} series={props.series} defaultLegend={props.series.length > 1} table={table} empty={!complete.some((item) => !bubble || (item as BubbleDatum).size! > 0)}>
     <ResponsivePlots props={props} render={renderPlot} />
   </Frame>;
 }

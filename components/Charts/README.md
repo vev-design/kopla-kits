@@ -154,10 +154,31 @@ capabilities. They are not official brand assets or measured brand guidelines.
 
 ## Brand label treatments
 
-A legend is the series/color key. `legendPosition="right"` (or
+A legend is the series/color key. All charts default to `legendPosition="right"`,
+with the legend beside the plot. Cartesian charts use subtle gridlines by default.
+Category labels sit close to the baseline; wrapped labels and negative
+value labels reserve extra space only when needed.
+Brand settings still override these defaults (`defaults.grid`, `defaults.legendPosition`).
+
+Cartesian titles, subtitles and vertical-axis numbers share a left edge.
+Use `description` for a subtitle with the reporting period and units. Scatter
+and bubble axis names read horizontally; long horizontal-axis names wrap.
+Line endpoint labels show the series name and latest available value, moving
+below the plot on small containers. They replace the separate legend by default.
+Single-series scatter and bubble charts also omit the redundant color key.
+Explicit `legend` and `brand.defaults.legend` settings still take precedence.
+Bubble reference circles retain the plot's area scale and share one row whenever
+their diameters and labels fit, including on phones.
+
+Use `legendPosition="top"` for a key above the plot or `legendPosition="bottom"`
+for a key below it. `legendPosition="right"` (or
 `brand.defaults.legendPosition`) places it beside the plot when the container
 is at least 600px wide; it wraps below on smaller containers. `legend={false}`
 suppresses it. Set `brand.pie.legend` to control only pie/donut legends.
+
+Pie and donut charts also default to a right-side legend, moving below on narrow
+containers. Their titles are centered above the plot itself, excluding the side
+legend from the title's alignment area.
 
 Category names and numeric pie labels can be selected independently. For a
 brand treatment with outside names, inside percentages and no repeated key:
@@ -192,7 +213,36 @@ colors and weights are preserved; responsive layout does not replace them.
 ```sh
 bun test tests/charts.unit.test.ts
 node scripts/build-components.mjs
-node demo/scripts/gen-components.mjs
-pnpm exec playwright test tests/Charts.spec.ts
-pnpm exec playwright test tests/catalog.spec.ts --grep Charts
 ```
+
+Use `pnpm dev` to review the chart gallery at 360, 768, and 1440px, switch brands,
+and check the scripts-off and reduced-motion controls.
+
+## Practical pie examples
+
+The lab includes customer agreement and sentiment, household spending, project
+funding, an annotated investment plan, fundraising progress, budget allocation,
+product revenue, training completion, device traffic, and customer segments.
+Figures are illustrative and labelled as sample data.
+
+All gallery examples inherit the active kit's chart colors and font families,
+including dark and accent surfaces. Examples with more than five categories
+derive additional tints from the kit's palette.
+
+The label treatments demonstrate:
+
+- Consistent outside names and inside percentages for both pies and donuts:
+  `categoryLabels="outside"`, `valueLabels="inside"`, and
+  `outsideLabelLayout="radial"` place names beside their slices with leader lines.
+- `highlight={["positive"]}` to emphasize an inside percentage using the brand's
+  display typography while keeping semantic colors unchanged.
+- A donut's `centerValue` and `centerLabel`, with a right-side legend and
+  `brand.defaults.legendMarker="circle"`.
+- An optional `annotation` on each pie datum for explanatory callouts. Callouts
+  wrap beside the plot at wide sizes and move below on narrow screens; their
+  complete text also appears in the accessible data table.
+
+A datum's optional `labelAngle` positions its outside label's anchor in degrees
+within that slice. It never changes the slice geometry or inside-value position;
+anchors outside the slice are rejected. Small inside values defer to the table
+when there is not enough room to render them legibly.

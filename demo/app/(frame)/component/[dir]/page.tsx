@@ -59,6 +59,7 @@ export default async function ComponentPage({
         dir={dir}
         index={readNumber(query.case)}
         reducedMotion={query.motion === 'reduce'}
+        animation={query.animation === 'enter' || query.animation === 'none' ? query.animation : undefined}
       />
     </>
   );

@@ -201,10 +201,9 @@ plus the catalog-specific rules:
 
 ## The interactive contract
 
-Anything a reader can operate has to hold everything below. These are not
-aspirations — each is an assertion in `tests/`, most of them run against every
-showcase case at every width, and a new component inherits them by existing.
-`pnpm test:components` runs the lot.
+Anything a reader can operate has to hold everything below. Review the relevant
+showcase cases in the component lab when changing their behavior or layout.
+Use the existing unit tests and component builds for automated validation.
 
 ### Reach for the platform first, then write the result down
 
@@ -236,8 +235,7 @@ with `@hydrate`, and hold the rest of this contract.
 A published page ships as HTML with no JavaScript unless a section declares
 `@hydrate`. So the unhydrated render is a real state a reader will see: on
 first paint before hydration, and permanently when a section forgot the tag.
-The rule is exact, because it is tested by comparing the page with scripts on
-against the same page with scripts off:
+Compare the page with scripts on against the same page with scripts off:
 
 **Nothing the hydrated render shows may be missing from the unhydrated one.**
 
@@ -261,7 +259,7 @@ that, and says why keeping the content was worth it.
 
 ### 360 / 768 / 1440, no document overflow, 44px targets
 
-Tested at all three widths on every case. 360 is where things break, and the
+Review affected cases at all three widths. 360 is where things break, and the
 failures are ones a className cannot tell you about: a rotated card counts its
 corners toward the document's scroll width, so a tilted stack gives the whole
 *page* a few pixels of horizontal scroll — invisible until someone swipes
@@ -320,7 +318,7 @@ pauses under the pointer and while anything inside it has focus.
 
 A component in this catalog will be handed content it was never designed
 around. So every `<Name>Showcase` carries the adversarial cases, and carrying
-them is what makes them tested:
+them makes the component's limits visible in the lab:
 
 - **2 items and 10 items** — a layout tuned for three.
 - **A deliberately overlong label** that has to wrap.
@@ -331,11 +329,10 @@ them is what makes them tested:
 Write showcase data **longhand**. `Array.from({ length: 10 }, …)` reads better
 and is wrong: the extractor reads static literals only, so a generated case is
 dropped from `design.json` while still rendering in the component lab — a case
-that looks tested and is absent from the product.
+that appears in the lab but is absent from the product.
 
-Case labels are the stable name for a case; `?case=` is positional. In a spec,
-look a case up by label, never by number, or inserting a case above it silently
-re-points the test at a different configuration.
+Case labels are the stable name for a case; `?case=` is positional. When referring
+to examples, use their labels because inserting a case changes later indices.
 
 ### The lab is the other half of the harness
 
@@ -345,6 +342,5 @@ reduced motion, and all thirteen kit themes. Judge the no-JS render on the
 default theme (`blank`) — the others are fetched on demand, so switching theme
 needs JS by construction, and the lab says so rather than hiding it.
 
-Reskinning is the one check the test suite cannot make: a hardcoded radius or
-colour compiles perfectly and only shows up under someone else's tokens. Flip
-through the themes.
+Check reskinning visually: a hardcoded radius or colour compiles perfectly and
+only shows up under someone else's tokens. Flip through the themes.

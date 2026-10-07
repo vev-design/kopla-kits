@@ -1,37 +1,57 @@
-// The lab supplies example looks. These illustrative colors are not an official
-// brand specification; consumers save their own approved colors and load fonts.
+// Example treatments inherit the active kit's colors and fonts.
 import { BarChart, PieChart, LineChart, ScatterChart, BubbleChart, type ChartBrand, type ChartInk, type ChartSurface,
   type BarChartProps, type PieChartProps, type LineChartProps, type ScatterChartProps, type BubbleChartProps } from './Charts';
 
-const ink = (color: string, labelColor = '#ffffff'): ChartInk => ({ color, labelColor });
-const categorical = [ink('#cc0033'), ink('#8b7de0'), ink('#d9d4ff', '#221632'), ink('#56515c'), ink('#470c37')];
+// All example colors are theme tokens. The examples vary chart geometry and
+// labels, while the selected kit supplies the palette and font families.
+// A theme can provide chart-specific text ink; otherwise choose light or dark
+// ink from each slice's lightness, rather than reusing the primary's text color.
+const contrastInk = (color: string) => `oklch(from ${color} clamp(0, (0.6 - l) * 1000, 1) 0 0)`;
+const ink = (color: string, labelColor = contrastInk(color)): ChartInk => ({ color, labelColor });
+const colors = [1, 2, 3, 4, 5].map((index) => {
+  // A kit without chart tokens still needs distinguishable slices.
+  const color = `var(--chart-${index}, color-mix(in oklab, var(--primary) ${100 - (index - 1) * 12}%, var(--background)))`;
+  return ink(color, `var(--chart-${index}-foreground, ${contrastInk(color)})`);
+});
+// Kits expose five colors; derive extra tints for the nine-category example.
+const categorical = [...colors, ...colors.slice(0, 4).map((item) => ink(
+  `color-mix(in oklab, ${item.color} 65%, var(--background))`,
+))];
 const light: ChartSurface = {
-  background: '#ffffff', text: '#221632', focalText: '#cc0033', mutedText: '#625b68', axis: '#c5bec9', grid: '#e7e2e9', trend: '#8b7de0',
+  background: 'var(--background)', text: 'var(--foreground)', focalText: 'var(--chart-1, var(--primary))',
+  mutedText: 'var(--muted-foreground)', axis: 'var(--border)', grid: 'var(--border)', trend: colors[1]!.color,
   categorical,
-  emphasis: { focus: ink('#cc0033'), context: [ink('#d9d4ff', '#221632'), ink('#8b7de0'), ink('#88828c')] },
-  semantic: { positive: ink('#cc0033'), neutral: ink('#d9d4ff', '#221632'), negative: ink('#470c37'), other: ink('#e7e2dc', '#221632') },
+  emphasis: { focus: colors[0]!, context: categorical.slice(1) },
+  semantic: { positive: colors[0]!, neutral: colors[1]!, negative: colors[2]!, other: colors[3]! },
 };
 export const editorialChartBrand: ChartBrand = {
   version: 1, defaultSurface: 'paper', seriesOrder: ['revenue', 'cost', 'profit', 'other'],
   surfaces: {
     paper: light,
-    warm: { ...light, background: '#f3f0eb' },
-    violet: { ...light, background: '#d9d4ff', focalText: '#470c37', allowedCharts: ['pie', 'donut'] },
-    dark: {
-      ...light, background: '#470c37', text: '#ffffff', focalText: '#ffffff', mutedText: '#e6cfe3', axis: '#9a718e', grid: '#704362',
-      categorical: [ink('#ff2854', '#22071b'), ink('#d9d4ff', '#221632'), ink('#a998ec', '#221632')],
-      emphasis: { focus: ink('#ff2854', '#22071b'), context: [ink('#d9d4ff', '#221632'), ink('#a998ec', '#221632')] },
-      semantic: { positive: ink('#ff2854', '#22071b'), neutral: ink('#d9d4ff', '#221632'), negative: ink('#a998ec', '#221632'), other: ink('#e7e2dc', '#221632') },
-    },
+    warm: { ...light, background: 'var(--muted)' },
+    accent: { ...light, background: 'var(--accent)', text: 'var(--accent-foreground)', allowedCharts: ['pie', 'donut'] },
+    dark: { ...light, background: 'var(--foreground)', text: 'var(--background)', focalText: 'var(--background)',
+      mutedText: 'var(--background)', axis: 'color-mix(in oklab, var(--background) 30%, var(--foreground))',
+      grid: 'color-mix(in oklab, var(--background) 12%, var(--foreground))' },
   },
-  typography: { displayFamily: 'Georgia, serif', displaySize: 36, labelSize: 12, valueSize: 13 },
+  typography: { displaySize: 36, labelSize: 12, valueSize: 13 },
   bar: { radius: 0, groupGap: 0.22, totals: true },
   line: { width: 1.5, pointRadius: 0 },
   pie: { innerRadius: 0.6, separatorWidth: 0, labels: 'inside' },
-  defaults: { grid: false, legend: true, values: false, lineLabels: 'end' },
+  defaults: { grid: true, values: false, lineLabels: 'end' },
   scatter: { radius: 3.5, trendWidth: 1 },
   bubble: { maxRadius: 48, fillOpacity: 1, strokeWidth: 0.75, ringCount: 9 },
   motion: { enabled: false, durationMs: 900 },
+};
+const surveyChartBrand: ChartBrand = {
+  ...editorialChartBrand,
+  typography: { labelSize: 14, valueSize: 16, valueWeight: 700, displaySize: 40, displayWeight: 700 },
+};
+const reportChartBrand: ChartBrand = {
+  ...editorialChartBrand, seriesOrder: [],
+  typography: { labelSize: 13, valueSize: 14, displaySize: 26 },
+  pie: { innerRadius: 0.62, separatorWidth: 2, labels: 'inside' },
+  defaults: { ...editorialChartBrand.defaults, legendMarker: 'circle' },
 };
 const roundedChartBrand: ChartBrand = {
   version: 1,
@@ -44,7 +64,7 @@ type DemoProps = ({ kind: 'bar' } & BarChartProps | { kind: 'pie' } & PieChartPr
   & { preset?: 'kit' | 'editorial' | 'rounded' | 'large-type' };
 
 export function Charts(props: DemoProps) {
-  const brand = props.preset === 'large-type' ? { ...editorialChartBrand, typography: { labelFamily: 'Georgia, serif', valueFamily: 'Arial, sans-serif', displayFamily: 'Georgia, serif', labelSize: 19, labelWeight: 700, valueSize: 19, displaySize: 48 } } satisfies ChartBrand : props.preset === 'editorial' ? editorialChartBrand : props.preset === 'rounded' ? roundedChartBrand : props.brand;
+  const brand = props.preset === 'large-type' ? { ...editorialChartBrand, typography: { labelSize: 19, labelWeight: 700, valueSize: 19, displaySize: 48 } } satisfies ChartBrand : props.preset === 'editorial' ? editorialChartBrand : props.preset === 'rounded' ? roundedChartBrand : props.brand;
   return <div className="p-6" style={{ minWidth: 0 }}>
     {props.kind === 'bar' ? <BarChart {...props} brand={brand} />
       : props.kind === 'pie' ? <PieChart {...props} brand={brand} />
@@ -53,10 +73,12 @@ export function Charts(props: DemoProps) {
   </div>;
 }
 
+// Scenario figures are illustrative sample data, not reported results.
 export const ChartsShowcase = [
   { label: "Grouped bars", props: {
     kind: "bar",
     title: "Revenue by quarter",
+    description: "In million dollars",
     series: [
       {id: "revenue", label: "Revenue"},
       {id: "cost", label: "Cost"},
@@ -157,7 +179,7 @@ export const ChartsShowcase = [
     kind: "bar",
     title: "A background that only allows circular charts",
     preset: "editorial",
-    surface: "violet",
+    surface: "accent",
     series: [
       {id: "revenue", label: "Revenue"},
       {id: "cost", label: "Cost"},
@@ -173,6 +195,7 @@ export const ChartsShowcase = [
   { label: "Semantic pie", props: {
     kind: "pie",
     title: "Responses",
+    description: "Share of total responses",
     preset: "editorial",
     colorMode: "semantic",
     data: [
@@ -182,92 +205,116 @@ export const ChartsShowcase = [
     ],
     animation: "enter",
   } },
-  { label: "Donut on dark", props: {
-    kind: "pie",
-    title: "Responses",
-    preset: "editorial",
-    surface: "dark",
-    colorMode: "semantic",
-    variant: "donut",
+  { label: 'Survey agreement — outside names', props: {
+    kind: 'pie', variant: 'donut', title: 'Would you recommend our service?',
+    description: '100 customer responses · Sample data', colorMode: 'semantic',
+    brand: { ...surveyChartBrand, pie: { innerRadius: 0.52, startAngle: -230.4, categoryLabels: 'outside', valueLabels: 'inside', legend: false } },
+    outsideLabelLayout: 'radial', height: 420,
     data: [
-      {id: "agree", label: "Agree", role: "positive", value: 78},
-      {id: "neutral", label: "Neutral", role: "neutral", value: 14},
-      {id: "disagree", label: "Disagree", role: "negative", value: 8},
-    ],
-    centerValue: "78%",
-    centerLabel: "Agree",
-  } },
-  { label: "Donut on violet", props: {
-    kind: "pie",
-    title: "Responses",
-    preset: "editorial",
-    surface: "violet",
-    colorMode: "semantic",
-    variant: "donut",
-    data: [
-      {id: "agree", label: "Agree", role: "positive", value: 78},
-      {id: "neutral", label: "Neutral", role: "neutral", value: 14},
-      {id: "disagree", label: "Disagree", role: "negative", value: 8},
-    ],
-    centerValue: "78%",
-    centerLabel: "Agree",
-  } },
-  { label: "Outside labels", props: {
-    kind: "pie",
-    title: "Response breakdown",
-    data: [
-      {id: "agree", label: "Agree", role: "positive", value: 78},
-      {id: "neutral", label: "Neutral", role: "neutral", value: 14},
-      {id: "disagree", label: "Disagree", role: "negative", value: 8},
-    ],
-    labels: "outside",
-  } },
-  { label: "Full circle", props: {
-    kind: "pie",
-    title: "Complete",
-    variant: "donut",
-    centerValue: "100%",
-    data: [
-      {id: "done", label: "Complete", value: 100},
-      {id: "zero", label: "Remaining", value: 0},
+      { id: 'agree', label: 'Agree', role: 'positive', value: 78, labelAngle: -180 },
+      { id: 'neutral', label: 'Neutral', role: 'neutral', value: 14 },
+      { id: 'disagree', label: 'Disagree', role: 'negative', value: 8 },
     ],
   } },
-  { label: "Large outside labels", props: {
-    kind: "pie", title: "Regional share", labels: "outside",
-    brand: { version: 1, typography: { labelSize: 24, labelFamily: "Arial, sans-serif" } },
+  { label: 'Survey sentiment — emphasized majority', props: {
+    kind: 'pie', title: 'Customer sentiment', description: '1,000 survey responses · Sample data',
+    colorMode: 'semantic', highlight: ['positive'], height: 360,
+    brand: { ...surveyChartBrand, pie: { startAngle: -140.4, categoryLabels: 'inside', valueLabels: 'inside', legend: false } },
     data: [
-      { id: "north", label: "North America", value: 50 },
-      { id: "south", label: "South America", value: 50 },
+      { id: 'positive', label: 'Positive', role: 'positive', value: 780 },
+      { id: 'negative', label: 'Negative', role: 'negative', value: 220 },
     ],
   } },
-  { label: "Maximum size outside labels", props: {
-    kind: "pie", title: "Regional share", labels: "outside", locale: "de-DE",
-    brand: { version: 1, typography: { labelSize: 72, labelFamily: "Georgia, serif", labelWeight: 700 } },
+  { label: 'Household spending — outside names', props: {
+    kind: 'pie', title: 'Where the household budget goes', description: '$5,000 monthly spending · Sample data',
+    brand: reportChartBrand, categoryLabels: 'outside', valueLabels: 'inside', legend: false,
+    outsideLabelLayout: 'radial', height: 420,
+    numberFormat: { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
     data: [
-      { id: "wide", label: "WWWWWWWWWWWWW", value: 99 },
-      { id: "long", label: "A deliberately long regional label", value: 1 },
+      { id: 'housing', label: 'Housing', value: 1500 },
+      { id: 'food', label: 'Food', value: 1250 },
+      { id: 'transport', label: 'Transport', value: 1000 },
+      { id: 'savings', label: 'Savings', value: 750 },
+      { id: 'other', label: 'Other', value: 500 },
     ],
   } },
-  { label: "Ten categories and long label", props: {
-    kind: "pie",
-    title: "Distribution",
-    labels: "outside",
+  { label: 'Project funding — detailed legend', props: {
+    kind: 'pie', variant: 'donut', title: 'How the project is funded',
+    description: '$10 million community center · Sample data', brand: reportChartBrand,
+    labels: 'none', centerValue: '$10M', centerLabel: 'Total funding',
+    numberFormat: { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
     data: [
-      {id: "0", label: "An intentionally long category label that must remain available in the legend and data table", value: 50},
-      {id: "1", label: "Category 2", value: 20},
-      {id: "2", label: "Category 3", value: 10},
-      {id: "3", label: "Category 4", value: 5},
-      {id: "4", label: "Category 5", value: 4},
-      {id: "5", label: "Category 6", value: 3},
-      {id: "6", label: "Category 7", value: 3},
-      {id: "7", label: "Category 8", value: 2},
-      {id: "8", label: "Category 9", value: 2},
-      {id: "9", label: "Category 10", value: 1},
+      { id: 'city', label: 'City funding', value: 2000000 },
+      { id: 'regional', label: 'Regional grant', value: 1500000 },
+      { id: 'national', label: 'National grant', value: 1500000 },
+      { id: 'foundation', label: 'Foundation', value: 1500000 },
+      { id: 'businesses', label: 'Local businesses', value: 1000000 },
+      { id: 'individuals', label: 'Individual donors', value: 1000000 },
+      { id: 'events', label: 'Fundraising events', value: 500000 },
+      { id: 'reserves', label: 'Reserves', value: 500000 },
+      { id: 'other', label: 'Other grants', value: 500000 },
+    ],
+  } },
+  { label: 'Investment priorities — annotated donut', props: {
+    kind: 'pie', variant: 'donut', title: 'Investing in better public services',
+    description: '2026 capital investment plan · Sample data', brand: reportChartBrand,
+    categoryLabels: 'none', valueLabels: 'inside', legend: false, height: 400,
+    centerValue: '2026', centerLabel: 'Capital plan',
+    data: [
+      { id: 'housing', label: 'Housing', value: 30, annotation: 'Build 120 affordable homes near public transport.' },
+      { id: 'schools', label: 'Schools', value: 25, annotation: 'Renovate classrooms in six primary schools.' },
+      { id: 'transport', label: 'Transport', value: 20, annotation: 'Add safe cycle routes and step-free bus stops.' },
+      { id: 'parks', label: 'Parks', value: 15 },
+      { id: 'digital', label: 'Digital services', value: 10 },
+    ],
+  } },
+  { label: 'Fundraising goal', props: {
+    kind: 'pie', variant: 'donut', preset: 'editorial', surface: 'dark',
+    title: 'Community library fund', description: '$780,000 raised toward a $1 million goal · Sample data',
+    colorMode: 'semantic', labels: 'none', centerValue: '78%', centerLabel: 'of goal raised',
+    numberFormat: { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+    data: [
+      { id: 'raised', label: 'Raised', role: 'positive', value: 780000 },
+      { id: 'remaining', label: 'Still needed', role: 'neutral', value: 220000 },
+    ],
+  } },
+  { label: 'Annual budget allocation', props: {
+    kind: 'pie', variant: 'donut', preset: 'editorial', surface: 'accent',
+    title: 'Where the budget goes', description: 'Annual operating budget · Sample data',
+    centerValue: '$1M', centerLabel: 'Total budget',
+    numberFormat: { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+    data: [
+      { id: 'people', label: 'People', value: 540000 },
+      { id: 'technology', label: 'Technology', value: 240000 },
+      { id: 'operations', label: 'Operations', value: 150000 },
+      { id: 'marketing', label: 'Marketing', value: 70000 },
+    ],
+  } },
+  { label: 'Revenue by product', props: {
+    kind: 'pie', preset: 'editorial', title: 'Revenue by product',
+    description: '$1 million in annual revenue · Sample data', categoryLabels: 'outside', valueLabels: 'inside', legend: false,
+    outsideLabelLayout: 'radial',
+    numberFormat: { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+    data: [
+      { id: 'platform', label: 'Platform', value: 480000 },
+      { id: 'services', label: 'Services', value: 300000 },
+      { id: 'support', label: 'Support', value: 150000 },
+      { id: 'training', label: 'Training', value: 70000 },
+    ],
+  } },
+  { label: 'Training completion', props: {
+    kind: 'pie', variant: 'donut', preset: 'editorial',
+    title: 'Security training complete', description: 'All 240 employees completed this year’s course · Sample data',
+    centerValue: '100%', centerLabel: 'Completed', labels: 'none', colorMode: 'semantic',
+    data: [
+      { id: 'done', label: 'Completed', role: 'positive', value: 240 },
+      { id: 'remaining', label: 'Remaining', role: 'neutral', value: 0 },
     ],
   } },
   { label: "Editorial line", props: {
     kind: "line",
-    title: "Quarterly trend",
+    title: "Revenue, costs and profit",
+    description: "2025 quarterly results · In million dollars",
     preset: "editorial",
     surface: "warm",
     series: [
@@ -285,7 +332,9 @@ export const ChartsShowcase = [
   } },
   { label: "Rounded line", props: {
     kind: "line",
-    title: "Quarterly trend",
+    title: "Revenue, costs and profit",
+    description: "2025 quarterly results · In million dollars",
+    labels: "none",
     preset: "rounded",
     series: [
       {id: "revenue", label: "Revenue"},
@@ -301,23 +350,25 @@ export const ChartsShowcase = [
   } },
   { label: "Missing observations", props: {
     kind: "line",
-    title: "Gaps remain gaps",
+    title: "Monthly revenue",
+    description: "January–July 2025 · In million dollars. March and May are not yet reported.",
     series: [
       {id: "revenue", label: "Revenue"},
     ],
     data: [
-      {id: "0", label: "Q1", values: {revenue: 12}},
-      {id: "1", label: "Q2", values: {revenue: 20}},
-      {id: "2", label: "Q3", values: {revenue: null}},
-      {id: "3", label: "Q4", values: {revenue: 28}},
-      {id: "4", label: "Q5", values: {revenue: null}},
-      {id: "5", label: "Q6", values: {revenue: 18}},
-      {id: "6", label: "Q7", values: {revenue: 25}},
+      {id: "0", label: "Jan", values: {revenue: 12}},
+      {id: "1", label: "Feb", values: {revenue: 20}},
+      {id: "2", label: "Mar", values: {revenue: null}},
+      {id: "3", label: "Apr", values: {revenue: 28}},
+      {id: "4", label: "May", values: {revenue: null}},
+      {id: "5", label: "Jun", values: {revenue: 18}},
+      {id: "6", label: "Jul", values: {revenue: 25}},
     ],
   } },
   { label: "Single observation", props: {
     kind: "line",
-    title: "One observation",
+    title: "First-quarter revenue",
+    description: "2025 · In million dollars. Later quarters are not yet reported.",
     series: [
       {id: "revenue", label: "Revenue"},
     ],
@@ -327,12 +378,14 @@ export const ChartsShowcase = [
     labels: "none",
     legend: false,
   } },
-  { label: "Empty pie", props: {
-    kind: "pie",
-    title: "No responses yet",
+  { label: 'New survey awaiting responses', props: {
+    kind: 'pie', preset: 'editorial', title: 'How was your onboarding?',
+    description: 'The survey has just opened. Results appear after the first response.',
+    colorMode: 'semantic',
     data: [
-      {id: "a", label: "Agree", value: 0},
-      {id: "b", label: "Disagree", value: 0},
+      { id: 'helpful', label: 'Helpful', role: 'positive', value: 0 },
+      { id: 'neutral', label: 'Neutral', role: 'neutral', value: 0 },
+      { id: 'unhelpful', label: 'Unhelpful', role: 'negative', value: 0 },
     ],
   } },
   { label: "Empty bars", props: {
@@ -348,7 +401,8 @@ export const ChartsShowcase = [
   } },
   { label: "Missing line data", props: {
     kind: "line",
-    title: "Awaiting observations",
+    title: "Quarterly financial results",
+    description: "In million dollars · Results appear once the first quarter closes.",
     series: [
       {id: "revenue", label: "Revenue"},
       {id: "cost", label: "Cost"},
@@ -379,21 +433,21 @@ export const ChartsShowcase = [
     ],
     dataTable: "visible",
   } },
-  { label: "Pie without labels", props: {
-    kind: "pie",
-    title: "Two segments",
-    labels: "none",
-    legend: true,
+  { label: 'Website traffic by device', props: {
+    kind: 'pie', preset: 'editorial', title: 'How visitors browse',
+    description: '10,000 website sessions in September · Sample data',
     data: [
-      {id: "agree", label: "Agree", role: "positive", value: 78},
-      {id: "neutral", label: "Neutral", role: "neutral", value: 14},
+      { id: 'mobile', label: 'Mobile', value: 6200 },
+      { id: 'desktop', label: 'Desktop', value: 3100 },
+      { id: 'tablet', label: 'Tablet', value: 700 },
     ],
   } },
   { label: "Line without zero", props: {
     kind: "line",
-    title: "Small changes around a large baseline",
+    title: "Consumer price index",
+    description: "2025 · Index, Q1 = 100. The vertical scale starts at 100.",
     series: [
-      {id: "revenue", label: "Revenue"},
+      {id: "revenue", label: "Price index"},
     ],
     includeZero: false,
     data: [
@@ -405,7 +459,8 @@ export const ChartsShowcase = [
   } },
   { label: "Scatter with trend", props: {
     kind: "scatter",
-    title: "Investment and return",
+    title: "Project investment and return",
+    description: "Ten completed projects · 2025. The line shows the overall trend.",
     preset: "editorial",
     animation: "enter",
     trendLine: "linear",
@@ -424,12 +479,13 @@ export const ChartsShowcase = [
       {id: "p9", label: "Project 9", seriesId: "projects", x: 78, y: 69},
       {id: "p10", label: "Project 10", seriesId: "projects", x: 90, y: 64},
     ],
-    xAxis: {label: "Investment", suffix: "m"},
-    yAxis: {label: "Return", suffix: "%"},
+    xAxis: {label: "Investment ($m)", suffix: "m"},
+    yAxis: {label: "Annual return (%)", suffix: "%"},
   } },
   { label: "Scatter direct labels", props: {
     kind: "scatter",
-    title: "Regional changes",
+    title: "Demand and margin by market",
+    description: "Year-over-year change · 2025",
     preset: "rounded",
     labels: "outside",
     series: [
@@ -437,37 +493,36 @@ export const ChartsShowcase = [
       {id: "b", label: "Emerging"},
     ],
     data: [
-      {id: "0", label: "An intentionally long regional observation label with complete content in the table", seriesId: "b", x: -10, y: -5},
-      {id: "1", label: "Region 2", seriesId: "a", x: -8, y: 10},
-      {id: "2", label: "Region 3", seriesId: "b", x: -6, y: 11},
-      {id: "3", label: "Region 4", seriesId: "a", x: -3, y: 10},
-      {id: "4", label: "Region 5", seriesId: "b", x: 0, y: 0},
-      {id: "5", label: "Region 6", seriesId: "a", x: 3, y: 10},
-      {id: "6", label: "Region 7", seriesId: "b", x: 6, y: 11},
-      {id: "7", label: "Region 8", seriesId: "a", x: 10, y: -3},
-      {id: "8", label: "Region 9", seriesId: "b", x: 12, y: 10},
-      {id: "9", label: "Region 10", seriesId: "a", x: 15, y: 12},
+      {id: "norway", label: "Norway", seriesId: "a", x: -8, y: -2},
+      {id: "brazil", label: "Brazil", seriesId: "b", x: -3, y: 1},
+      {id: "germany", label: "Germany", seriesId: "a", x: 3, y: 3},
+      {id: "india", label: "India", seriesId: "b", x: 10, y: 8},
+      {id: "canada", label: "Canada", seriesId: "a", x: 15, y: 5},
     ],
-    xAxis: {label: "Change in demand", suffix: "%"},
-    yAxis: {label: "Change in margin", suffix: "%"},
+    xAxis: {label: "Demand growth (%)", suffix: "%"},
+    yAxis: {label: "Margin change (pp)", suffix: " pp"},
   } },
   { label: "Scatter single observation", props: {
     kind: "scatter",
-    title: "One observation",
+    title: "First completed project",
+    description: "Pilot investment and annual return · 2025",
     labels: "none",
     series: [
       {id: "projects", label: "Projects"},
     ],
     data: [
-      {id: "p1", label: "Project 1", seriesId: "projects", x: 10, y: 12},
+      {id: "p1", label: "Warehouse upgrade", seriesId: "projects", x: 10, y: 12},
     ],
-    xAxis: {includeZero: false},
-    yAxis: {includeZero: false},
+    xAxis: {label: "Investment ($m)", includeZero: false},
+    yAxis: {label: "Annual return (%)", suffix: "%", includeZero: false},
     trendLine: "linear",
   } },
   { label: "Scatter missing observations", props: {
     kind: "scatter",
-    title: "Missing coordinates",
+    title: "Project reporting progress",
+    description: "Investment and annual return · Incomplete reports remain in the table.",
+    xAxis: {label: "Investment ($m)"},
+    yAxis: {label: "Annual return (%)", suffix: "%"},
     series: [
       {id: "projects", label: "Projects"},
     ],
@@ -480,7 +535,10 @@ export const ChartsShowcase = [
   } },
   { label: "Scatter empty", props: {
     kind: "scatter",
-    title: "Awaiting observations",
+    title: "New project portfolio",
+    description: "Investment and annual return will appear after the first project reports.",
+    xAxis: {label: "Investment ($m)"},
+    yAxis: {label: "Annual return (%)", suffix: "%"},
     series: [
       {id: "projects", label: "Projects"},
     ],
@@ -491,7 +549,7 @@ export const ChartsShowcase = [
     kind: "scatter",
     title: "Restricted chart treatment",
     preset: "editorial",
-    surface: "violet",
+    surface: "accent",
     series: [
       {id: "projects", label: "Projects"},
     ],
@@ -502,7 +560,8 @@ export const ChartsShowcase = [
   } },
   { label: "Bubble area comparison", props: {
     kind: "bubble",
-    title: "Growth, margin and revenue",
+    title: "Market growth and profitability",
+    description: "2025 · Circle area represents annual revenue in million dollars.",
     preset: "editorial",
     animation: "enter",
     colorMode: "semantic",
@@ -516,15 +575,16 @@ export const ChartsShowcase = [
       {id: "c", label: "East", seriesId: "growth", x: 62, y: 28, size: 64},
       {id: "d", label: "West", seriesId: "growth", x: 80, y: 56, size: 36},
     ],
-    xAxis: {label: "Growth", suffix: "%"},
-    yAxis: {label: "Margin", suffix: "%"},
-    sizeLabel: "Revenue",
+    xAxis: {label: "Revenue growth (%)", suffix: "%"},
+    yAxis: {label: "Operating margin (%)", suffix: "%"},
+    sizeLabel: "Revenue ($m)",
     sizeSuffix: "m",
     sizeMax: 100,
   } },
   { label: "Bubble concentric rings", props: {
     kind: "bubble",
     title: "Market opportunities",
+    description: "2025 · Circle area represents annual revenue in million dollars.",
     preset: "editorial",
     surface: "dark",
     animation: "enter",
@@ -540,14 +600,19 @@ export const ChartsShowcase = [
       {id: "c", label: "East", seriesId: "growth", x: 62, y: 28, size: 64},
       {id: "d", label: "West", seriesId: "growth", x: 80, y: 56, size: 36},
     ],
-    xAxis: {label: "Growth", suffix: "%"},
-    yAxis: {label: "Margin", suffix: "%"},
-    sizeLabel: "Revenue",
+    xAxis: {label: "Revenue growth (%)", suffix: "%"},
+    yAxis: {label: "Operating margin (%)", suffix: "%"},
+    sizeLabel: "Revenue ($m)",
     sizeSuffix: "m",
   } },
   { label: "Bubble zero and missing sizes", props: {
     kind: "bubble",
-    title: "Reported sizes",
+    title: "Market reporting progress",
+    description: "2025 · Revenue is zero or not yet reported for some markets.",
+    sizeLabel: "Revenue ($m)",
+    sizeSuffix: "m",
+    xAxis: {label: "Revenue growth (%)", suffix: "%"},
+    yAxis: {label: "Operating margin (%)", suffix: "%"},
     labels: "none",
     series: [
       {id: "core", label: "Core markets", role: "positive"},
@@ -563,7 +628,12 @@ export const ChartsShowcase = [
   } },
   { label: "Bubble empty", props: {
     kind: "bubble",
-    title: "No positive sizes",
+    title: "New market launch",
+    description: "2025 · Revenue has not yet been recorded.",
+    sizeLabel: "Revenue ($m)",
+    sizeSuffix: "m",
+    xAxis: {label: "Revenue growth (%)", suffix: "%"},
+    yAxis: {label: "Operating margin (%)", suffix: "%"},
     series: [
       {id: "core", label: "Core markets", role: "positive"},
       {id: "growth", label: "Growth markets", role: "neutral"},
@@ -574,7 +644,10 @@ export const ChartsShowcase = [
   } },
   { label: "Bubble coincident observations", props: {
     kind: "bubble",
-    title: "Overlapping observations",
+    title: "Two markets, the same performance",
+    description: "2025 · Equal growth and margin, different annual revenue.",
+    sizeLabel: "Revenue ($m)",
+    sizeSuffix: "m",
     series: [
       {id: "core", label: "Core markets", role: "positive"},
       {id: "growth", label: "Growth markets", role: "neutral"},
@@ -584,12 +657,17 @@ export const ChartsShowcase = [
       {id: "small", label: "Small market", seriesId: "core", x: 10, y: 10, size: 25},
       {id: "large", label: "Large market", seriesId: "growth", x: 10, y: 10, size: 100},
     ],
-    xAxis: {domain: [0, 20]},
-    yAxis: {domain: [0, 20]},
+    xAxis: {label: "Revenue growth (%)", suffix: "%", domain: [0, 20]},
+    yAxis: {label: "Operating margin (%)", suffix: "%", domain: [0, 20]},
   } },
   { label: "Bubble large labels", props: {
     kind: "bubble",
-    title: "Large brand typography",
+    title: "North and South market performance",
+    description: "2025 · Circle area represents annual revenue in million dollars.",
+    sizeLabel: "Revenue ($m)",
+    sizeSuffix: "m",
+    xAxis: {label: "Revenue growth (%)", suffix: "%"},
+    yAxis: {label: "Operating margin (%)", suffix: "%"},
     series: [
       {id: "core", label: "Core markets", role: "positive"},
       {id: "growth", label: "Growth markets", role: "neutral"},
@@ -712,7 +790,8 @@ export const ChartsShowcase = [
     animation: "none",
     dataTable: "visible",
     kind: "line",
-    title: "Revenue trend",
+    title: "Revenue by customer segment",
+    description: "Quarterly results · In euros",
     numberFormat: {
       style: "currency",
       currency: "EUR",
@@ -808,37 +887,17 @@ export const ChartsShowcase = [
     ]
   }
 },
-  {
-  label: "Responsive donut center",
-  props: {
-    preset: "large-type",
-    animation: "none",
-    dataTable: "visible",
-    kind: "pie",
-    variant: "donut",
-    labels: "outside",
-    title: "Revenue share",
-    centerValue: "€1,700,000",
-    centerLabel: "Total recurring revenue",
+  { label: 'Revenue by customer segment', props: {
+    kind: 'pie', variant: 'donut', preset: 'editorial',
+    title: 'Revenue by customer segment', description: 'Annual recurring revenue in euros · Sample data',
+    centerValue: '€1.7M', centerLabel: 'Annual revenue', dataTable: 'visible',
+    numberFormat: { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 },
     data: [
-      {
-        id: "a",
-        label: "Enterprise customers with annual agreements",
-        value: 950000
-      },
-      {
-        id: "b",
-        label: "Mid-market customers",
-        value: 530000
-      },
-      {
-        id: "c",
-        label: "Small business customers",
-        value: 220000
-      }
-    ]
-  }
-},
+      { id: 'enterprise', label: 'Enterprise customers with annual agreements', value: 950000 },
+      { id: 'mid-market', label: 'Mid-market', value: 530000 },
+      { id: 'small-business', label: 'Small business', value: 220000 },
+    ],
+  } },
   {
   label: "Responsive scatter labels",
   props: {
@@ -1212,20 +1271,39 @@ export const ChartsShowcase = [
     ]
   }
 },
+  { label: 'Bottom bar legend', props: {
+    kind: 'bar', title: 'Revenue by quarter', legendPosition: 'bottom',
+    series: [{ id: 'revenue', label: 'Revenue' }, { id: 'cost', label: 'Cost' }, { id: 'profit', label: 'Profit' }],
+    data: [
+      { id: 'q1', label: 'Q1', values: { revenue: 24, cost: 18, profit: 6 } },
+      { id: 'q2', label: 'Q2', values: { revenue: 32, cost: 20, profit: 12 } },
+      { id: 'q3', label: 'Q3', values: { revenue: 28, cost: 18, profit: 10 } },
+      { id: 'q4', label: 'Q4', values: { revenue: 40, cost: 25, profit: 15 } },
+    ],
+  } },
   { label: 'Right-side brand legend', props: {
     kind: 'bar', preset: 'editorial', title: 'Revenue composition', layout: 'stacked', legendPosition: 'right',
     series: [{ id: 'revenue', label: 'Recurring revenue' }, { id: 'cost', label: 'Services' }, { id: 'profit', label: 'Other income' }],
     data: [{ id: 'q1', label: 'Q1', values: { revenue: 24, cost: 8, profit: 3 } }, { id: 'q2', label: 'Q2', values: { revenue: 30, cost: 7, profit: 4 } }],
   } },
-  { label: 'Donut with split label roles', props: {
-    kind: 'pie', title: 'Response', variant: 'donut', colorMode: 'semantic',
+  { label: 'Customer acquisition channels', props: {
+    kind: 'pie', variant: 'donut', title: 'Where new customers come from',
+    description: '200 new customers this quarter · Sample data',
+    outsideLabelLayout: 'radial',
     brand: { ...editorialChartBrand, pie: { innerRadius: 0.6, categoryLabels: 'outside', valueLabels: 'inside', legend: false } },
-    data: [{ id: 'agree', label: 'Agree', value: 78, role: 'positive' }, { id: 'neutral', label: 'Neutral', value: 14, role: 'neutral' }, { id: 'disagree', label: 'Disagree', value: 8, role: 'negative' }],
+    data: [
+      { id: 'organic', label: 'Organic search', value: 90 },
+      { id: 'referrals', label: 'Referrals', value: 60 },
+      { id: 'paid', label: 'Paid campaigns', value: 50 },
+    ],
   } },
-  { label: 'Pie with inside labels only', props: {
-    kind: 'pie', title: 'Sentiment', colorMode: 'semantic',
+  { label: 'Electricity from renewable sources', props: {
+    kind: 'pie', title: 'Electricity supply', description: '1,000 MWh consumed across our offices · Sample data', colorMode: 'semantic',
     brand: { ...editorialChartBrand, pie: { categoryLabels: 'inside', valueLabels: 'inside', legend: false } },
-    data: [{ id: 'positive', label: 'Positive', value: 78, role: 'positive' }, { id: 'negative', label: 'Negative', value: 22, role: 'negative' }],
+    data: [
+      { id: 'renewable', label: 'Renewable', value: 780, role: 'positive' },
+      { id: 'grid', label: 'Other', value: 220, role: 'neutral' },
+    ],
   } },
   { label: 'Simple bars with inside values', props: {
     kind: 'bar', preset: 'editorial', title: 'Revenue', valueLabels: 'inside', legend: false,

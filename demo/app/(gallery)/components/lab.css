@@ -292,3 +292,79 @@
   font: 400 11px/1 'JetBrains Mono', monospace;
   color: var(--fg-muted);
 }
+
+/* Chart browsing has three small, dependent choices instead of one catalog-wide
+   list. These are ordinary buttons/selects: keyboard and touch need no custom
+   selection model, and the iframe retains its original showcase index. */
+.lab__chart-nav {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.lab__chart-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.lab__control-label { font-size: 12px; font-weight: 600; color: var(--fg-muted); }
+.lab__segments { display: flex; flex-wrap: wrap; gap: 6px; }
+.lab__segments button, .lab__example-stepper button, .lab__play {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.lab__segments button[aria-pressed='true'] {
+  background: var(--btn-bg);
+  border-color: var(--btn-bg);
+  color: var(--btn-fg);
+}
+.lab__segments button:hover:not([aria-pressed='true']), .lab__play:hover:not(:disabled),
+.lab__example-stepper button:hover:not(:disabled) { background: var(--chip); }
+.lab__example-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.lab__example-controls select {
+  flex: 1 1 260px;
+  width: 100%;
+  min-width: 0;
+  max-width: 440px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+}
+.lab__example-stepper { display: flex; align-items: center; gap: 8px; }
+.lab__example-stepper button { min-width: 44px; }
+.lab__example-stepper span { min-width: 36px; text-align: center; font-size: 12px; color: var(--fg-muted); }
+.lab__chart-nav button:disabled { opacity: .4; cursor: default; }
+.lab__chart-motion { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.lab__chart-motion .lab__toggle { min-height: 44px; }
+.lab__motion-hint { font-size: 12px; color: var(--fg-muted); }
+.lab__play { display: inline-flex; align-items: center; gap: 8px; }
+.lab :is(button, select, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.lab__main { min-width: 0; }
+.lab__group { flex-wrap: wrap; }
+.lab__controls button, .lab__controls select, .lab__controls .lab__toggle { min-height: 44px; }
+@media (max-width: 600px) {
+  .lab { padding: 20px 16px 40px; }
+  .lab__chart-nav { padding: 14px; }
+  .lab__chart-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .lab__segments button { flex: 1 0 auto; }
+  .lab__example-controls select { max-width: none; }
+}
