@@ -213,19 +213,17 @@ colors and weights are preserved; responsive layout does not replace them.
 ```sh
 bun test tests/charts.unit.test.ts
 node scripts/build-components.mjs
-node demo/scripts/gen-components.mjs
-pnpm exec playwright test tests/Charts.spec.ts
-pnpm exec playwright test tests/catalog.spec.ts --grep Charts
 ```
+
+Use `pnpm dev` to review the chart gallery at 360, 768, and 1440px, switch brands,
+and check the scripts-off and reduced-motion controls.
 
 ## Practical pie examples
 
 The lab includes customer agreement and sentiment, household spending, project
 funding, an annotated investment plan, fundraising progress, budget allocation,
 product revenue, training completion, device traffic, and customer segments.
-Figures are illustrative and labelled as sample data. Deliberately oversized
-fonts and arbitrary ten-slice data live in browser-test fixtures instead of the
-example menu.
+Figures are illustrative and labelled as sample data.
 
 All gallery examples inherit the active kit's chart colors and font families,
 including dark and accent surfaces. Examples with more than five categories

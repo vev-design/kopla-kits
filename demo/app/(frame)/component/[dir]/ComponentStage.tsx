@@ -81,18 +81,9 @@ export function ComponentStage({ dir, index, reducedMotion, animation }: Props) 
   const Component = entry.component;
   return (
     <div
-      // What the REGISTRY sees, published for the specs to check against what the
-      // manifest scanner saw. Two readers of one contract — the scanner reads the
-      // source text, this reads the real module — and the specs enumerate cases
-      // from the scanner while the frame renders from the registry. When they
-      // disagree the specs address `?case=` numbers past the end, which clamps,
-      // so the suite goes green while retesting one case. Cheap to publish, and
-      // it turns that whole failure mode into an assertion.
-      data-case-count={entry.cases.length}
-      data-case-label={active.label}
       // Honoured by any component that respects the media query, and by the
-      // motion wrappers. A class as well as the emulated query, because
-      // Playwright can force the query but a human clicking the toggle cannot.
+      // motion wrappers. The lab toggle must also suppress motion independently
+      // of the operating system's media query preference.
       data-reduced-motion={reducedMotion ? 'true' : undefined}
       style={reducedMotion ? ({ '--motion-duration': '0s' } as React.CSSProperties) : undefined}
     >
