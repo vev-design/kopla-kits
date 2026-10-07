@@ -65,10 +65,21 @@ test('play and replay override a static chart and respect both motion settings',
 
 test('animation preview works with iframe scripts off, and other galleries keep their content selector', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // Exercise script execution itself: the same inline probe runs normally,
+  // then remains present but cannot execute after scripts are switched off.
+  await page.route('**/component/Charts?*', async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace('</body>',
+      '<script id="chart-script-probe">document.documentElement.dataset.chartScriptsRan = "true"</script></body>');
+    await route.fulfill({ response, body });
+  });
   await openCharts(page);
+  const frame = page.frameLocator('iframe');
+  await expect(frame.locator('html')).toHaveAttribute('data-chart-scripts-ran', 'true');
   await page.getByLabel('Scripts off', { exact: true }).check();
   await page.getByRole('button', { name: 'Play animation', exact: true }).click();
-  await expect(page.locator('iframe')).toHaveAttribute('sandbox', 'allow-same-origin');
+  await expect(frame.locator('#chart-script-probe')).toHaveCount(1);
+  await expect(frame.locator('html')).not.toHaveAttribute('data-chart-scripts-ran');
   await expect(page.frameLocator('iframe').locator('[data-chart-plot]:visible [data-bar]').first()).toHaveCSS('animation-name', 'kk-chart-bar');
   await page.locator('.lab__list button').filter({ has: page.getByText('Accordion', { exact: true }) }).click();
   await expect(page.getByRole('region', { name: 'Chart browser' })).toHaveCount(0);
