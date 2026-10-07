@@ -34,6 +34,9 @@ const ALLOW = [
   // test), not the banned infrastructure term. Matched as the attribute forms
   // only, so prose use of the word stays flagged.
   { path: /app\/\(gallery\)\/components\/Lab\.tsx$/, re: /\ballow-scripts\b|\bsandbox=/ },
+  // The matching browser assertion verifies scripts-off iframe permissions;
+  // allow only this exact platform-attribute check in its dedicated test file.
+  { path: /^tests\/chart-lab\.spec\.ts$/, re: /^\s*await expect\(page\.locator\('iframe'\)\)\.toHaveAttribute\('\bsandbox', 'allow-same-origin'\);$/ },
 ];
 
 const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
