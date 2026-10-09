@@ -34,6 +34,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
+import { validateAdoption } from './component-adoption.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
@@ -135,6 +136,7 @@ function checkManifest(name, manifest) {
       }
     }
   }
+  problems.push(...validateAdoption(manifest.adopt, resolve(COMPONENTS_SRC, name)));
   return problems.map((p) => `${name}: ${p}`);
 }
 
@@ -277,21 +279,33 @@ for (const slug of kits) {
     await cp(resolve(ROOT, 'scripts/extractor', rel), resolve(work, 'scripts', rel));
   }
 
-  // The copy-in, per components/AGENTS.md: everything but component.json into
-  // src/components/, one barrel line per component. The barrel here is the KIT's
-  // own, which is the whole reason for building more than once.
+  // Adopt complete primitives exactly as a host does; legacy engines keep the
+  // manual copy convention. Explicit destinations prevent theme.ts collisions.
   for (const name of names) {
-    await cp(resolve(COMPONENTS_SRC, name), resolve(work, 'src/components'), {
-      recursive: true,
-      force: true,
-      filter,
-    });
-    await appendFile(resolve(work, 'src/components/index.ts'), `export * from './${name}';\n`);
+    const dir = resolve(COMPONENTS_SRC, name);
+    const manifest = JSON.parse(await readFile(resolve(dir, 'component.json'), 'utf8'));
+    if (manifest.adopt) {
+      for (const { from, to } of manifest.adopt.files) {
+        await mkdir(dirname(resolve(work, to)), { recursive: true });
+        await cp(resolve(dir, from), resolve(work, to));
+      }
+      await appendFile(resolve(work, 'src/components/index.ts'), `${manifest.adopt.export}\n`);
+    } else {
+      await cp(dir, resolve(work, 'src/components'), { recursive: true, force: true, filter });
+      await appendFile(resolve(work, 'src/components/index.ts'), `export * from './${name}';\n`);
+    }
   }
 
   console.log(`\nbuild-components: ${slug} — bun install && bun run build`);
   execFileSync('bun', ['install'], { cwd: work, stdio: 'inherit' });
   execFileSync('bun', ['run', 'build'], { cwd: work, stdio: 'inherit' });
+  for (const name of names) {
+    const dir = resolve(COMPONENTS_SRC, name);
+    const manifest = JSON.parse(await readFile(resolve(dir, 'component.json'), 'utf8'));
+    for (const check of manifest.adopt?.checks ?? []) {
+      execFileSync('bun', [resolve(dir, check), work], { cwd: work, stdio: 'inherit' });
+    }
+  }
 
   // The build passing isn't enough — each component must also have made it into
   // the machine-readable catalog (design.json.components).

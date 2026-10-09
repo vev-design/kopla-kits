@@ -30,6 +30,7 @@ import { collectTokensFromCss } from './extractor/lib/tokens.mjs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
+import { validateAdoption } from './component-adoption.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
@@ -211,6 +212,7 @@ function validateComponentManifest(name, raw) {
     )
   )
     errs.push('`vendor` ({ pkg, version, license }[]; [] when nothing is vendored) required');
+  errs.push(...validateAdoption(m.adopt, resolve(COMPONENTS_SRC, name)));
   if (errs.length > 0) {
     console.error(`pack: component "${name}" component.json invalid:\n  - ${errs.join('\n  - ')}`);
     process.exit(1);
@@ -222,6 +224,10 @@ function validateComponentManifest(name, raw) {
     tags: m.tags,
     hydrate: m.hydrate,
     vendor: m.vendor,
+    ...(m.exports ? { exports: m.exports } : {}),
+    ...(m.demo ? { demo: m.demo } : {}),
+    ...(m.implements ? { implements: m.implements } : {}),
+    ...(m.adopt ? { adopt: m.adopt } : {}),
   };
 }
 

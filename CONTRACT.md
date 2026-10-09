@@ -278,6 +278,42 @@ agent-facing copy-in guide.
   (`{ "<Name>": { manifest, files } }`); consumers that predate the key
   ignore it, so adding it was not a `formatVersion` bump.
 
+### Host-driven component adoption
+
+Advanced-component manifests may additionally contain:
+
+```json
+"adopt": {
+  "files": [{ "from": "Chart.tsx", "to": "src/components/Chart.tsx" },
+            { "from": "theme.ts", "to": "src/components/chart-theme.ts" },
+            { "from": "showcase.ts", "to": "src/components/chart-showcase.ts" }],
+  "export": "export * from './Chart';",
+  "theme": "src/components/chart-theme.ts",
+  "checks": ["check.mjs"]
+}
+```
+
+The complete file list also includes any vendor artifacts needed by the renderer.
+Paths are relative, never traversals. Source paths refer to this component's
+catalog folder; destinations refer to a workspace. The theme must be a declared
+destination. Hosts copy the declared files and append the export idempotently,
+preserving an existing theme. Demos, skeletons and metadata are not adopted.
+
+A finished primitive separates its complete renderer from brand theme data and
+literal showcase states. Re-exporting `<Name>Showcase` from a separate module is
+supported by the extractor snapshot and gallery. An existing engine can keep
+its public primitives and skeletons while supplying a complete themed wrapper.
+
+`checks` name deterministic Bun scripts. Hosts snapshot these with the adoption
+record and run `bun <check-path> <workspace-root>` from that root once after the
+build. Checks import the copied component, use that workspace's dependencies,
+and report findings. The catalog build treats a failed check as a regression;
+hosts can surface checks as advisory publication diagnostics.
+
+The bundle preserves `adopt`, `implements`, `exports` and `demo` metadata, and
+packs every declared source and check file. The existing manual copy contract
+continues for folders with no adoption manifest.
+
 ## Toolchain contract
 
 For every kit, the assembled workspace must pass:

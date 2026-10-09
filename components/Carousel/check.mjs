@@ -1,0 +1,21 @@
+// Bun resolves TSX and the workspace's @/ alias. Run once after adoption.
+import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+const require = createRequire(process.argv[2] ? resolve(process.argv[2], 'package.json') : import.meta.url);
+const { createElement } = require('react');
+const { renderToStaticMarkup } = require('react-dom/server');
+const url = pathToFileURL(resolve(process.argv[2] ?? process.cwd(), 'src/components/Carousel.tsx')).href;
+const { Carousel } = await import(url);
+const html = renderToStaticMarkup(createElement(Carousel, { label: 'Customer stories', autoAdvanceMs: 5000, items: [{ title: 'First story' }, { title: 'Second story', body: 'Every word remains without scripts.' }] }));
+assert.match(html, /aria-roledescription="carousel"/);
+assert.match(html, /aria-label="Customer stories"/);
+assert.match(html, /aria-label="1 of 2"/);
+assert.match(html, /aria-label="2 of 2"/);
+assert.match(html, /First story/);
+assert.match(html, /Every word remains without scripts/);
+assert.match(html, /tabindex="0"/);
+assert.ok(!html.includes('<button'), 'Script-dependent controls must not appear before hydration');
+assert.equal(renderToStaticMarkup(createElement(Carousel, { items: [] })), '');
+console.log('Carousel: SSR content, accessible slide names, keyboard track and empty state passed');

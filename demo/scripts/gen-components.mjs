@@ -79,8 +79,26 @@ for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     module: moduleName,
     ...manifest,
     implements: normalizeImplements(manifest.implements),
-    cases: showcaseCases(await readFile(file, 'utf8')),
+    cases: showcaseCases(await readShowcaseSource(file)),
   });
+}
+
+// A finished primitive can re-export its literal canvas data from showcase.ts.
+// Follow only relative named re-exports, with cycle protection, without executing.
+async function readShowcaseSource(file, seen = new Set()) {
+  if (seen.has(file)) return '';
+  seen.add(file);
+  const source = await readFile(file, 'utf8');
+  if (/export const \w+Showcase\s*=/.test(source)) return source;
+  for (const match of source.matchAll(/export\s*\{[^}]*\b\w+Showcase\b[^}]*\}\s*from\s*['"](\.[^'"]+)['"]/g)) {
+    const path = resolve(dirname(file), match[1]);
+    for (const candidate of [path, `${path}.ts`, `${path}.tsx`]) {
+      if (!existsSync(candidate)) continue;
+      const result = await readShowcaseSource(candidate, seen);
+      if (result) return result;
+    }
+  }
+  return source;
 }
 
 /**

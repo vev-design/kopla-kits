@@ -1,0 +1,79 @@
+{
+  "name": "Chart",
+  "description": "Complete themed quantitative charts with server-rendered SVG, seven geometries, source tables, and a brand frame slot.",
+  "whenToUse": "Quantitative comparisons, trends, shares and x/y observations. Adopt Chart, then edit chart-theme.ts only and supply a frame element for a structural device. Supports bar, stacked-bar, line, pie, donut, scatter and area-scaled bubbles from series.values. All marks and source data render without JavaScript. NOT for decorative statistic bubbles, bespoke illustrations, or interactive dashboards. Never-do prose guides the author; it is not an executable chart restriction.",
+  "demo": "Chart.demo",
+  "tags": [
+    "charts",
+    "data-visualization",
+    "ssr",
+    "theme"
+  ],
+  "hydrate": false,
+  "vendor": [
+    {
+      "pkg": "echarts",
+      "version": "6.0.0",
+      "license": "Apache-2.0"
+    },
+    {
+      "pkg": "zrender",
+      "version": "6.0.0",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "pkg": "tslib",
+      "version": "2.3.0",
+      "license": "0BSD"
+    }
+  ],
+  "adopt": {
+    "files": [
+      {
+        "from": "Chart.tsx",
+        "to": "src/components/Chart.tsx"
+      },
+      {
+        "from": "theme.ts",
+        "to": "src/components/chart-theme.ts"
+      },
+      {
+        "from": "showcase.ts",
+        "to": "src/components/chart-showcase.ts"
+      },
+      {
+        "from": "Chart.vendor/LICENSE.echarts",
+        "to": "src/components/Chart.vendor/LICENSE.echarts"
+      },
+      {
+        "from": "Chart.vendor/LICENSE.tslib",
+        "to": "src/components/Chart.vendor/LICENSE.tslib"
+      },
+      {
+        "from": "Chart.vendor/LICENSE.zrender",
+        "to": "src/components/Chart.vendor/LICENSE.zrender"
+      },
+      {
+        "from": "Chart.vendor/NOTICE.echarts",
+        "to": "src/components/Chart.vendor/NOTICE.echarts"
+      },
+      {
+        "from": "Chart.vendor/NOTICE.tslib",
+        "to": "src/components/Chart.vendor/NOTICE.tslib"
+      },
+      {
+        "from": "Chart.vendor/renderer.d.ts",
+        "to": "src/components/Chart.vendor/renderer.d.ts"
+      },
+      {
+        "from": "Chart.vendor/renderer.js",
+        "to": "src/components/Chart.vendor/renderer.js"
+      }
+    ],
+    "export": "export * from './Chart';",
+    "theme": "src/components/chart-theme.ts",
+    "checks": [
+      "check.mjs"
+    ]
+  }
+}

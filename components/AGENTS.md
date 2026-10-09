@@ -80,12 +80,47 @@ A bare string (`"implements": ["marquee"]`) stays legal and means the
 component's defaults already are that behaviour. Omit the field entirely for a
 component that isn't a recipe for any of them.
 
+## Finished primitives and host-driven adoption
+
+A complete themed element uses the following folder contract:
+
+```
+<Name>/component.json  # adopt manifest below
+<Name>/<Name>.tsx      # complete renderer and prop contract
+<Name>/theme.ts        # documented brand values and neutral defaults
+<Name>/showcase.ts     # literal canvas states; exported by the renderer
+<Name>/check.mjs       # deterministic SSR/accessibility check
+<Name>/<Name>.demo.tsx # lab entry only; never adopted
+```
+
+`component.json.adopt` declares `files: [{ from, to }]` (component-relative
+source and workspace-relative destination), `export` (one barrel statement),
+`theme` (one file destination), and `checks` (component-relative `.mjs` paths).
+The host copies these exact files, registers the export idempotently, and keeps
+an existing theme. The host runs each copied check once with
+`bun <check-file> <workspace-root>` from that workspace after building.
+Checks report findings; consumers decide whether findings block publication.
+Checks use the workspace's React installation and import the adopted component.
+
+**Use the host's adoption operation when this manifest exists.** Edit the theme
+and author devices around the supplied slots. Keep the renderer unchanged.
+Chart is a complete quantitative element with a `frame` slot. Carousel now
+includes a complete gallery and its theme as well as its existing unstyled
+engine; an entirely authored layout can still use its skeletons and primitives.
+A `neverDo` list records restrictions requiring judgement, and a `frameDevice`
+name identifies a device to pass as a React element; neither executes code.
+
+The engine-only rules below apply to components whose appearance belongs
+entirely to the authored section. Finished primitives may split out themes and
+showcases and include token-themed presentation. They ship no demo markup via
+adoption. Catalog-only filename bridges are excluded by the explicit manifest.
+
 ## To use one in a workspace
 
 1. **Pick by `whenToUse`.** Read the `component.json` files (or the
    staged `catalog.json`); `whenToUse` says what each component is for
    AND what it is not for.
-2. **Copy everything except `component.json`, `skeleton.*` and `*.demo.tsx`**
+2. **For a legacy component without `adopt`, copy everything except `component.json`, `skeleton.*` and `*.demo.tsx`**
    into `src/components/`, keeping the relative layout. A `skeleton.<token>.tsx`
    is a SECTION source: copy its content into `src/sections/` instead and
    reshape the markup there (its own header says what to keep). A
