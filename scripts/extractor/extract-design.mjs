@@ -336,7 +336,7 @@ async function collectComponents(program, checker) {
     const props = await propsTypeToSchema(propsType, checker);
     const hydrate = await sectionNeedsHydration(decl, propsType, checker);
     const axes = deriveAxesFromProps(props);
-    const showcase = collectComponentShowcase(decl, exp.name);
+    const showcase = await collectComponentShowcase(decl, exp.name, checker);
     components.push({
       name: exp.name,
       description,
@@ -379,10 +379,20 @@ function deriveAxesFromProps(props) {
  *  `{ props, label? }` static literals — into ComponentInstance[]. The analogue
  *  of `collectDemo` for sections; reads the same source file the component is
  *  declared in. */
-function collectComponentShowcase(decl, name) {
+async function collectComponentShowcase(decl, name, checker) {
   const sourceFile = decl.getSourceFile();
   if (!sourceFile) return [];
-  const initializer = findExportedConstInitializer(sourceFile, `${name}Showcase`);
+  let initializer = findExportedConstInitializer(sourceFile, `${name}Showcase`);
+  // Finished primitives keep canvas data in a separate adopted showcase module.
+  // Resolve its re-export through the checker; never execute workspace code.
+  if (!initializer) {
+    const moduleSymbol = await checker.getSymbolAtLocation(sourceFile);
+    const exports = moduleSymbol ? await checker.getExportsOfModule(moduleSymbol) : [];
+    let symbol = exports.find((entry) => entry.name === `${name}Showcase`);
+    if (symbol?.flags & SymbolFlags.Alias) symbol = await checker.getAliasedSymbol(symbol);
+    const showcaseDecl = symbol ? await nodeOf(symbol.valueDeclaration ?? symbol.declarations?.[0]) : null;
+    if (showcaseDecl && isVariableDeclaration(showcaseDecl)) initializer = showcaseDecl.initializer;
+  }
   if (!initializer || !isArrayLiteralExpression(initializer)) return [];
   const out = [];
   for (const elem of initializer.elements) {
