@@ -8,6 +8,7 @@ const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const moduleUrl = process.argv[2] ? pathToFileURL(resolve(process.argv[2], 'src/components/Chart.tsx')).href : new URL('./Chart.tsx', import.meta.url).href;
 const { Chart, ChartShowcase } = await import(moduleUrl);
+const { measureStaticText } = await import(new URL('./Chart.vendor/renderer.js', moduleUrl).href);
 let count = 0;
 for (const { label, props } of ChartShowcase) {
   const html = renderToStaticMarkup(createElement(Chart, props));
@@ -58,7 +59,7 @@ const P = await import(primitivesUrl);
 const TAU = Math.PI * 2;
 function context(shares, compact) {
   const width = compact ? 320 : 520; let angle = 0;
-  const slices = shares.map((share, index) => { const start = angle; angle += share * TAU; return { index, name: ['Positive', 'Neutral', 'Negative', 'No response'][index], value: share * 1000, share, color: '#333', start, end: angle, mid: (start + angle) / 2, shareLabel: `${Math.round(share * 1000) / 10}%`, valueLabel: String(share * 1000) }; });
+  const slices = shares.map((share, index) => { const start = angle; angle += share * TAU; return { index, name: ['Positive', 'Neutral', 'Negative', 'No response'][index] ?? `Sector ${String(index + 1)}`, value: share * 1000, share, color: '#333', start, end: angle, mid: (start + angle) / 2, shareLabel: `${Math.round(share * 1000) / 10}%`, valueLabel: String(share * 1000) }; });
   return { slices, donut: false, compact, width, outer: compact ? 64 : 120, cx: width / 2, cy: (compact ? 300 : 340) / 2, type: { fontFamily: 'sans-serif', labelSize: 12, titleSize: 20, titleWeight: 600 }, textColor: '#111' };
 }
 for (const compact of [false, true]) {
@@ -90,5 +91,39 @@ for (const compact of [false, true]) {
     assert.ok(Math.abs(Math.abs(Number(m[1]) - Number(m[3])) - 4) < 0.01, `short leader ends ${m[1]} but its text starts at ${m[3]}`);
   }
   assert.ok((short.match(/<polyline/g) ?? []).length === 4, 'one short leader per sector');
+  // A leaderless label sits beside ITS sector: on the sector's radial line just
+  // past the rim, pushed away only to escape a neighbour, and never over the
+  // circle. The first version clamped every label to the circle's horizontal
+  // extent and stacked each side into a column, so a 4% sector at twelve
+  // o'clock was named at the far left of the canvas.
+  for (const shares of [[0.624, 0.216, 0.12, 0.04], [0.3, 0.25, 0.2, 0.15, 0.1], [0.5, 0.03, 0.03, 0.03, 0.03, 0.38], [0.44, 0.5, 0.02, 0.02, 0.02]]) {
+    const cc = context(shares, compact);
+    const svg = renderToStaticMarkup(P.canvas(cc, [P.slices(cc), P.outsideLabels(cc, { lines: (s) => [s.name, s.shareLabel], leaders: 'none', firstLine: { weight: 700 } })]));
+    const boxes = [];
+    for (const m of svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" text-anchor="(start|middle|end)" font-size="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)) {
+      const x = Number(m[1]), y = Number(m[2]), size = Number(m[4]);
+      const lines = [...m[5].matchAll(/>([^<]+)</g)].map((t) => t[1]);
+      const width = Math.max(...lines.map((line) => measureStaticText(line, `${size}px sans-serif`).width));
+      const left = m[3] === 'start' ? x : m[3] === 'end' ? x - width : x - width / 2;
+      const top = y - size * 0.85, bottom = top + lines.length * Math.ceil(size * 1.4);
+      const s = cc.slices.find((s) => s.name === lines[0] || s.name.startsWith(lines[0]));
+      boxes.push({ name: lines[0], left, right: left + width, top, bottom, s });
+    }
+    assert.equal(boxes.length, shares.length, `leaderless (${shares.length} sectors): every sector is labelled`);
+    for (const b of boxes) {
+      // Nearest point of the box to the centre stays outside the rim.
+      const dx = Math.max(b.left - cc.cx, 0, cc.cx - b.right), dy = Math.max(b.top - cc.cy, 0, cc.cy - b.bottom);
+      assert.ok(Math.hypot(dx, dy) >= cc.outer - 0.5, `leaderless "${b.name}" overlaps the circle (${String(Math.round(Math.hypot(dx, dy)))} < ${String(cc.outer)})`);
+      assert.ok(b.left >= 0 && b.right <= cc.width, `leaderless "${b.name}" leaves the canvas`);
+      for (const o of boxes) if (o !== b) assert.ok(b.right <= o.left || b.left >= o.right || b.bottom <= o.top || b.top >= o.bottom, `leaderless "${b.name}" overlaps "${o.name}"`);
+    }
+    if (shares.length === 4) for (const b of boxes) {
+      // A label's box stays within a block of the ring 10px past the rim, even
+      // after a neighbour nudged it (the old column put this one 110px away).
+      const px = cc.cx + (cc.outer + 10) * Math.sin(b.s.mid), py = cc.cy - (cc.outer + 10) * Math.cos(b.s.mid);
+      const gap = Math.hypot(Math.max(b.left - px, 0, px - b.right), Math.max(b.top - py, 0, py - b.bottom));
+      assert.ok(gap < 30, `leaderless "${b.name}" sits ${String(Math.round(gap))}px from its sector`);
+    }
+  }
 }
 console.log(`Chart: ${count} showcase SSR states, 6 edge/accessibility checks, 2 direct-label checks and responsive axes passed`);

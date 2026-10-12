@@ -107,13 +107,69 @@ export function insideLabels(c: CircularContext, opts: { text: (s: CircularSlice
   return { node: <g data-chart-inside-labels="">{nodes}</g>, skipped };
 }
 
-interface Placed { s: CircularSlice; lines: string[]; x: number; y: number; side: 1 | -1; anchor: { x: number; y: number }; textAnchor: 'start' | 'end' }
+interface Placed { s: CircularSlice; lines: string[]; x: number; y: number; side: 1 | -1; anchor: { x: number; y: number }; textAnchor: 'start' | 'middle' | 'end'; width: number }
+
+/** Where a leaderless label for a sector at `angle` sits: on the radial line
+ *  10px past the rim, reading outward — centred near the vertical, else away
+ *  from the circle — with the block slid along the line so it never crosses the rim. */
+function beside(c: CircularContext, angle: number, block: number): { x: number; y: number; textAnchor: Placed['textAnchor'] } {
+  const near = point(c, c.outer + 10, angle);
+  const textAnchor = Math.abs(Math.sin(angle)) < 0.35 ? 'middle' : Math.sin(angle) >= 0 ? 'start' : 'end';
+  return { x: near.x, y: near.y - (Math.cos(angle) * block) / 2, textAnchor };
+}
+
+/**
+ * Collision handling for leaderless labels. A label belongs beside its sector,
+ * so it moves only when it actually overlaps a placed block in both axes, and
+ * then to the nearest free spot of two kinds: along the vertical away from the
+ * circle (up in the top half while the canvas has room; down in the bottom
+ * half, where the canvas grows), or along the rim toward the side, which keeps
+ * it beside the circle when several small sectors crowd the top. A label is
+ * never pushed down over the rim. Returns the bottom edge the canvas must reach.
+ */
+function settleBeside(c: CircularContext, placed: Placed[], lineHeight: number, pad: number): number {
+  const box = (p: { x: number; y: number; textAnchor: Placed['textAnchor']; width: number; lines: string[] }) => {
+    const block = p.lines.length * lineHeight;
+    const left = p.textAnchor === 'start' ? p.x : p.textAnchor === 'end' ? p.x - p.width : p.x - p.width / 2;
+    return { left, right: left + p.width, top: p.y - block / 2, bottom: p.y + block / 2 };
+  };
+  const settled: Placed[] = [];
+  const clear = (candidate: ReturnType<typeof box>) => candidate.left >= pad && candidate.right <= c.width - pad && candidate.top >= 8
+    && !settled.map(box).some((q) => candidate.right + 4 > q.left && candidate.left - 4 < q.right && candidate.top < q.bottom + 6 && candidate.bottom > q.top - 6);
+  let bottom = 0;
+  for (const p of [...placed].sort((a, b) => a.y - b.y)) {
+    const block = p.lines.length * lineHeight;
+    const home = { x: p.x, y: Math.max(p.y, 8 + block / 2) };
+    const upper = Math.cos(p.s.mid) > 0;
+    const side = Math.sin(p.s.mid) >= 0 ? 1 : -1;
+    type Spot = { x: number; y: number; textAnchor: Placed['textAnchor'] };
+    const spots: Spot[] = [home.y === p.y ? { ...home, textAnchor: p.textAnchor } : { x: p.x, y: home.y, textAnchor: p.textAnchor }];
+    // Along the vertical, one block at a time, up to six blocks away.
+    for (let k = 1; k <= 6; k++) spots.push({ x: p.x, y: home.y + (upper ? -1 : 1) * k * (block + 6), textAnchor: p.textAnchor });
+    // Along the rim toward the side, in 3° steps, as far as the horizontal.
+    for (let deg = 3; deg <= 90; deg += 3) {
+      const angle = p.s.mid + side * (Math.PI / 180) * deg;
+      if (Math.sign(Math.sin(angle)) !== side && Math.abs(Math.sin(angle)) > 0.01) break;
+      spots.push(beside(c, angle, block));
+    }
+    const fits = spots.map((spot) => ({ spot, d: Math.hypot(spot.x - home.x, spot.y - home.y) })).sort((a, b) => a.d - b.d)
+      .find(({ spot }) => clear(box({ ...spot, width: p.width, lines: p.lines })));
+    // Nothing free near the sector: wholly beside the circle, below everything placed there.
+    const spot = fits?.spot ?? { ...beside(c, side * (Math.PI / 2), block), y: Math.max(c.cy, ...settled.map((q) => box(q).bottom + 6 + block / 2)) };
+    p.x = spot.x; p.y = spot.y; p.textAnchor = spot.textAnchor;
+    settled.push(p);
+    bottom = Math.max(bottom, box(p).bottom + 6);
+  }
+  return bottom;
+}
 
 /**
  * Labels beside the circle, one block per sector, stacked so they never
  * overlap. `leaders`: 'column' aligns every label to the canvas edge and draws
  * an elbow leader to it; 'short' sets the label just past the sector with a
- * short straight leader; 'none' sets it just past the sector with no line.
+ * short straight leader; 'none' sets it on the sector's own radial line just
+ * outside the rim, with no line — above a sector at the top, beside one at the
+ * side, below one at the bottom, as a guide draws a pie with labels and no leaders.
  * `lines` chooses the words — `[s.name]`, `[s.name, s.shareLabel]`, … The first
  * line may carry its own weight (`firstLine`).
  */
@@ -134,27 +190,43 @@ export function outsideLabels(c: CircularContext, opts: {
   const placed: Placed[] = chosen.map((s) => {
     const side: 1 | -1 = Math.sin(s.mid) >= 0 ? 1 : -1;
     const anchor = point(c, c.outer + 2, s.mid);
+    if (leaders === 'none') {
+      // No line to bridge a gap, so the label sits where the sector points: on
+      // its radial line, 10px past the rim. It reads outward — centred over a
+      // sector near the vertical, else away from the circle — and wraps to the
+      // room it has in that direction, so a word is not broken for a column
+      // width that does not apply here.
+      const { x: nearX, textAnchor } = beside(c, s.mid, 0);
+      const room = textAnchor === 'middle' ? 2 * Math.min(nearX - pad, c.width - pad - nearX) : textAnchor === 'start' ? c.width - pad - nearX : nearX - pad;
+      const lines = opts.lines(s).flatMap((line) => wrap(line, Math.max(40, Math.min(room, 160)), font));
+      const width = Math.max(...lines.map((line) => measureStaticText(line, font).width), 0);
+      return { s, lines, ...beside(c, s.mid, lines.length * lineHeight), side, anchor, width };
+    }
     const lines = opts.lines(s).flatMap((line) => wrap(line, maxWidth, font));
-    const near = point(c, c.outer + (leaders === 'none' ? 10 : 22), s.mid);
-    // Short and leaderless labels stay clear of the rim on their own side even
-    // for a sector near the top or bottom, where the radial point sits over the circle.
-    const clearance = c.cx + side * (c.outer + (leaders === 'none' ? 10 : 22));
+    const width = Math.max(...lines.map((line) => measureStaticText(line, font).width), 0);
+    const near = point(c, c.outer + 22, s.mid);
+    // Short labels stay clear of the rim on their own side even for a sector
+    // near the top or bottom, where the radial point sits over the circle.
+    const clearance = c.cx + side * (c.outer + 22);
     const x = leaders === 'column' ? (side > 0 ? c.width - pad : pad) : side > 0 ? Math.max(near.x, clearance) : Math.min(near.x, clearance);
-    return { s, lines, x, y: near.y, side, anchor, textAnchor: side > 0 ? 'start' : 'end' };
+    return { s, lines, x, y: near.y, side, anchor, textAnchor: side > 0 ? 'start' : 'end', width };
   });
-  // Stack per side: sort by y, push each block below the previous one. The
-  // first block starts no higher than the canvas top; the canvas grows at the
-  // bottom to fit the tallest column.
+  // Keep blocks apart. The first block starts no higher than the canvas top;
+  // the canvas grows at the bottom to fit whatever was pushed down.
   let bottom = 0;
-  for (const side of [-1, 1] as const) {
-    const column = placed.filter((p) => p.side === side).sort((a, b) => a.y - b.y);
-    let cursor = 8;
-    for (const p of column) {
-      const block = p.lines.length * lineHeight;
-      const top = Math.max(p.y - block / 2, cursor);
-      p.y = top + block / 2;
-      cursor = top + block + 6;
-      bottom = Math.max(bottom, cursor);
+  if (leaders === 'none') {
+    bottom = settleBeside(c, placed, lineHeight, pad);
+  } else {
+    for (const side of [-1, 1] as const) {
+      const column = placed.filter((p) => p.side === side).sort((a, b) => a.y - b.y);
+      let cursor = 8;
+      for (const p of column) {
+        const block = p.lines.length * lineHeight;
+        const top = Math.max(p.y - block / 2, cursor);
+        p.y = top + block / 2;
+        cursor = top + block + 6;
+        bottom = Math.max(bottom, cursor);
+      }
     }
   }
   const nodes = placed.map((p) => {
@@ -163,8 +235,7 @@ export function outsideLabels(c: CircularContext, opts: {
     // A column leader ends where the WORDS end, not where the column does: the
     // label is anchored to the canvas edge and reads inward, so the leader has
     // to reach past the longest line to meet it.
-    const textWidth = Math.max(...p.lines.map((line) => measureStaticText(line, font).width), 0);
-    const edgeX = p.side > 0 ? textX - textWidth - 4 : textX + textWidth + 4;
+    const edgeX = p.side > 0 ? textX - p.width - 4 : textX + p.width + 4;
     // A leader ends at the WORDS, wherever stacking moved them: for a column
     // label an elbow at the radial line then across; for a short leader a
     // straight line from the sector to the near edge of the text. The first
