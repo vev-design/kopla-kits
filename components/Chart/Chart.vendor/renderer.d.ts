@@ -7,3 +7,6 @@ export declare function init(element: null, theme: undefined, options: { rendere
 
 /** Uncompressed static SVG; avoids collapsed near-full arcs at small radii. */
 export declare function renderStaticSVG(chart: ReturnType<typeof init>): string;
+
+/** Conservative, deterministic layout widths; never reads the DOM or loads fonts. */
+export declare function measureStaticText(text: string, font?: string): { width: number };

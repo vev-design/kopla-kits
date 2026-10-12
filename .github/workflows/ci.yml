@@ -51,7 +51,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: pnpm install --frozen-lockfile
       # Render with React's real server JSX runtime, independently of the lab.
-      - run: bun test tests/charts.unit.test.ts
+      - run: bun test tests
 
   # The demo must build — it's also what Vercel deploys for preview URLs.
   demo:

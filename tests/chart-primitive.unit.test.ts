@@ -8,6 +8,120 @@ const render = (props: Partial<QuantitativeChartProps> = {}) => renderToStaticMa
 }));
 
 describe('finished Chart primitive', () => {
+  test('renderer geometry is identical with and without a browser canvas', () => {
+    const renderer = new URL('../components/Chart/Chart.vendor/renderer.js', import.meta.url).href;
+    const run = (browser: boolean) => {
+      const source = `${browser ? `globalThis.document = { documentElement: { style: {} }, createElement() { throw new Error('Static chart must not measure with canvas'); } };` : ''}
+        const { init } = await import(${JSON.stringify(renderer)});
+        const chart = init(null, undefined, { renderer: 'svg', ssr: true, width: 320, height: 320 });
+        chart.setOption({ animation: false, textStyle: { fontFamily: 'var(--font-sans)' }, grid: { outerBounds: { left: 8, right: 8, top: 8, bottom: 8 } }, xAxis: { type: 'category', data: ['First', 'Second'] }, yAxis: { type: 'value', axisLabel: { fontFamily: 'var(--font-sans)', fontSize: 14 } }, series: [{ type: 'bar', data: [900000, 1800000] }] });
+        console.log(JSON.stringify([...chart.renderToSVGString().matchAll(/<text\\b[^>]*>[\\s\\S]*?<\\/text>/g)].map(match => match[0])));
+        chart.dispose();`;
+      const result = Bun.spawnSync([process.execPath, '-e', source]);
+      expect(result.exitCode).toBe(0);
+      return result.stdout.toString().trim();
+    };
+    expect(run(true)).toBe(run(false));
+  });
+  test('million-value ticks reserve loaded-font room at every layout and theme size', () => {
+    const before = { ...chartTheme.typography };
+    try {
+      chartTheme.typography.fontFamily = 'var(--font-sans)';
+      for (const size of [14, 20, 24]) {
+        chartTheme.typography.labelSize = size;
+        const html = render({ categories: ['First', 'Second'], series: [{ name: 'Sales', values: [900000, 1800000] }] });
+        const ticks = [...html.matchAll(/<text\b[^>]*transform="translate\(([-\d.]+) [^"]+"[^>]*>1,800,000<\/text>/g)];
+        expect(ticks.length).toBe(4);
+        for (const tick of ticks) {
+          expect(tick[0]).toContain(`font-size:${size}px`);
+          expect(tick[0]).toContain('font-family:var(--font-sans)');
+          // Recorded loaded-font browser width at 14px; the former canvas path
+          // placed this at x47.49 and clipped almost 20px from the label's start.
+          expect(Number(tick[1]) - 67.477 * size / 14).toBeGreaterThanOrEqual(8);
+        }
+      }
+    } finally { Object.assign(chartTheme.typography, before); }
+  });
+  test('Cartesian layouts preserve type size and short date labels without hydration', () => {
+    const html = render({ categories: ['Q1 2025', 'Q2 2025'], series: [{ name: 'Sales', values: [12, 20] }] });
+    expect([...html.matchAll(/<svg width="(\d+)"/g)].map((match) => Number(match[1]))).toEqual([320, 480, 640, 800]);
+    for (const plot of html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
+      expect(plot).toContain(`font-size:${chartTheme.typography.labelSize}px`);
+      expect(plot).toMatch(/<text\b[^>]*>Q1 2025<\/text>/);
+      expect(plot).toMatch(/<text\b[^>]*>Q2 2025<\/text>/);
+    }
+    expect(html).toContain('container-name:kopla-cartesian');
+    expect(html).toContain('min-width:320px');
+    expect(html).toContain('width:320px;min-width:320px;margin-inline:auto');
+    expect(html).toContain('max-width:800px');
+  });
+  test('dense categories scroll with a visible hint and retain every tick until the width cap', () => {
+    const categories = Array.from({ length: 8 }, (_, i) => `Q${i + 1} 2025`);
+    const html = render({ categories, series: [{ name: 'Sales', values: categories.map((_, i) => 1000000 + i * 100000) }] });
+    for (const plot of html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
+      expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThan(640);
+      for (const category of categories) expect(plot).toContain(`>${category}</text>`);
+    }
+    expect(html).toContain('Scroll to see the full chart.');
+    expect(html).toContain('tabindex="0" role="region" aria-label="Comparison chart;');
+    expect(html).toContain('max-w-full overflow-x-auto');
+  });
+  test('extreme category density has bounded SVG width and preserves full source labels', () => {
+    const categories = Array.from({ length: 100 }, (_, i) => `A very long category with complete source wording ${i}`);
+    const html = render({ categories, series: [{ name: 'Sales', values: categories.map((_, i) => i + 1) }] });
+    expect([...html.matchAll(/<svg width="(\d+)"/g)].map((match) => Number(match[1]))).toEqual([2400]);
+    const table = html.split('<details')[1] ?? '';
+    for (const category of categories) expect(table).toContain(category);
+    expect(table.match(/scope="row"/g)?.length).toBe(100);
+  });
+  test('numeric observations do not trigger categorical scrolling', () => {
+    const html = render({ variant: 'scatter', categories: undefined, series: [{ name: 'Samples', values: Array.from({ length: 100 }, (_, i) => ({ x: i, y: i * i })) }] });
+    expect([...html.matchAll(/<svg width="(\d+)"/g)].map((match) => Number(match[1]))).toEqual([320, 480, 640, 800]);
+  });
+  test('large numeric x/y labels have separate line boxes at the origin', () => {
+    const before = chartTheme.typography.labelSize;
+    try {
+      chartTheme.typography.labelSize = 24;
+      const html = render({ variant: 'bubble', categories: undefined, series: [{ name: 'First', values: [{ x: 740000, y: 860000, size: 820 }] }, { name: 'Second', values: [{ x: 1210000, y: 1700000, size: 1320 }] }] });
+      for (const plot of html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
+        const zero = plot.match(/<text\b[^>]*text-anchor="end"[^>]*transform="translate\([-\d.]+ ([-\d.]+)\)"[^>]*>0<\/text>/);
+        expect(zero).not.toBeNull();
+        const xLabels = [...plot.matchAll(/<text\b[^>]*text-anchor="middle"[^>]*y="([-\d.]+)"[^>]*transform="translate\([-\d.]+ ([-\d.]+)\)"[^>]*>/g)];
+        expect(xLabels.length).toBeGreaterThan(0);
+        for (const label of xLabels) {
+          // This loaded-font line box is taller than the nominal 24px. The old
+          // fixed 8px margin let the two perpendicular axes' labels intersect.
+          expect(Number(label[1]) + Number(label[2]) - Number(zero![1])).toBeGreaterThan(28.6);
+        }
+      }
+    } finally { chartTheme.typography.labelSize = before; }
+  });
+  test('long circular labels reserve their actual wrapped heights with larger typography', () => {
+    const fixture = ChartShowcase.find((state) => state.label === 'Dense circular labels')!;
+    const before = chartTheme.typography.labelSize;
+    try {
+      for (const size of [12, 14, 20, 24]) {
+        chartTheme.typography.labelSize = size;
+        const html = render(fixture.props as QuantitativeChartProps);
+        const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
+        expect(plots.length).toBe(2);
+        for (const plot of plots) {
+          // The renderer emits each multiline label's actual transparent hit
+          // rectangle. Compare those bounds, not the intended newline count.
+          const bounds = [...plot.matchAll(/<path d="M(-?[\d.]+) (-?[\d.]+)l([\d.]+) 0l0 ([\d.]+)l[^>]*transform="translate\(([\d.]+) ([\d.]+)\)"[^>]*fill="none"[^>]*>/g)]
+            .map((match) => ({ x: Number(match[5]), top: Number(match[6]) + Number(match[2]), bottom: Number(match[6]) + Number(match[2]) + Number(match[4]) }));
+          expect(bounds.length).toBe(10);
+          const height = Number(plot.match(/height="(\d+)"/)?.[1]);
+          for (const [i, box] of bounds.entries()) {
+            expect(box.top).toBeGreaterThanOrEqual(0);
+            expect(box.bottom).toBeLessThanOrEqual(height);
+            for (const other of bounds.slice(i + 1)) if (box.x === other.x)
+              expect(box.top >= other.bottom || box.bottom <= other.top).toBe(true);
+          }
+        }
+      }
+    } finally { chartTheme.typography.labelSize = before; }
+  });
   for (const state of ChartShowcase) test(`SSR ${state.label}`, () => {
     const html = render(state.props as QuantitativeChartProps);
     expect(html).toContain('<table');
