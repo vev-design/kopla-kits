@@ -1,6 +1,7 @@
 import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { init, measureStaticText, renderStaticSVG } from './Chart.vendor/renderer.js';
-import { chartTheme } from './chart-theme';
+import { chartTheme, composeCircular } from './chart-composition';
+import type { CircularContext, CircularSlice } from './chart-primitives';
 export { ChartShowcase } from './chart-showcase';
 
 /** The role is chosen from the source meaning, never from the value's sign. */
@@ -34,7 +35,7 @@ export interface ChartDataSeries {
 
 /** Quantitative comparisons, trends, shares, and x/y observations using one data model.
  * Use a Stat or an illustration for decorative numbers. This renderer is complete:
- * change chart-theme.ts for brand values, and frame for a structural brand device.
+ * change chart-composition.tsx for brand values and the pie/donut composition, and frame for a structural brand device.
  * Server-rendered SVG and a semantic source table contain all information without
  * JavaScript. There is no tooltip-only content or animation. Native disclosure and
  * table-scroll keyboard behavior is unchanged; no keyboard keys are rebound. */
@@ -185,15 +186,20 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
   </div>;
 }
 
-function CircularPlot({ slices, donut, locale, theme, base, centerValue, centerLabel }: {
-  slices: Slice[]; donut: boolean; locale: string; theme: ChartTheme; base: Option;
+/**
+ * A pie or donut: the geometry is computed here, the drawing is the brand's
+ * composition (chart-composition.tsx → composeCircular, over the parts in
+ * chart-primitives.tsx). Two layouts are composed — compact and wide — and a
+ * container query shows one, so a phone gets its own layout rather than a
+ * shrunken desktop one. Both are SSR; no hydration.
+ */
+function CircularPlot({ slices, donut, locale, theme, centerValue, centerLabel }: {
+  slices: Slice[]; donut: boolean; locale: string; theme: ChartTheme;
   centerValue?: string; centerLabel?: string;
 }) {
   // Normalization avoids an infinite denominator when several finite values are
   // near Number.MAX_VALUE. The source values remain unchanged in the HTML key.
   const maximum = slices.reduce((max, slice) => Math.max(max, slice.value), 0);
-  // An extreme positive ratio can underflow to zero. Preserve its positive
-  // meaning for labels without imposing a false minimum sector angle.
   const weights = slices.map((slice) => slice.value > 0 ? Math.max(Number.MIN_VALUE, slice.value / maximum) : 0);
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   const shares = weights.map((weight) => weight > 0 ? Math.max(Number.MIN_VALUE, weight / total) : 0);
@@ -203,68 +209,35 @@ function CircularPlot({ slices, donut, locale, theme, base, centerValue, centerL
     : share > 0.999 && (share < 1 || positiveCount > 1) ? `>${percent.format(0.999)}` : percent.format(share);
   const format = numberFormat(locale);
   const hasValues = maximum > 0;
+  if (!hasValues) return <p className="py-16 text-center">No positive values</p>;
 
-  function layout(compact: boolean) {
+  function context(compact: boolean): CircularContext {
     const width = compact ? 320 : 520;
-    const fontSize = Math.max(theme.typography.labelSize, compact ? 12 : 14);
-    const lineHeight = Math.ceil(fontSize * 1.4);
-    const labelWidth = compact ? 74 : 116;
-    const font = `${fontSize}px ${theme.typography.fontFamily}`;
-    const labels = slices.map((slice, i) => `${wrapMeasuredLabel(slice.name, labelWidth, font)}\n${wrapMeasuredLabel(shareLabel(shares[i]), labelWidth, font)}`);
-    let angle = 0;
-    const sideHeights = [0, 0];
-    shares.forEach((share, i) => {
-      if (share > 0) sideHeights[Math.sin((angle + share / 2) * Math.PI * 2) >= 0 ? 1 : 0] += labels[i].split('\n').length * lineHeight + 10;
-      angle += share;
-    });
-    const height = Math.max(compact ? 300 : 340, Math.max(...sideHeights) + 32);
-    // Radius is bounded independently of available width and label height: a
-    // wide desktop section must not turn a three-slice donut into a giant ring.
-    // The compact label column ends at x=80; a 64px radius leaves 16px
-    // before the ring even at its equator, so leaders remain visible.
     const outer = compact ? 64 : 120;
-    const inner = donut ? outer * 0.68 : 0;
-    const option: Option = { ...base, series: [{
-      type: 'pie', radius: [inner, outer], center: ['50%', '50%'],
-      avoidLabelOverlap: true, minShowLabelAngle: 0, stillShowZeroSum: false,
-      label: {
-        show: true, position: 'outside', alignTo: 'edge', edgeDistance: 6,
-        width: labelWidth, overflow: 'break', distanceToLabelLine: 4,
-        color: theme.textColor, fontFamily: theme.typography.fontFamily,
-        fontSize, lineHeight,
-        formatter: ({ dataIndex }: { dataIndex: number }) => labels[dataIndex],
-      },
-      labelLine: { show: true, length: 10, length2: 8, minTurnAngle: 45, lineStyle: { color: theme.textColor, width: 1 } },
-      data: slices.map((slice, i) => ({
-        name: slice.name, value: weights[i],
-        itemStyle: { color: slice.color },
-        // A zero has no sector to point at. Keep it in the visible HTML key;
-        // do not draw a false minimum-sized slice merely to anchor its label.
-        label: { show: shares[i] > 0 }, labelLine: { show: shares[i] > 0 },
-      })),
-      emphasis: { disabled: true },
-    }] };
-    return <div className={compact ? 'kopla-chart-circular-compact' : 'kopla-chart-circular-wide'} style={{ position: 'relative', maxWidth: width, marginInline: 'auto' }}>
-      <Plot width={width} height={height} option={option} precise />
-      {donut && centerValue && <div data-chart-center="" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: `${inner * 1.6 / width * 100}%`, textAlign: 'center', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
-        <div style={{ fontSize: Math.max(14, Math.min(theme.typography.titleSize + 6, inner * 1.5 / Math.max(1, Array.from(centerValue).length) / 0.65)), fontWeight: theme.typography.titleWeight }}>{centerValue}</div>
-        {centerLabel && <div style={{ marginTop: 4, fontSize: Math.max(11, Math.min(theme.typography.labelSize, compact ? 12 : 14)) }}>{centerLabel}</div>}
-      </div>}
-    </div>;
+    let angle = 0;
+    const geometry: CircularSlice[] = slices.map((slice, index) => {
+      const share = shares[index] ?? 0;
+      const start = angle;
+      angle += share * Math.PI * 2;
+      return { index, name: slice.name, value: slice.value, share, color: slice.color, start, end: angle, mid: (start + angle) / 2, shareLabel: shareLabel(share), valueLabel: format.full(slice.value) };
+    });
+    return {
+      slices: geometry, donut, compact, width, outer, cx: width / 2, cy: (compact ? 300 : 340) / 2,
+      type: { fontFamily: theme.typography.fontFamily, labelSize: theme.typography.labelSize, titleSize: theme.typography.titleSize, titleWeight: theme.typography.titleWeight },
+      textColor: theme.textColor,
+      ...(donut && centerValue ? { center: { value: centerValue, ...(centerLabel ? { label: centerLabel } : {}) } } : {}),
+    };
   }
+  const compact = composeCircular(context(true));
+  const wide = composeCircular(context(false));
   return <>
-    {hasValues ? <div className="kopla-chart-circular-layout" style={{ containerType: 'inline-size', containerName: 'chart-circular' }}>
+    <div className="kopla-chart-circular-layout" style={{ containerType: 'inline-size', containerName: 'chart-circular' }}>
       {/* Container queries choose actual layouts, not shrunken desktop text.
           Both SVGs are SSR content; no measurement hook or hydration is needed. */}
       <style>{`.kopla-chart-circular-wide{display:none}@container chart-circular (min-width:480px){.kopla-chart-circular-compact{display:none}.kopla-chart-circular-wide{display:block}}`}</style>
-      {layout(true)}{layout(false)}
-    </div> : <p className="py-16 text-center">No positive values</p>}
-    <ul data-chart-key="" className="mt-4 grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,180px),1fr))', fontSize: Math.max(12, theme.typography.labelSize), lineHeight: 1.5 }}>
-      {slices.map((slice, i) => <li key={i} className="flex min-w-0 items-start gap-2">
-        <span aria-hidden="true" className="mt-1.5 size-3 shrink-0" style={{ background: slice.color }} />
-        <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span className="font-medium">{slice.name}</span><br />{format.full(slice.value)} <span>({hasValues ? shareLabel(shares[i]) : '—'})</span></span>
-      </li>)}
-    </ul>
+      <div className="kopla-chart-circular-compact" style={{ maxWidth: 320, marginInline: 'auto' }}>{compact.canvas}{compact.below}</div>
+      <div className="kopla-chart-circular-wide" style={{ maxWidth: 520, marginInline: 'auto' }}>{wide.canvas}{wide.below}</div>
+    </div>
   </>;
 }
 
@@ -325,7 +298,7 @@ export function Chart({ title, variant = 'bar', series, categories, background =
     <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))' }}>
       {panels.map((panel, i) => <div key={i} style={{ minWidth: 0, width: '100%', maxWidth: 600, marginInline: 'auto' }}>
         {panels.length > 1 && <p className="mb-2 font-medium">{panel.name}</p>}
-        <CircularPlot slices={panel.slices} donut={variant === 'donut'} locale={locale} theme={theme} base={base}
+        <CircularPlot slices={panel.slices} donut={variant === 'donut'} locale={locale} theme={theme}
           centerValue={panels.length === 1 ? centerValue : undefined} centerLabel={panels.length === 1 ? centerLabel : undefined} />
       </div>)}
     </div>

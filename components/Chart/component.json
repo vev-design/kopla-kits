@@ -1,7 +1,7 @@
 {
   "name": "Chart",
-  "description": "Complete themed quantitative charts with server-rendered SVG, direct pie/donut labels, seven geometries, source tables, and a brand frame slot.",
-  "whenToUse": "Quantitative comparisons, trends, shares and x/y observations. Adopt Chart, then edit chart-theme.ts only and supply a frame element for a structural device. Supports bar, stacked-bar, line, pie, donut, scatter and area-scaled bubbles from series.values. Pie and donut show category/share labels and a formatted value key by default. Optional centerValue and centerLabel are authored content for a single donut, never an inferred takeaway. Supply locale explicitly when en-US number formatting is inappropriate. All marks and source data render without JavaScript. NOT for decorative statistic bubbles, bespoke illustrations, or interactive dashboards. Never-do prose guides the author; it is not an executable chart restriction.",
+  "description": "Complete quantitative charts with server-rendered SVG, seven geometries, a source table, and a brand-composed pie/donut: the brand decides label placement, leaders, key and ring from documented parts.",
+  "whenToUse": "Quantitative comparisons, trends, shares and x/y observations. Adopt Chart; the brand's values and its pie/donut COMPOSITION live in chart-composition.tsx (see COMPOSING.md) and the renderer is never edited. Supports bar, stacked-bar, line, pie, donut, scatter and area-scaled bubbles from series.values. Optional centerValue and centerLabel are authored content for a single donut, never an inferred takeaway. Supply locale explicitly when en-US number formatting is inappropriate. All marks and source data render without JavaScript. NOT for decorative statistic bubbles, bespoke illustrations, or interactive dashboards.",
   "demo": "Chart.demo",
   "tags": [
     "charts",
@@ -34,8 +34,12 @@
         "to": "src/components/Chart.tsx"
       },
       {
-        "from": "theme.ts",
-        "to": "src/components/chart-theme.ts"
+        "from": "composition.tsx",
+        "to": "src/components/chart-composition.tsx"
+      },
+      {
+        "from": "chart-primitives.tsx",
+        "to": "src/components/chart-primitives.tsx"
       },
       {
         "from": "showcase.ts",
@@ -71,9 +75,17 @@
       }
     ],
     "export": "export * from './Chart';",
-    "theme": "src/components/chart-theme.ts",
+    "theme": "src/components/chart-composition.tsx",
     "checks": [
       "check.mjs"
-    ]
+    ],
+    "compose": {
+      "docs": "COMPOSING.md",
+      "categories": [
+        "data-viz",
+        "color",
+        "typography"
+      ]
+    }
   }
 }

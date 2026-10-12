@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Chart, ChartShowcase, type QuantitativeChartProps } from '../components/Chart/Chart';
-import { chartTheme } from '../components/Chart/theme';
+import { chartTheme } from '../components/Chart/composition';
 const render = (props: Partial<QuantitativeChartProps> = {}) => renderToStaticMarkup(createElement(Chart, {
   title: 'Comparison', categories: ['One', 'Two'], series: [{ name: 'Current', values: [12, 20] }], ...props,
 }));
@@ -106,10 +106,11 @@ describe('finished Chart primitive', () => {
         const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
         expect(plots.length).toBe(2);
         for (const plot of plots) {
-          // The renderer emits each multiline label's actual transparent hit
-          // rectangle. Compare those bounds, not the intended newline count.
-          const bounds = [...plot.matchAll(/<path d="M(-?[\d.]+) (-?[\d.]+)l([\d.]+) 0l0 ([\d.]+)l[^>]*transform="translate\(([\d.]+) ([\d.]+)\)"[^>]*fill="none"[^>]*>/g)]
-            .map((match) => ({ x: Number(match[5]), top: Number(match[6]) + Number(match[2]), bottom: Number(match[6]) + Number(match[2]) + Number(match[4]) }));
+          // Each outside label is one <text> of tspans; its block is the first
+          // line's top to the last line's bottom. Same-side blocks never overlap
+          // and every block sits inside the canvas, at every type size.
+          const bounds = [...plot.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-size="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)]
+            .map((match) => { const lines = (match[4].match(/<tspan/g) ?? []).length || 1; const top = Number(match[2]) - Number(match[3]) * 0.85; return { x: Number(match[1]), top, bottom: top + lines * Math.ceil(Number(match[3]) * 1.4) }; });
           expect(bounds.length).toBe(10);
           const height = Number(plot.match(/height="(\d+)"/)?.[1]);
           for (const [i, box] of bounds.entries()) {
@@ -187,13 +188,15 @@ describe('finished Chart primitive', () => {
     const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
     expect(plots.length).toBeGreaterThan(0);
     for (const plot of plots) {
-      const visibleText = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ');
-      for (const text of ['Enterprise', 'Mid-market', 'Small business', '56.5%', '27.4%', '16.2%']) expect(visibleText).toContain(text);
+      const visibleText = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1].replace(/<[^>]+>/g, ' ')).join(' ').replace(/\s+/g, '');
+      for (const text of ['Enterprise', 'Mid-market', 'Small business', '56.5%', '27.4%', '16.2%']) expect(visibleText).toContain(text.replace(/\s+/g, ''));
     }
-    const visibleFigure = html.split('<details')[0] ?? '';
-    expect(visibleFigure).toContain('960,000');
-    expect(visibleFigure).toContain('465,000');
-    expect(visibleFigure).not.toContain(': 960000');
+    // The default composition draws no key under a small pie — the circle
+    // already says name and share — and the source table keeps every value.
+    const [visibleFigure, table] = html.split('<details');
+    expect(visibleFigure).not.toContain('data-chart-key');
+    expect(table).toContain('960000');
+    expect(table).toContain('465000');
   });
   test('donut center content is authored and escaped', () => {
     const html = render({ variant: 'donut', centerValue: '56.5%', centerLabel: 'Enterprise share' });
@@ -207,13 +210,14 @@ describe('finished Chart primitive', () => {
   });
   test('formats pie values and shares using the requested locale', () => {
     const html = render({ variant: 'pie', locale: 'de-DE', categories: ['Enterprise', 'Other'], series: [{ name: 'Revenue', values: [960000, 740000] }] });
-    expect(html).toContain('960.000');
-    expect(html).toContain('56,5');
+    // The share on the circle is locale-formatted; the exact value lives in the table.
+    expect(html.split('<details')[0]).toContain('56,5');
+    expect(html.split('<details')[1]).toContain('960000');
   });
   test('tiny, zero and missing shares remain truthful', () => {
     const html = render({ variant: 'donut', categories: ['Main category', 'Tiny category', 'Zero', 'Missing'], series: [{ name: 'Data', values: [9999, 1, 0, null] }] });
     for (const plot of html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
-      const text = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ');
+      const text = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1].replace(/<[^>]+>/g, '')).join(' ');
       expect(text).toContain('Tiny');
       expect(text).toContain('&lt;0.1%');
       expect(text).toContain('&gt;99.9%');
@@ -222,13 +226,17 @@ describe('finished Chart primitive', () => {
     expect(html).toContain('—');
     expect(html).not.toMatch(/NaN|Infinity/);
   });
-  test('formatted circular keys retain precise values and source observations', () => {
+  test('the source table retains precise values, and a key formats them without losing digits', () => {
     const html = render({ variant: 'pie', categories: ['Large', 'Small'], series: [{ name: 'Data', values: [1000000000000001, 0.1234567890123456] }] });
-    const [figure, table] = html.split('<details');
-    expect(figure).toContain('1,000,000,000,000,001');
-    expect(figure).toContain('0.1234567890123456');
+    const table = html.split('<details')[1];
     expect(table).toContain('1000000000000001');
     expect(table).toContain('0.1234567890123456');
+    // Ten sectors and up draw the key; its values keep every digit.
+    const many = render({ variant: 'pie', categories: Array.from({ length: 10 }, (_, i) => `C${String(i)}`), series: [{ name: 'Data', values: [1000000000000001, 0.1234567890123456, 1, 1, 1, 1, 1, 1, 1, 1] }] });
+    const figure = many.split('<details')[0];
+    expect(figure).toContain('data-chart-key');
+    expect(figure).toContain('1,000,000,000,000,001');
+    expect(figure).toContain('0.1234567890123456');
   });
   test('finite large circular values do not overflow the share calculation', () => {
     const html = render({ variant: 'pie', categories: ['First', 'Second'], series: [{ name: 'Data', values: [1e308, 1e308] }] });
@@ -242,7 +250,7 @@ describe('finished Chart primitive', () => {
     const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
     expect(plots.length).toBeGreaterThan(0);
     for (const plot of plots) {
-      const text = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ');
+      const text = [...plot.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1].replace(/<[^>]+>/g, '')).join(' ');
       expect(text).toContain('Tiny');
       expect(text).toContain('&lt;0.1%');
       expect(text).toContain('&gt;99.9%');
@@ -254,23 +262,21 @@ describe('finished Chart primitive', () => {
       const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
       expect(plots.length).toBe(2);
       for (const plot of plots) {
-        const dominant = [...plot.matchAll(/<path\b[^>]*>/g)].map((match) => match[0]).find((path) => / d="[^"]*A/.test(path));
+        const sectors = [...plot.matchAll(/<path d="([^"]*)" fill="(?!none)[^"]*"/g)].map((match) => match[1]);
+        // The dominant sector draws as a near-full ring (one large-arc sweep
+        // with distinct endpoints) or, past the point an arc can express it,
+        // as two half arcs — never as a collapsed arc whose endpoints coincide.
+        const dominant = sectors.find((d) => /A[\d.]+ [\d.]+ 0 1 1/.test(d));
         expect(dominant).toBeDefined();
-        expect(dominant).not.toContain('fill="none"');
-        const path = dominant!.match(/ d="([^"]*)"/)![1]!;
-        // A large arc whose endpoint rounds back to its start draws nothing.
-        // Check the actual outer and inner contours, not merely an SVG/path tag.
-        const arcs = [...path.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)A([\d.]+) ([\d.]+) ([\d.]+) ([01]) ([01]) (-?[\d.]+) (-?[\d.]+)/g)];
-        expect(arcs.length).toBe(2);
+        const arcs = [...dominant!.matchAll(/([ML])(-?[\d.]+) (-?[\d.]+) ?A([\d.]+) ([\d.]+) 0 ([01]) ([01]) (-?[\d.]+) (-?[\d.]+)/g)];
+        expect(arcs.length).toBeGreaterThanOrEqual(2);
         for (const arc of arcs) {
-          expect(arc[6]).toBe('1');
-          const distance = Math.hypot(Number(arc[8]) - Number(arc[1]), Number(arc[9]) - Number(arc[2]));
+          const distance = Math.hypot(Number(arc[8]) - Number(arc[2]), Number(arc[9]) - Number(arc[3]));
           expect(distance).toBeGreaterThan(0);
-          expect(distance).toBeLessThan(1);
         }
-        expect(arcs[0]![7]).toBe('1');
-        expect(arcs[1]![7]).toBe('0');
-        expect(Number(arcs[1]![3])).toBeLessThan(Number(arcs[0]![3]));
+        // Both contours of the ring are present: an outer radius and a smaller inner one.
+        const radii = new Set(arcs.map((arc) => Number(arc[4])));
+        expect(radii.size).toBe(2);
       }
     }
   });

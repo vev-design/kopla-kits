@@ -285,10 +285,12 @@ Advanced-component manifests may additionally contain:
 ```json
 "adopt": {
   "files": [{ "from": "Chart.tsx", "to": "src/components/Chart.tsx" },
-            { "from": "theme.ts", "to": "src/components/chart-theme.ts" },
+            { "from": "composition.tsx", "to": "src/components/chart-composition.tsx" },
+            { "from": "chart-primitives.tsx", "to": "src/components/chart-primitives.tsx" },
             { "from": "showcase.ts", "to": "src/components/chart-showcase.ts" }],
   "export": "export * from './Chart';",
-  "theme": "src/components/chart-theme.ts",
+  "theme": "src/components/chart-composition.tsx",
+  "compose": { "docs": "COMPOSING.md", "categories": ["data-viz", "color", "typography"] },
   "checks": ["check.mjs"]
 }
 ```
@@ -299,8 +301,18 @@ catalog folder; destinations refer to a workspace. The theme must be a declared
 destination. Hosts copy the declared files and append the export idempotently,
 preserving an existing theme. Demos, skeletons and metadata are not adopted.
 
-A finished primitive separates its complete renderer from brand theme data and
-literal showcase states. Re-exporting `<Name>Showcase` from a separate module is
+A finished primitive separates its complete renderer from the brand's one
+editable file and literal showcase states. **The line between the two is
+drawn by one rule: if a brand guide could reasonably draw it differently, it
+is composed in the theme file from documented parts, never a constant in the
+renderer.** Colour roles and type are values; where a pie's labels sit,
+whether leaders exist, whether a key repeats the labels, how thick a ring is
+are compositions. A component declares this surface with
+`adopt.compose: { docs, categories }` — `docs` is the catalog-relative guide
+to its parts (handed to the brand build with the default composition), and
+`categories` names the brand rule categories its evidence comes from, so a host
+can pair the component with exactly the rules and reference crops that apply
+to it. Chart's `COMPOSING.md` is the worked example. Re-exporting `<Name>Showcase` from a separate module is
 supported by the extractor snapshot and gallery. An existing engine can keep
 its public primitives and skeletons while supplying a complete themed wrapper.
 
