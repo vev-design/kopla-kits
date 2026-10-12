@@ -27,4 +27,17 @@ assert.match(render({ series: [{ name: 'Duplicates', values: [{ x: 'A', y: 1 }, 
 assert.match(render({ frame: createElement('div', { 'data-brand-frame': true }), series: [{ name: 'One', values: [1, 2] }] }), /data-brand-frame="true"><div/);
 const hostile = render({ title: '<script>alert(1)</script>', categories: ['<img src=x onerror=alert(1)>'], series: [{ name: 'Escaped', values: [1] }] });
 assert.ok(!hostile.includes('<script>') && !hostile.includes('<img src=x'), 'Source content must be escaped');
-console.log(`Chart: ${count} showcase SSR states and 6 edge/accessibility checks passed`);
+// A valid circle without readable category/share labels is still a failed chart.
+// Inspect SVG text, not the source table or the separate key below the plot.
+for (const variant of ['pie', 'donut']) {
+  const html = render({ variant, categories: ['Enterprise', 'Mid-market', 'Small business'], series: [{ name: 'Revenue', values: [960000, 465000, 275000] }] });
+  const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
+  assert.ok(plots.length > 0, `${variant}: missing plot`);
+  for (const svg of plots) {
+    const labels = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ');
+    for (const label of ['Enterprise', 'Mid-market', 'Small business', '56.5%', '27.4%', '16.2%'])
+      assert.ok(labels.includes(label), `${variant}: visible slice label missing: ${label}`);
+  }
+  assert.ok(html.split('<details')[0].includes('960,000'), `${variant}: visible value formatting missing`);
+}
+console.log(`Chart: ${count} showcase SSR states, 6 edge/accessibility checks and 2 direct-label checks passed`);

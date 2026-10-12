@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, type ReactNode } from 'react';
-import { init } from './Chart.vendor/renderer.js';
+import { init, renderStaticSVG } from './Chart.vendor/renderer.js';
 import { chartTheme } from './chart-theme';
 export { ChartShowcase } from './chart-showcase';
 
@@ -55,6 +55,12 @@ interface ChartProps {
   yLabel?: string;
   /** Attribution or qualification from the source, normally 3–20 words. */
   source?: string;
+  /** Explicit number-format locale; defaults to en-US so server and browser agree. No currency or unit is inferred from prose. */
+  locale?: string;
+  /** Authored focal value inside a donut, normally 1–8 characters. Omit for an empty center; no total or takeaway is invented. */
+  centerValue?: string;
+  /** Authored supporting label inside a donut, normally 1–4 words. Used only with centerValue and only for a single donut panel. */
+  centerLabel?: string;
   /** Optional brand device element that accepts children. The plot is inserted as its children; choose the device named by chartTheme.frameDevice. */
   frame?: ReactNode;
   /** Layout classes from the surrounding section; do not use to redefine chart marks. */
@@ -69,17 +75,23 @@ type Option = Record<string, unknown>;
 // Keep SVG dimensions for layout calculation, then scale the resulting viewBox.
 // SSR mode disables the animation loop and DOM events; always dispose, even if
 // invalid input makes the renderer throw, so long-lived servers retain no charts.
-function Plot({ option, height = 320, width = 640 }: { option: Option; height?: number; width?: number }) {
+function Plot({ option, height = 320, width = 640, precise = false }: { option: Option; height?: number; width?: number; precise?: boolean }) {
   const chart = init(null, undefined, { renderer: 'svg', ssr: true, width, height });
   let svg: string;
   try {
     chart.setOption(option);
-    svg = chart.renderToSVGString();
+    // The default SVG compressor rounds small charts to one decimal. A
+    // near-full sector can then have identical arc endpoints and vanish.
+    svg = precise ? renderStaticSVG(chart) : chart.renderToSVGString();
     if (!svg.includes('viewBox=')) svg = svg.replace('<svg ', `<svg viewBox="0 0 ${width} ${height}" `);
   } finally {
     chart.dispose();
   }
-  return <div aria-hidden="true" className="min-w-0 w-full [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />;
+  // The plot is opaque, static SVG. ECharts assigns renderer/class counters
+  // globally, so identical SSR and browser renders have different internal IDs.
+  // Preserve the server SVG when a preview app hydrates this static component;
+  // React still verifies every authored label, key and source-table cell around it.
+  return <div aria-hidden="true" suppressHydrationWarning className="min-w-0 w-full [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 function color(role: SeriesRole | undefined, index: number) {
@@ -87,7 +99,120 @@ function color(role: SeriesRole | undefined, index: number) {
   return role && role !== 'categorical' ? palette[role] : palette.categorical[index % Math.max(1, palette.categorical.length)] ?? palette.focus;
 }
 
-export function Chart({ title, variant = 'bar', series, categories, background = 'default', xLabel, yLabel, source, frame, className }: ChartProps) {
+type Slice = { name: string; value: number; color: string };
+
+// Keep keys stable across SSR and the browser. Twenty-one significant digits
+// preserve every finite Number's round-trip decimal digits; formatting adds
+// locale separators while the source table keeps its original numeric cells.
+function numberFormat(locale: string) {
+  const number = new Intl.NumberFormat(locale, { maximumSignificantDigits: 21 });
+  return {
+    full: (value: number | null | undefined) => value == null || !Number.isFinite(value) ? '—' : number.format(value),
+  };
+}
+
+// SVG keeps concise wrapped names; the adjacent HTML key always keeps the full
+// name. Break unspaced words too, so a URL-like category cannot leave the plot.
+function wrapLabel(text: string, columns: number, maxLines = 3) {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.trim().split(/\s+/)) {
+    if (line && line.length + word.length + 1 > columns) { lines.push(line); line = ''; }
+    for (const character of word) {
+      if (line.length >= columns) { lines.push(line); line = ''; }
+      line += character;
+    }
+    line += ' ';
+  }
+  if (line.trim()) lines.push(line.trim());
+  const visible = lines.slice(0, maxLines).map((value) => value.trim());
+  if (lines.length > maxLines) visible[maxLines - 1] = visible[maxLines - 1].slice(0, columns - 1).trimEnd() + '…';
+  return visible.join('\n');
+}
+
+function CircularPlot({ slices, donut, locale, theme, base, centerValue, centerLabel }: {
+  slices: Slice[]; donut: boolean; locale: string; theme: ChartTheme; base: Option;
+  centerValue?: string; centerLabel?: string;
+}) {
+  // Normalization avoids an infinite denominator when several finite values are
+  // near Number.MAX_VALUE. The source values remain unchanged in the HTML key.
+  const maximum = slices.reduce((max, slice) => Math.max(max, slice.value), 0);
+  // An extreme positive ratio can underflow to zero. Preserve its positive
+  // meaning for labels without imposing a false minimum sector angle.
+  const weights = slices.map((slice) => slice.value > 0 ? Math.max(Number.MIN_VALUE, slice.value / maximum) : 0);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const shares = weights.map((weight) => weight > 0 ? Math.max(Number.MIN_VALUE, weight / total) : 0);
+  const positiveCount = weights.filter((weight) => weight > 0).length;
+  const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 });
+  const shareLabel = (share: number) => share > 0 && share < 0.001 ? `<${percent.format(0.001)}`
+    : share > 0.999 && (share < 1 || positiveCount > 1) ? `>${percent.format(0.999)}` : percent.format(share);
+  const format = numberFormat(locale);
+  const hasValues = maximum > 0;
+
+  function layout(compact: boolean) {
+    const width = compact ? 320 : 520;
+    const fontSize = Math.max(theme.typography.labelSize, compact ? 12 : 14);
+    const lineHeight = Math.ceil(fontSize * 1.4);
+    const labelWidth = compact ? 74 : 116;
+    const labels = slices.map((slice, i) => `${wrapLabel(slice.name, Math.max(5, Math.floor(labelWidth / (fontSize * 0.6))))}\n${shareLabel(shares[i])}`);
+    let angle = 0;
+    const sideHeights = [0, 0];
+    shares.forEach((share, i) => {
+      if (share > 0) sideHeights[Math.sin((angle + share / 2) * Math.PI * 2) >= 0 ? 1 : 0] += labels[i].split('\n').length * lineHeight + 10;
+      angle += share;
+    });
+    const height = Math.max(compact ? 300 : 340, Math.max(...sideHeights) + 32);
+    // Radius is bounded independently of available width and label height: a
+    // wide desktop section must not turn a three-slice donut into a giant ring.
+    // The compact label column ends at x=80; a 64px radius leaves 16px
+    // before the ring even at its equator, so leaders remain visible.
+    const outer = compact ? 64 : 120;
+    const inner = donut ? outer * 0.68 : 0;
+    const option: Option = { ...base, series: [{
+      type: 'pie', radius: [inner, outer], center: ['50%', '50%'],
+      avoidLabelOverlap: true, minShowLabelAngle: 0, stillShowZeroSum: false,
+      label: {
+        show: true, position: 'outside', alignTo: 'edge', edgeDistance: 6,
+        width: labelWidth, overflow: 'break', distanceToLabelLine: 4,
+        color: theme.textColor, fontFamily: theme.typography.fontFamily,
+        fontSize, lineHeight,
+        formatter: ({ dataIndex }: { dataIndex: number }) => labels[dataIndex],
+      },
+      labelLine: { show: true, length: 10, length2: 8, minTurnAngle: 45, lineStyle: { color: theme.textColor, width: 1 } },
+      data: slices.map((slice, i) => ({
+        name: slice.name, value: weights[i],
+        itemStyle: { color: slice.color },
+        // A zero has no sector to point at. Keep it in the visible HTML key;
+        // do not draw a false minimum-sized slice merely to anchor its label.
+        label: { show: shares[i] > 0 }, labelLine: { show: shares[i] > 0 },
+      })),
+      emphasis: { disabled: true },
+    }] };
+    return <div className={compact ? 'kopla-chart-circular-compact' : 'kopla-chart-circular-wide'} style={{ position: 'relative', maxWidth: width, marginInline: 'auto' }}>
+      <Plot width={width} height={height} option={option} precise />
+      {donut && centerValue && <div data-chart-center="" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: `${inner * 1.6 / width * 100}%`, textAlign: 'center', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
+        <div style={{ fontSize: Math.max(14, Math.min(theme.typography.titleSize + 6, inner * 1.5 / Math.max(1, Array.from(centerValue).length) / 0.65)), fontWeight: theme.typography.titleWeight }}>{centerValue}</div>
+        {centerLabel && <div style={{ marginTop: 4, fontSize: Math.max(11, Math.min(theme.typography.labelSize, compact ? 12 : 14)) }}>{centerLabel}</div>}
+      </div>}
+    </div>;
+  }
+  return <>
+    {hasValues ? <div className="kopla-chart-circular-layout" style={{ containerType: 'inline-size', containerName: 'chart-circular' }}>
+      {/* Container queries choose actual layouts, not shrunken desktop text.
+          Both SVGs are SSR content; no measurement hook or hydration is needed. */}
+      <style>{`.kopla-chart-circular-wide{display:none}@container chart-circular (min-width:480px){.kopla-chart-circular-compact{display:none}.kopla-chart-circular-wide{display:block}}`}</style>
+      {layout(true)}{layout(false)}
+    </div> : <p className="py-16 text-center">No positive values</p>}
+    <ul data-chart-key="" className="mt-4 grid gap-x-6 gap-y-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,180px),1fr))', fontSize: Math.max(12, theme.typography.labelSize), lineHeight: 1.5 }}>
+      {slices.map((slice, i) => <li key={i} className="flex min-w-0 items-start gap-2">
+        <span aria-hidden="true" className="mt-1.5 size-3 shrink-0" style={{ background: slice.color }} />
+        <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}><span className="font-medium">{slice.name}</span><br />{format.full(slice.value)} <span>({hasValues ? shareLabel(shares[i]) : '—'})</span></span>
+      </li>)}
+    </ul>
+  </>;
+}
+
+export function Chart({ title, variant = 'bar', series, categories, background = 'default', xLabel, yLabel, source, locale = 'en-US', centerValue, centerLabel, frame, className }: ChartProps) {
   const theme: ChartTheme = chartTheme;
   const observations = series.map((s) => ({ ...s, points: s.values.map((value, i): Point =>
     value !== null && typeof value === 'object' ? value : { x: categories?.[i] ?? i + 1, y: value },
@@ -131,13 +256,11 @@ export function Chart({ title, variant = 'bar', series, categories, background =
     return p?.y != null ? [{ name: s.name, value: p.y, color: colors[i] }] : [];
   }) })) : valid.map((s) => ({ name: s.name, slices: s.points.flatMap((p, j) => p.y === null ? [] : [{ name: String(p.x), value: p.y, color: color(s.role, j) }]) }));
   const plot = issue ? <p role="status" className="py-8">{issue}</p> : circular ? (
-    <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))]">
-      {panels.map((panel, i) => <div key={i}>
-        <p className="mb-2 font-medium">{panel.name}</p>
-        {panel.slices.some((p) => p.value > 0) ? <Plot width={320} height={260} option={{ ...base, series: [{ type: 'pie', radius: variant === 'donut' ? ['50%', '78%'] : '78%', center: ['50%', '50%'], label: { show: false }, data: panel.slices.map((p) => ({ name: p.name, value: p.value, itemStyle: { color: p.color } })), emphasis: { disabled: true } }] }} /> : <p className="py-16 text-center">No positive values</p>}
-        <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2" style={{ fontSize: theme.typography.labelSize }}>
-          {panel.slices.map((p, j) => <li key={j} className="flex items-center gap-2"><span aria-hidden="true" className="size-3 shrink-0" style={{ background: p.color }} />{p.name}: {p.value}</li>)}
-        </ul>
+    <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))' }}>
+      {panels.map((panel, i) => <div key={i} style={{ minWidth: 0, width: '100%', maxWidth: 600, marginInline: 'auto' }}>
+        {panels.length > 1 && <p className="mb-2 font-medium">{panel.name}</p>}
+        <CircularPlot slices={panel.slices} donut={variant === 'donut'} locale={locale} theme={theme} base={base}
+          centerValue={panels.length === 1 ? centerValue : undefined} centerLabel={panels.length === 1 ? centerLabel : undefined} />
       </div>)}
     </div>
   ) : <>

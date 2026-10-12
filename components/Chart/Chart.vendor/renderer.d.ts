@@ -4,3 +4,6 @@ export declare function init(element: null, theme: undefined, options: { rendere
   renderToSVGString(): string;
   dispose(): void;
 };
+
+/** Uncompressed static SVG; avoids collapsed near-full arcs at small radii. */
+export declare function renderStaticSVG(chart: ReturnType<typeof init>): string;
