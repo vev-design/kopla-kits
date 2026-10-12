@@ -136,7 +136,10 @@ export function outsideLabels(c: CircularContext, opts: {
     const anchor = point(c, c.outer + 2, s.mid);
     const lines = opts.lines(s).flatMap((line) => wrap(line, maxWidth, font));
     const near = point(c, c.outer + (leaders === 'none' ? 10 : 22), s.mid);
-    const x = leaders === 'column' ? (side > 0 ? c.width - pad : pad) : near.x;
+    // Short and leaderless labels stay clear of the rim on their own side even
+    // for a sector near the top or bottom, where the radial point sits over the circle.
+    const clearance = c.cx + side * (c.outer + (leaders === 'none' ? 10 : 22));
+    const x = leaders === 'column' ? (side > 0 ? c.width - pad : pad) : side > 0 ? Math.max(near.x, clearance) : Math.min(near.x, clearance);
     return { s, lines, x, y: near.y, side, anchor, textAnchor: side > 0 ? 'start' : 'end' };
   });
   // Stack per side: sort by y, push each block below the previous one. The
@@ -162,9 +165,14 @@ export function outsideLabels(c: CircularContext, opts: {
     // to reach past the longest line to meet it.
     const textWidth = Math.max(...p.lines.map((line) => measureStaticText(line, font).width), 0);
     const edgeX = p.side > 0 ? textX - textWidth - 4 : textX + textWidth + 4;
+    // A leader ends at the WORDS, wherever stacking moved them: for a column
+    // label an elbow at the radial line then across; for a short leader a
+    // straight line from the sector to the near edge of the text. The first
+    // version ended a short leader at a fixed radial point, so a label pushed
+    // down by its neighbours drifted away from its own stub.
     const leader = leaders === 'none' ? null : leaders === 'column'
       ? `${round(p.anchor.x)},${round(p.anchor.y)} ${round(point(c, c.outer + 14, p.s.mid).x)},${round(p.y)} ${round(edgeX)},${round(p.y)}`
-      : `${round(p.anchor.x)},${round(p.anchor.y)} ${round(point(c, c.outer + 14, p.s.mid).x)},${round(point(c, c.outer + 14, p.s.mid).y)}`;
+      : `${round(p.anchor.x)},${round(p.anchor.y)} ${round(p.side > 0 ? textX - 4 : textX + 4)},${round(p.y)}`;
     return <g key={p.s.index} data-chart-outside-label="">
       {leader && <polyline points={leader} fill="none" stroke={opts.leaderColor ?? c.textColor} strokeWidth={1} />}
       <text x={round(textX)} y={round(top)} textAnchor={leaders === 'column' ? (p.side > 0 ? 'end' : 'start') : p.textAnchor} fontSize={size} fontFamily={c.type.fontFamily} fill={opts.color ?? c.textColor} fontWeight={opts.weight ?? 400}>

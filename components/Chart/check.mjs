@@ -83,5 +83,12 @@ for (const compact of [false, true]) {
     assert.ok(reach > 20 && reach < 140, `column leader ends ${String(reach)}px from the text edge at x=${m[3]}`);
   }
   assert.ok((col.match(/<polyline/g) ?? []).length === 4, 'one column leader per sector');
+  // A short leader also ends at its own label, after stacking moved it: the
+  // polyline's last point is 4px from the text's x, on the text's line.
+  const short = renderToStaticMarkup(P.canvas(c, [P.slices(c), P.outsideLabels(c, { lines: (s) => [s.name, s.shareLabel], leaders: 'short' })]));
+  for (const m of short.matchAll(/<polyline points="[^ ]+ ([\d.]+),([\d.]+)"[^>]*><\/polyline><text x="([\d.]+)" y="([\d.]+)"/g)) {
+    assert.ok(Math.abs(Math.abs(Number(m[1]) - Number(m[3])) - 4) < 0.01, `short leader ends ${m[1]} but its text starts at ${m[3]}`);
+  }
+  assert.ok((short.match(/<polyline/g) ?? []).length === 4, 'one short leader per sector');
 }
 console.log(`Chart: ${count} showcase SSR states, 6 edge/accessibility checks, 2 direct-label checks and responsive axes passed`);
