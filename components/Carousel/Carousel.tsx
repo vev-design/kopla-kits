@@ -1,26 +1,6 @@
-// A horizontal gallery on a scroll-snap track. THIS FILE HAS NO LOOK IN IT, and
-// that is the contract, not an accident of how it was written:
-//
-//   1. useCarousel        the ENGINE: state, timing, locking, measurement and
-//                         announcement logic. No JSX, no classNames.
-//   2. Carousel*          SLOT PRIMITIVES: minimal elements carrying only what
-//                         the mechanics and accessibility need (role/aria/
-//                         data-state/hidden/handlers), styled by the AUTHOR.
-//                         `asChild` on every interactive one, so the design's
-//                         own arrow or dot IS the control.
-//
-// The only classes in here are ones that ARE mechanics — `CarouselTrack`'s
-// `flex snap-x snap-mandatory overflow-x-auto` is literally what swipes and
-// snaps, and `sr-only` on the live region is an accessibility fact — so if you
-// find yourself adding a colour, a radius or a spacing here, it belongs in the
-// section. Start from `skeleton.carousel-*.tsx` beside this file and reshape its
-// markup freely: the mechanics come from here and the appearance is yours.
-//
-// The styled <Carousel> lives in `Carousel.demo.tsx`, which is the lab's demo
-// and is NOT copied into a workspace. It used to be a third layer in this file;
-// the reason it moved is written at the top of that one, and the rule it leaves
-// behind is: anything true of EVERY design with a carousel in it belongs here,
-// and everything else belongs there.
+// Carousel supplies a complete theme-driven gallery plus an unstyled engine.
+// Brand builds edit carousel-theme.ts. A fully authored layout can use the
+// existing useCarousel + slot primitives from a skeleton instead.
 //
 // The split between what the PLATFORM does and what JS adds is the whole design
 // of this component, and it is not an implementation detail — it is what a
@@ -61,6 +41,9 @@ import {
   type RefObject,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { carouselTheme } from './carousel-theme';
+export { CarouselShowcase } from './carousel-showcase';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * asChild plumbing (kept file-local: this is a copy-in component, and the next
@@ -739,4 +722,224 @@ export function CarouselPause({ asChild, children, ...rest }: CarouselPauseProps
     ...rest,
   };
   return renderSlot(asChild, 'button', ours, children);
+}
+
+// Complete gallery: this composition is copied alongside the engine.
+/** One slide, when the gallery is driven by data rather than authored markup. */
+export interface CarouselItem {
+  /** Slide heading. 2–8 words. */
+  title: string;
+  /** Slide body copy. 1–3 sentences. */
+  body?: string | null;
+  /** Small label above the title, e.g. a category. */
+  kicker?: string | null;
+  /** Slide image. @kind image */
+  image?: string | null;
+}
+
+/**
+ * A horizontal gallery of slides on a scroll-snap track, with arrows, dots and
+ * optional auto-advance.
+ *
+ * Pass the slides as `children` to keep the design's own markup — this owns the
+ * track and the controls, never a slide's appearance. And when the design drew
+ * its own gallery UI (an arrow of its own, numbered markers, a cropped-peek
+ * layout), do not use this wrapper at all: drive the design's markup with
+ * `useCarousel` + the Carousel* primitives instead.
+ * @hydrate
+ */
+export interface CarouselProps {
+  /** The authored slides, one node each. Takes precedence over `items`. */
+  children?: ReactNode;
+  /** Data slides, used when there are no children. 2–10 entries. */
+  items?: CarouselItem[];
+  /** Which controls to draw over the track. The track scrolls and snaps without
+   *  any of them. */
+  controls?: 'arrows' | 'dots' | 'both' | 'none';
+  /**
+   * Advance on a timer, in milliseconds.
+   *
+   * The design's own timing wins where it states one (a prototype's
+   * `AFTER_TIMEOUT`). Where the source states none, 5000 rather than nothing —
+   * see `UseCarouselOptions.autoAdvanceMs`, which this forwards to. Ignored
+   * under `prefers-reduced-motion`.
+   */
+  autoAdvanceMs?: number | null;
+  /**
+   * How many slides sit side by side from the `md` breakpoint up. Always one on a
+   * phone, whatever this says.
+   *
+   * A string union rather than `1 | 2 | 3` because that is what becomes a VARIANT
+   * AXIS: the extractor turns enum props into the matrix a designer flips through
+   * in the component canvas, and a numeric union is silently not one — the prop
+   * still works and simply stops being discoverable.
+   */
+  perView?: 'one' | 'two' | 'three';
+  /** Wrap from the last slide back to the first when auto-advancing. */
+  loop?: boolean;
+  /** What the gallery IS, for a screen reader — "Customer stories", "Our work".
+   *  A carousel announced only as "carousel" tells the reader nothing. */
+  label?: string;
+  /** Classes for the carousel's own box. */
+  className?: string;
+  /** Classes for each slide's wrapper. */
+  slideClassName?: string;
+  /** Id root. Each slide gets `<id>-slide-<n>`, so a link elsewhere on the page
+   *  can point at one. */
+  id?: string;
+}
+
+/** The gap between slides, in the one place both the class and the width
+ *  calculation can read it. */
+const GAP = carouselTheme.gap;
+
+const PER_VIEW = { one: 1, two: 2, three: 3 } as const;
+
+function DataSlide({ item }: { item: CarouselItem }) {
+  return (
+    <article className="flex h-full flex-col gap-3 overflow-hidden border p-6" style={{ borderRadius: carouselTheme.radius, background: carouselTheme.background, color: carouselTheme.textColor }}>
+      {item.image ? (
+        <img src={item.image} alt="" className="h-40 w-full rounded-md object-cover" />
+      ) : null}
+      {item.kicker ? (
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {item.kicker}
+        </p>
+      ) : null}
+      <h3 className="text-lg font-semibold tracking-tight">{item.title}</h3>
+      {item.body ? <p className="text-sm text-muted-foreground">{item.body}</p> : null}
+    </article>
+  );
+}
+
+const CONTROL_CLASS =
+  'inline-flex size-11 shrink-0 items-center justify-center border hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+export function Carousel({
+  children,
+  items,
+  controls = 'both',
+  autoAdvanceMs,
+  perView = 'one',
+  loop = true,
+  label,
+  className,
+  slideClassName,
+  id,
+}: CarouselProps) {
+  const authored = Children.toArray(children).filter(
+    (c) => isValidElement(c) || typeof c === 'string',
+  );
+  const slides: ReactNode[] =
+    authored.length > 0 ? authored : (items ?? []).map((item, i) => <DataSlide key={i} item={item} />);
+  const count = slides.length;
+
+  const autoId = useId();
+  const rootId = id ?? `carousel-${autoId.replace(/[:]/g, '')}`;
+
+  const car = useCarousel({ count, autoAdvanceMs, loop });
+
+  if (count === 0) return null;
+
+  const showArrows = car.interactive && (controls === 'arrows' || controls === 'both');
+  const showDots = car.interactive && (controls === 'dots' || controls === 'both');
+  const rotating = car.interactive && car.rotating;
+  const controlStyle = { borderRadius: carouselTheme.controlRadius, color: carouselTheme.controlColor, background: carouselTheme.controlBackground };
+
+  return (
+    <CarouselRoot car={car} id={rootId} label={label} className={cn('flex flex-col gap-4', className)}>
+      <CarouselTrack
+        className={cn(
+          'gap-[var(--slide-gap)]',
+          // Smooth only when motion is welcome — this is what `scrollTo` inherits
+          // for keyboard scrolling too.
+          'motion-safe:scroll-smooth',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          // The scrollbar is hidden because the dots are the affordance. Without
+          // controls it stays, so a bare track never becomes a strip with no way
+          // to tell it scrolls.
+          controls !== 'none' && '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        )}
+        style={{ '--per-view': PER_VIEW[perView], '--slide-gap': GAP, borderRadius: carouselTheme.radius } as CSSProperties}
+      >
+        {slides.map((slide, i) => (
+          <CarouselSlide
+            key={i}
+            index={i}
+            className={cn(
+              // One slide per view on a phone whatever `perView` says: three
+              // cards across 360px is three unreadable cards.
+              'shrink-0 basis-full snap-start',
+              'md:basis-[calc((100%-(var(--per-view)-1)*var(--slide-gap))/var(--per-view))]',
+              slideClassName,
+            )}
+          >
+            {slide}
+          </CarouselSlide>
+        ))}
+      </CarouselTrack>
+
+      {showArrows || showDots || rotating ? (
+        <div data-slot="carousel-controls" className="flex flex-wrap items-center gap-2">
+          {rotating ? (
+            <CarouselPause asChild>
+              <button className={CONTROL_CLASS} style={controlStyle}>
+                {car.paused ? <Play className="size-4" /> : <Pause className="size-4" />}
+              </button>
+            </CarouselPause>
+          ) : null}
+
+          {showArrows ? (
+            <>
+              {/* `noTarget="disable"`: this chrome draws BOTH arrows, so the one
+                  with nothing behind it dims rather than vanishing — a pair that
+                  blinks in and out reads as broken. A design that drew a single
+                  arrow wants the default instead. */}
+              <CarouselPrev asChild noTarget="disable">
+                <button
+                  style={controlStyle}
+                  aria-label="Previous slide"
+                  className={cn(CONTROL_CLASS, 'disabled:pointer-events-none disabled:opacity-40')}
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+              </CarouselPrev>
+              <CarouselNext asChild noTarget="disable">
+                <button
+                  style={controlStyle}
+                  aria-label="Next slide"
+                  className={cn(CONTROL_CLASS, 'disabled:pointer-events-none disabled:opacity-40')}
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </CarouselNext>
+            </>
+          ) : null}
+
+          {showDots ? (
+            <div className="flex flex-wrap items-center gap-0.5">
+              {slides.map((_, i) => (
+                <CarouselDot key={i} index={i} asChild>
+                  <button
+                    aria-label={`Go to slide ${i + 1}`}
+                    // 44px of button around an 8px dot. The dot is the drawing; the
+                    // target is what a thumb has to hit.
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'size-2 rounded-full motion-safe:transition-colors',
+                        i === car.index ? 'bg-primary' : 'bg-border',
+                      )}
+                    />
+                  </button>
+                </CarouselDot>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </CarouselRoot>
+  );
 }
