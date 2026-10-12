@@ -87,7 +87,9 @@ A complete themed element uses the following folder contract:
 ```
 <Name>/component.json  # adopt manifest below
 <Name>/<Name>.tsx      # complete renderer and prop contract
-<Name>/theme.ts        # documented brand values and neutral defaults
+<Name>/composition.tsx # THE brand-editable file: values + composition from parts
+<Name>/<name>-primitives.tsx # the mechanical parts a composition draws with
+<Name>/COMPOSING.md    # the parts, documented for the brand build
 <Name>/showcase.ts     # literal canvas states; exported by the renderer
 <Name>/check.mjs       # deterministic SSR/accessibility check
 <Name>/<Name>.demo.tsx # lab entry only; never adopted
@@ -102,8 +104,12 @@ an existing theme. The host runs each copied check once with
 Checks report findings; consumers decide whether findings block publication.
 Checks use the workspace's React installation and import the adopted component.
 
-**Use the host's adoption operation when this manifest exists.** Edit the theme
-and author devices around the supplied slots. Keep the renderer unchanged.
+**Use the host's adoption operation when this manifest exists.** Edit the
+composition file (values AND how the brand draws the thing, from the
+documented parts — `COMPOSING.md`) and author devices around the supplied
+slots. Keep the renderer and the parts unchanged. The rule for what belongs in
+the composition rather than the renderer: anything a brand guide could
+reasonably draw differently.
 Chart is a complete quantitative element with a `frame` slot. Carousel now
 includes a complete gallery and its theme as well as its existing unstyled
 engine; an entirely authored layout can still use its skeletons and primitives.
