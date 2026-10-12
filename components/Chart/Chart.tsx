@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, type ReactNode } from 'react';
-import { init, renderStaticSVG } from './Chart.vendor/renderer.js';
+import { init, measureStaticText, renderStaticSVG } from './Chart.vendor/renderer.js';
 import { chartTheme } from './chart-theme';
 export { ChartShowcase } from './chart-showcase';
 
@@ -73,6 +73,7 @@ type Point = { x: string | number; y: number | null; size?: number };
 type Option = Record<string, unknown>;
 
 // Keep SVG dimensions for layout calculation, then scale the resulting viewBox.
+// CartesianPlot displays those dimensions exactly so axis text keeps its theme size.
 // SSR mode disables the animation loop and DOM events; always dispose, even if
 // invalid input makes the renderer throw, so long-lived servers retain no charts.
 function Plot({ option, height = 320, width = 640, precise = false }: { option: Option; height?: number; width?: number; precise?: boolean }) {
@@ -111,23 +112,77 @@ function numberFormat(locale: string) {
   };
 }
 
-// SVG keeps concise wrapped names; the adjacent HTML key always keeps the full
-// name. Break unspaced words too, so a URL-like category cannot leave the plot.
-function wrapLabel(text: string, columns: number, maxLines = 3) {
+// Use the renderer's metrics for wrapping as well as fitting. Character counts
+// can undercount lines when a label contains wider glyphs; that once let pie
+// labels overlap despite reserving space for every authored newline.
+// HTML keys/source data retain the complete names beyond these three lines.
+function wrapMeasuredLabel(text: string, width: number, font: string) {
   const lines: string[] = [];
   let line = '';
   for (const word of text.trim().split(/\s+/)) {
-    if (line && line.length + word.length + 1 > columns) { lines.push(line); line = ''; }
+    if (line && measureStaticText(line + word, font).width > width) { lines.push(line.trim()); line = ''; }
     for (const character of word) {
-      if (line.length >= columns) { lines.push(line); line = ''; }
+      if (line && measureStaticText(line + character, font).width > width) { lines.push(line.trim()); line = ''; }
       line += character;
     }
     line += ' ';
   }
   if (line.trim()) lines.push(line.trim());
-  const visible = lines.slice(0, maxLines).map((value) => value.trim());
-  if (lines.length > maxLines) visible[maxLines - 1] = visible[maxLines - 1].slice(0, columns - 1).trimEnd() + '…';
+  const visible = lines.slice(0, 3);
+  if (lines.length > 3) {
+    let last = Array.from(visible[2]);
+    while (last.length && measureStaticText(last.join('') + '…', font).width > width) last.pop();
+    visible[2] = last.join('').trimEnd() + '…';
+  }
   return visible.join('\n');
+}
+
+function CartesianPlot({ option, names, categorical, axisValues, theme, title }: {
+  option: Option; names: string[]; categorical: boolean; axisValues: number[]; theme: ChartTheme; title: string;
+}) {
+  const font = `${theme.typography.labelSize}px ${theme.typography.fontFamily}`;
+  // A short year/category needs less room than a name. Reserve up to 120px per
+  // category, then wrap long names to three lines; source data retains full text.
+  const pitch = categorical ? Math.max(48, Math.min(120, Math.ceil(names.reduce((max, name) => Math.max(max, measureStaticText(name, font).width), 0) + 16))) : 0;
+  const axisFormat = numberFormat('en-US');
+  // Include the numeric axis in the width budget, including stacked totals.
+  // Extra ems cover tick rounding and gaps; they are spacing, not font metrics.
+  const axisWidth = axisValues.reduce((max, value) => Number.isFinite(value) ? Math.max(max, measureStaticText(axisFormat.full(value), font).width) : max, 0);
+  const axisBudget = Math.max(112, Math.ceil(axisWidth + theme.typography.labelSize * 2 + 24));
+  const uncappedWidth = names.length * pitch + axisBudget;
+  const minimumWidth = categorical ? Math.min(2400, Math.ceil(uncappedWidth)) : 0;
+  const layout = (baseWidth: number) => {
+    const width = Math.max(baseWidth, minimumWidth);
+    const xAxis = option.xAxis as Option;
+    const label = xAxis.axisLabel as Option;
+    const labelWidth = pitch - 16;
+    const plotOption = { ...option, xAxis: { ...xAxis, axisLabel: { ...label,
+      ...(categorical ? {
+        width: labelWidth, overflow: 'break', lineHeight: Math.ceil(theme.typography.labelSize * 1.4),
+        interval: uncappedWidth <= 2400 ? 0 : 'auto', hideOverlap: uncappedWidth > 2400,
+        formatter: (value: string) => wrapMeasuredLabel(String(value), labelWidth, font),
+      } : {}),
+    } } };
+    return <>
+      <style>{`@container kopla-cartesian (max-width:${width - 0.01}px){.kopla-cartesian-scroll-${width}{display:block!important}}`}</style>
+      <p className={`kopla-cartesian-scroll-${width} mb-2`} style={{ display: 'none', fontSize: theme.typography.noteSize }}>Scroll to see the full chart.</p>
+      <div tabIndex={0} role="region" aria-label={`${title} chart; scroll horizontally if needed. Full labels and values are in View source data.`}
+        className="max-w-full overflow-x-auto" style={{ minWidth: 0 }}>
+        <div style={{ width, minWidth: width, marginInline: 'auto' }}><Plot option={plotOption} width={width} height={320} /></div>
+      </div>
+    </>;
+  };
+  // Container queries use the available plot width, including any brand frame's
+  // constraints. Intrinsic widths keep text at its exact theme size at every
+  // breakpoint instead of growing between breakpoints then suddenly shrinking;
+  // a dense plot scrolls locally instead of squeezing labels or the whole page.
+  // The 2400px cap prevents an unbounded canvas; auto interval/hideOverlap still
+  // applies beyond that density and every observation remains in the table.
+  const widths = Array.from(new Set([320, 480, 640, 800].map((width) => Math.max(width, minimumWidth))));
+  return <div style={{ containerType: 'inline-size', containerName: 'kopla-cartesian', maxWidth: Math.max(800, minimumWidth), minWidth: 0, marginInline: 'auto' }}>
+    <style>{widths.slice(1).map((width, i) => `@container kopla-cartesian (min-width:${width}px){.kopla-cartesian-layout-${widths[i]}{display:none!important}.kopla-cartesian-layout-${width}{display:block!important}}`).join('')}</style>
+    {widths.map((width, i) => <div key={width} className={`kopla-cartesian-layout-${width}`} style={{ display: i ? 'none' : undefined }}>{layout(width)}</div>)}
+  </div>;
 }
 
 function CircularPlot({ slices, donut, locale, theme, base, centerValue, centerLabel }: {
@@ -154,7 +209,8 @@ function CircularPlot({ slices, donut, locale, theme, base, centerValue, centerL
     const fontSize = Math.max(theme.typography.labelSize, compact ? 12 : 14);
     const lineHeight = Math.ceil(fontSize * 1.4);
     const labelWidth = compact ? 74 : 116;
-    const labels = slices.map((slice, i) => `${wrapLabel(slice.name, Math.max(5, Math.floor(labelWidth / (fontSize * 0.6))))}\n${shareLabel(shares[i])}`);
+    const font = `${fontSize}px ${theme.typography.fontFamily}`;
+    const labels = slices.map((slice, i) => `${wrapMeasuredLabel(slice.name, labelWidth, font)}\n${wrapMeasuredLabel(shareLabel(shares[i]), labelWidth, font)}`);
     let angle = 0;
     const sideHeights = [0, 0];
     shares.forEach((share, i) => {
@@ -233,12 +289,22 @@ export function Chart({ title, variant = 'bar', series, categories, background =
     : empty ? 'No finite observations are available.' : null;
   const colors = series.map((s, i) => color(s.role, i));
   const base = { animation: false, textStyle: { fontFamily: theme.typography.fontFamily, color: theme.textColor } };
-  const axis = { axisLine: { show: true, lineStyle: { color: theme.textColor, width: theme.line.width } }, axisTick: { show: false }, axisLabel: { color: theme.textColor, fontSize: theme.typography.labelSize, fontFamily: theme.typography.fontFamily, hideOverlap: true }, splitLine: { show: false } };
+  // A fixed 8px gap lets large x/y labels touch at the origin. One em separates
+  // their line boxes, including a loaded font's ascenders/descenders.
+  const axis = { axisLine: { show: true, lineStyle: { color: theme.textColor, width: theme.line.width } }, axisTick: { show: false }, axisLabel: { color: theme.textColor, fontSize: theme.typography.labelSize, fontFamily: theme.typography.fontFamily, margin: Math.max(8, theme.typography.labelSize), hideOverlap: true }, splitLine: { show: false } };
   const maxSize = Math.max(1, ...valid.flatMap((s) => s.points.map((p) => Number.isFinite(p.size) ? Math.max(0, p.size ?? 1) : 1)));
+  const axisValues = valid.flatMap((s) => s.points.flatMap((p) => p.y === null ? [] : [p.y]));
+  if (variant === 'stacked-bar') for (const name of names) {
+    const values = valid.map((s) => s.points.find((p) => String(p.x) === name)?.y ?? 0);
+    axisValues.push(values.reduce((sum, value) => sum + Math.max(0, value), 0), values.reduce((sum, value) => sum + Math.min(0, value), 0));
+  }
   const option: Option = {
     ...base,
-    grid: { left: 48, right: variant === 'bubble' ? 32 : 16, top: variant === 'bubble' ? 32 : 16, bottom: 40 },
-    xAxis: { ...axis, type: positional && numericX ? 'value' : 'category', data: positional && numericX ? undefined : names, axisLabel: { ...axis.axisLabel, overflow: 'truncate', width: 80 } },
+    // Font metrics are deliberately approximate and identical in SSR/browser.
+    // Inset automatic bounds as well: touching the SVG edge leaves no tolerance
+    // for a loaded brand font's glyphs being wider than the fallback metrics.
+    grid: { left: 48, right: variant === 'bubble' ? 32 : 16, top: variant === 'bubble' ? 32 : 16, bottom: 40, outerBounds: { left: 8, right: 8, top: 8, bottom: 8 } },
+    xAxis: { ...axis, type: positional && numericX ? 'value' : 'category', data: positional && numericX ? undefined : names },
     yAxis: { ...axis, type: 'value', axisLine: { show: false }, splitLine: { show: theme.grid.width > 0, lineStyle: { color: theme.grid.color, width: theme.grid.width } } },
     series: valid.map((s, i) => ({
       name: s.name, type: variant === 'line' ? 'line' : variant === 'scatter' || variant === 'bubble' ? 'scatter' : 'bar',
@@ -265,7 +331,7 @@ export function Chart({ title, variant = 'bar', series, categories, background =
     </div>
   ) : <>
     {yLabel && <p className="mb-2" style={{ fontSize: theme.typography.labelSize }}>{yLabel}</p>}
-    <Plot option={option} />
+    <CartesianPlot option={option} names={names} categorical={!(positional && numericX)} axisValues={axisValues} theme={theme} title={title} />
     {xLabel && <p className="mt-2 text-center" style={{ fontSize: theme.typography.labelSize }}>{xLabel}</p>}
     <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3" style={{ fontSize: theme.typography.labelSize }}>
       {series.map((s, i) => <li key={i} className="flex items-center gap-2"><span aria-hidden="true" className="size-3 shrink-0" style={{ background: colors[i] }} />{s.name}</li>)}

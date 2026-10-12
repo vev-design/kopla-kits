@@ -34,10 +34,15 @@ for (const variant of ['pie', 'donut']) {
   const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
   assert.ok(plots.length > 0, `${variant}: missing plot`);
   for (const svg of plots) {
-    const labels = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ');
+    const labels = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]).join(' ').replace(/\s+/g, '');
     for (const label of ['Enterprise', 'Mid-market', 'Small business', '56.5%', '27.4%', '16.2%'])
-      assert.ok(labels.includes(label), `${variant}: visible slice label missing: ${label}`);
+      assert.ok(labels.includes(label.replace(/\s+/g, '')), `${variant}: visible slice label missing: ${label}`);
   }
   assert.ok(html.split('<details')[0].includes('960,000'), `${variant}: visible value formatting missing`);
 }
-console.log(`Chart: ${count} showcase SSR states, 6 edge/accessibility checks and 2 direct-label checks passed`);
+const axes = render({ categories: ['First', 'Second'], series: [{ name: 'Sales', values: [900000, 1800000] }] });
+assert.ok(axes.includes('container-name:kopla-cartesian'), 'Cartesian layouts must respond to their container');
+for (const svg of axes.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
+  assert.match(svg, /<text\b[^>]*>1,800,000<\/text>/, 'Million-value axis label missing');
+}
+console.log(`Chart: ${count} showcase SSR states, 6 edge/accessibility checks, 2 direct-label checks and responsive axes passed`);
