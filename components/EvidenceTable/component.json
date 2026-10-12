@@ -1,0 +1,33 @@
+{
+  "name": "EvidenceTable",
+  "description": "Exact source figures in a semantic, horizontally scrollable table with a headline, context, takeaway and footnote; one column can be highlighted.",
+  "whenToUse": "When the reader needs the exact numbers behind a finding, or several measures per row (revenue, cost, margin, growth). Put it after the chart it substantiates. The brand frames the table through the tableFrame slot. NOT for a single figure (StatBand) and NOT as a substitute for a chart when a trend is the point.",
+  "demo": "EvidenceTable.demo",
+  "tags": [
+    "proposal",
+    "table",
+    "evidence",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "EvidenceTable.tsx",
+        "to": "src/sections/EvidenceTable.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './EvidenceTable';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 40
+  }
+}

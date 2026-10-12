@@ -1,0 +1,33 @@
+{
+  "name": "ProposalHero",
+  "description": "The opening beat of a proposal or report: a title, one line of why, a short introduction and an optional action \u2014 typographic, image-led or figure-led.",
+  "whenToUse": "The first section of a proposal, pitch, report or brief. Choose the variant from the material: 'typographic' when the title carries the page, 'image' when the brand's photography should open it, 'figure' when one number is the argument. The brand's device appears through the heroDevice and pageFrame slots in archetype-slots.tsx; the archetype itself stays untouched. NOT for marketing landing pages with product screenshots, and NOT a slide: it scrolls.",
+  "demo": "ProposalHero.demo",
+  "tags": [
+    "proposal",
+    "hero",
+    "opening",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "ProposalHero.tsx",
+        "to": "src/sections/ProposalHero.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './ProposalHero';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 10
+  }
+}

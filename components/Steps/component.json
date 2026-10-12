@@ -1,0 +1,33 @@
+{
+  "name": "Steps",
+  "description": "A plan or timeline as numbered steps or a timeline with when-labels; each marker comes from the brand through a slot.",
+  "whenToUse": "A sequence in time: a pilot plan, a rollout, a decision process. Two to six steps with a short title and body; 'timeline' when each has a when-label (weeks, quarters). The marker beside each step comes through the stepMarker slot. NOT for parallel ideas (Narrative).",
+  "demo": "Steps.demo",
+  "tags": [
+    "proposal",
+    "steps",
+    "timeline",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "Steps.tsx",
+        "to": "src/sections/Steps.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './Steps';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 70
+  }
+}

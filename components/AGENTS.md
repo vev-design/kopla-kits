@@ -115,6 +115,45 @@ entirely to the authored section. Finished primitives may split out themes and
 showcases and include token-themed presentation. They ship no demo markup via
 adoption. Catalog-only filename bridges are excluded by the explicit manifest.
 
+## Section entries: the proposal archetypes
+
+An adoption manifest may land in `src/sections/` instead of `src/components/`.
+Such an entry is a complete page SECTION — a `type` a page's JSON can name —
+rather than a primitive a section composes. The host tells the two apart by
+where `adopt.export` resolves (`adoptionKind` in
+`scripts/component-adoption.mjs`): the export is appended to
+`src/sections/index.ts`, whose line order is the recommended composition
+chain, so a section entry also carries **`adopt.order`** (hero 10 … closing
+80); the host adopts `catalog:sections` in that order.
+
+The eight archetypes (`ProposalHero`, `StatBand`, `EvidenceChart`,
+`EvidenceTable`, `Narrative`, `Quote`, `Steps`, `ProposalClosing`) exist so a
+brand library ships sections a page build can CHOOSE between instead of
+inventing generic two-column templates. Their rules:
+
+- **The archetype is never edited.** What a brand changes is
+  `archetype-slots.tsx`, the one brand-editable surface, declared as every
+  entry's `theme` with the SAME destination (`src/sections/archetype-slots.tsx`)
+  and identical bytes in every folder — the host keeps a theme file the brand
+  edited and treats identical bytes as untouched, so eight entries share one
+  file cleanly. Fill a slot with a component from the design system
+  (`statFrame: (ctx, figure) => <BrandFrame>{figure}</BrandFrame>`); an empty
+  slot renders the archetype's neutral form. Slots run during server
+  rendering: no hooks, no browser APIs.
+- **Props are content and standard style props only** (`background`,
+  `spacing`, `align`, `hide…`); `variant` is layout. JSDoc on every prop with
+  length guidance, `@kind image` through `ImageBlockProps | null`, `@kind url`
+  on hrefs. `hydrate: false`, always.
+- **`EvidenceChart` composes the adopted `Chart`** (`@/components/Chart`) and
+  hands `archetypeSlots.chartFrame` to its `frame`; adopt Chart alongside it.
+- **The showcase stays catalog-only and has no value imports**: a section's
+  `@/` imports resolve only inside a workspace, so `showcase.ts` mirrors the
+  `<Name>Demo` literal rather than importing it, and `check.mjs` loads the
+  section from the workspace and the showcase from the catalog.
+- Build-time: `build-components.mjs` asserts a section entry in
+  `design.json.sections` (not `.components`) and reads its hydration from
+  `hydrateSections`.
+
 ## To use one in a workspace
 
 1. **Pick by `whenToUse`.** Read the `component.json` files (or the

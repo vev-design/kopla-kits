@@ -1,0 +1,33 @@
+{
+  "name": "EvidenceChart",
+  "description": "One finding beside one chart: eyebrow, headline, explanation and takeaway with a Chart drawn from the supplied series; split, full-width or compact layouts.",
+  "whenToUse": "When a chart carries a specific finding. Adopt Chart first (this section composes it). Use 'split' for the standard finding-beside-chart beat, 'full' for the two or three charts that lead the argument, 'compact' when several charts follow each other. Series roles come from the brand's chart theme; the brand's device around the plot comes through the chartFrame slot. NOT for a table of exact values (EvidenceTable) and NOT for one headline number (StatBand).",
+  "demo": "EvidenceChart.demo",
+  "tags": [
+    "proposal",
+    "chart",
+    "evidence",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "EvidenceChart.tsx",
+        "to": "src/sections/EvidenceChart.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './EvidenceChart';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 30
+  }
+}

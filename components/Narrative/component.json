@@ -1,0 +1,33 @@
+{
+  "name": "Narrative",
+  "description": "One beat of the argument with two to four supporting ideas, as cards, columns or a ruled list; a note separates assumptions from evidence.",
+  "whenToUse": "The prose beats between evidence: the problem, the proposed solution, the commercial model, success criteria. Two to four supporting ideas with short titles. Use 'ruled' for a quieter list, 'cards' when the ideas are parallel options. The brand's surface texture comes through the sectionDevice slot. NOT for a sequence in time (Steps) and NOT for figures (StatBand).",
+  "demo": "Narrative.demo",
+  "tags": [
+    "proposal",
+    "narrative",
+    "argument",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "Narrative.tsx",
+        "to": "src/sections/Narrative.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './Narrative';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 50
+  }
+}

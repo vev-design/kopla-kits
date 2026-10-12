@@ -34,7 +34,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
-import { validateAdoption } from './component-adoption.mjs';
+import { ADOPTION_TREES, adoptionKind, validateAdoption } from './component-adoption.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
@@ -289,7 +289,10 @@ for (const slug of kits) {
         await mkdir(dirname(resolve(work, to)), { recursive: true });
         await cp(resolve(dir, from), resolve(work, to));
       }
-      await appendFile(resolve(work, 'src/components/index.ts'), `${manifest.adopt.export}\n`);
+      // A section entry registers in the SECTIONS barrel, a component entry in
+      // the components one — the same rule the host applies (adoptionKind).
+      const tree = ADOPTION_TREES.find((t) => t.kind === adoptionKind(manifest.adopt)) ?? ADOPTION_TREES[0];
+      await appendFile(resolve(work, tree.index), `${manifest.adopt.export}\n`);
     } else {
       await cp(dir, resolve(work, 'src/components'), { recursive: true, force: true, filter });
       await appendFile(resolve(work, 'src/components/index.ts'), `export * from './${name}';\n`);
@@ -320,8 +323,14 @@ for (const slug of kits) {
   // quietly stops being exported from the barrel, which the old check could not
   // see, and which would leave an authored section importing a name the
   // consumer's catalog does not have.
+  //
+  // A SECTION entry is checked against design.json.sections instead: that is
+  // the catalog a page build composes from, and an archetype that built fine
+  // but never reached it is one no page can use.
   const design = JSON.parse(await readFile(resolve(work, 'design.json'), 'utf8'));
-  const surfaced = new Map((design.components ?? []).map((c) => [c.name, c]));
+  const surfacedComponents = new Map((design.components ?? []).map((c) => [c.name, c]));
+  const surfacedSections = new Map((design.sections ?? []).map((s) => [s.name, s]));
+  const surfacedFor = (manifest) => (adoptionKind(manifest.adopt) === 'section' ? surfacedSections : surfacedComponents);
   const missing = [];
   const expectedByComponent = new Map();
   for (const name of names) {
@@ -330,11 +339,13 @@ for (const slug of kits) {
       ? manifest.exports
       : [name];
     expectedByComponent.set(name, expected);
-    missing.push(...expected.filter((e) => !surfaced.has(e)).map((e) => `${name} → ${e}`));
+    const surfaced = surfacedFor(manifest);
+    const list = adoptionKind(manifest.adopt) === 'section' ? 'sections' : 'components';
+    missing.push(...expected.filter((e) => !surfaced.has(e)).map((e) => `${name} → ${e} (design.json.${list})`));
   }
   if (missing.length > 0) {
     console.error(
-      `build-components: ${slug} built, but missing from design.json.components: ${missing.join(', ')}`,
+      `build-components: ${slug} built, but missing from design.json: ${missing.join(', ')}`,
     );
     process.exit(1);
   }
@@ -356,7 +367,10 @@ for (const slug of kits) {
   for (const name of names) {
     const manifest = JSON.parse(await readFile(resolve(COMPONENTS_SRC, name, 'component.json'), 'utf8'));
     const exports = expectedByComponent.get(name) ?? [name];
-    const inferred = exports.some((e) => surfaced.get(e)?.hydrate === true);
+    const surfaced = surfacedFor(manifest);
+    // A section carries no per-entry `hydrate`; the contract for it is the
+    // `hydrateSections` list, so read both.
+    const inferred = exports.some((e) => surfaced.get(e)?.hydrate === true || (design.hydrateSections ?? []).includes(e));
     if (Boolean(manifest.hydrate) !== inferred) {
       lies.push(
         `${name}: component.json says hydrate: ${Boolean(manifest.hydrate)}, ` +

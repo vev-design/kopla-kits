@@ -16,6 +16,7 @@
     "allowJs": true,
     "plugins": [{ "name": "next" }],
     "paths": {
+      "@/components/Chart": ["../components/Chart/Chart.tsx"],
       "@/*": ["../kits/_base/src/*"]
     }
   },

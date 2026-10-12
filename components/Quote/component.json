@@ -1,0 +1,33 @@
+{
+  "name": "Quote",
+  "description": "A standout quotation with attribution and an optional portrait; the brand's decoration and portrait frame arrive through slots.",
+  "whenToUse": "A quotation that earns its own beat: a customer's words, a leader's framing, a line from the brief. 'standout' makes it the moment; 'editorial' sets it quieter beside a portrait. The brand's echo lines, quotation mark or portrait framing come through the quoteDecoration and portraitFrame slots. Never invent quotations; use supplied ones only.",
+  "demo": "Quote.demo",
+  "tags": [
+    "proposal",
+    "quote",
+    "voice",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "Quote.tsx",
+        "to": "src/sections/Quote.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './Quote';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 60
+  }
+}

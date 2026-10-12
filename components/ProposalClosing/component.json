@@ -1,0 +1,33 @@
+{
+  "name": "ProposalClosing",
+  "description": "The ask and sign-off: a final statement, an optional line, one action and a contact; contrast or quiet, with the brand's device through slots.",
+  "whenToUse": "The last section of a proposal or report: the decision being asked for, one action, who to contact. 'contrast' lands it on an inverse band; 'quiet' closes on the page's own surface. The brand's device and page frame come through the heroDevice and pageFrame slots. Use the supplied ask; do not invent contact details.",
+  "demo": "ProposalClosing.demo",
+  "tags": [
+    "proposal",
+    "closing",
+    "ask",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "ProposalClosing.tsx",
+        "to": "src/sections/ProposalClosing.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './ProposalClosing';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 80
+  }
+}

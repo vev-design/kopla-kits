@@ -1,0 +1,33 @@
+{
+  "name": "StatBand",
+  "description": "One to four focal figures that carry the argument, each with a label and optional support line; the brand frames each figure through a slot.",
+  "whenToUse": "When a number IS the point: the headline increase, the share, the margin. One figure for a single punch, two to four for a row. Use the brand's framing device through the statFrame slot in archetype-slots.tsx. NOT for a table of figures (EvidenceTable) and NOT for a trend (EvidenceChart).",
+  "demo": "StatBand.demo",
+  "tags": [
+    "proposal",
+    "stat",
+    "figures",
+    "archetype",
+    "section"
+  ],
+  "hydrate": false,
+  "vendor": [],
+  "adopt": {
+    "files": [
+      {
+        "from": "StatBand.tsx",
+        "to": "src/sections/StatBand.tsx"
+      },
+      {
+        "from": "archetype-slots.tsx",
+        "to": "src/sections/archetype-slots.tsx"
+      }
+    ],
+    "export": "export * from './StatBand';",
+    "theme": "src/sections/archetype-slots.tsx",
+    "checks": [
+      "check.mjs"
+    ],
+    "order": 20
+  }
+}
