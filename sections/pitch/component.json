@@ -1,0 +1,24 @@
+{
+  "name": "Pitch",
+  "description": "Pitch sections: a brand-composed frame (header, main, footer) every section wears, mechanical parts a main is built from (ranked panels, key-value tables, bullets, stats, columns), and the mains themselves. The brand decides the shell, what each rank looks like, the bullet marker and the takeaway band from documented parts; the agent decides content, rank and arrangement.",
+  "whenToUse": "A proposal, pitch or recommendation deck rendered as pages: one message per section, evidence ranked, one takeaway. Adopt Pitch; the brand's frame and rank styles live in pitch-composition.tsx (see COMPOSING.md) and the parts are never edited. Mains: Fees. NOT for marketing pages, documentation or anything without an argument to land.",
+  "tags": ["pitch", "proposal", "sections", "ssr", "theme"],
+  "hydrate": false,
+  "exports": ["Fees"],
+  "adopt": {
+    "files": [
+      { "from": "pitch-primitives.tsx", "to": "src/sections/pitch-primitives.tsx" },
+      { "from": "composition.tsx", "to": "src/sections/pitch-composition.tsx" },
+      { "from": "showcase.ts", "to": "src/sections/pitch-showcase.ts" },
+      { "from": "Fees.tsx", "to": "src/sections/Fees.tsx" }
+    ],
+    "export": "export * from './Fees';",
+    "barrel": "src/sections/index.ts",
+    "theme": "src/sections/pitch-composition.tsx",
+    "checks": ["check.mjs"],
+    "compose": {
+      "docs": "COMPOSING.md",
+      "categories": ["layout", "color", "typography"]
+    }
+  }
+}
