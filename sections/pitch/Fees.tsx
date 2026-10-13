@@ -24,16 +24,18 @@ export interface FeesProps {
   takeaway?: string | null;
   /** What kind of sentence the takeaway is; chooses the band's lead-in word. */
   takeawayKind?: 'implication' | 'recommendation' | 'takeaway' | 'next' | null;
-  /** Running footer facts: a confidentiality note, the client, the date. */
-  running?: { note?: string | null; client?: string | null; date?: string | null } | null;
+  /** Running footer facts the brand may draw: the document's title, a confidentiality note, the client, the date. Same values on every section of a pitch. */
+  running?: { title?: string | null; note?: string | null; client?: string | null; date?: string | null } | null;
+  /** This section's page number, and the page count when known. Same `total` on every section. */
+  page?: { index: number; total?: number | null } | null;
   /** The brand's mark for the footer, when the design system passes one. */
   logo?: ReactNode;
 }
 
-export function Fees({ id, kicker, title, heading, rows, notes, takeaway, takeawayKind, running, logo }: FeesProps) {
+export function Fees({ id, kicker, title, heading, rows, notes, takeaway, takeawayKind, running, page, logo }: FeesProps) {
   const table = <Panel rank="lead" heading={heading} theme={pitchTheme}><KeyValues rows={rows} theme={pitchTheme} /></Panel>;
   return (
-    <PitchFrame id={id} kicker={kicker} title={title} takeaway={takeaway} takeawayKind={takeawayKind} running={running ?? undefined} logo={logo} theme={pitchTheme} compose={composeFrame}>
+    <PitchFrame id={id} kicker={kicker} title={title} takeaway={takeaway} takeawayKind={takeawayKind} running={running ?? undefined} page={page} logo={logo} theme={pitchTheme} compose={composeFrame}>
       {notes?.length
         ? <Columns widths={[6.4, 5.6]}>{table}<Bullets items={notes} theme={pitchTheme} /></Columns>
         : table}
@@ -59,5 +61,6 @@ export const FeesDemo: FeesProps = {
   ],
   takeaway: 'Confirm by 5 September to hold the September start and the quoted fee',
   takeawayKind: 'recommendation',
-  running: { note: 'This information is confidential and was prepared solely for the use of our client; it is not to be relied on by any third party without prior written consent' },
+  running: { title: 'Caldera Foods: recovering 340 bps of EBITDA margin', note: 'This information is confidential and was prepared solely for the use of our client; it is not to be relied on by any third party without prior written consent', date: 'September 2026' },
+  page: { index: 21, total: 21 },
 };

@@ -56,9 +56,12 @@ export interface FrameContext {
   takeaway?: string | null;
   /** What kind of sentence it is: the band's lead-in word comes from this. */
   takeawayKind?: 'implication' | 'recommendation' | 'takeaway' | 'next' | null;
-  /** Running footer facts the brand may draw: a confidentiality note, the
-   *  client, the date. The composition decides which, and where. */
-  running?: { note?: string | null; client?: string | null; date?: string | null };
+  /** Running footer facts the brand may draw: the document's title, a
+   *  confidentiality note, the client, the date. The composition decides
+   *  which, and where. */
+  running?: { title?: string | null; note?: string | null; client?: string | null; date?: string | null };
+  /** This section's place in the document, when the author numbers pages. */
+  page?: { index: number; total?: number | null } | null;
   /** The brand's mark, when the design system has one to pass. */
   logo?: ReactNode;
   compact: boolean;
@@ -115,6 +118,13 @@ export function band(c: FrameContext, opts: { leadIn?: Partial<Record<NonNullabl
 export function footnote(c: FrameContext, text: string | null | undefined, opts: { color?: string; size?: number } = {}): Part {
   if (!text) return { node: null };
   return { node: <small data-pitch-footnote="" style={{ color: opts.color ?? c.theme.ink, fontSize: opts.size ?? 9, lineHeight: 1.3 }}>{text}</small> };
+}
+
+/** The page number, when the section has one: "10", or "10 / 21" with `ofTotal`. */
+export function pageNumber(c: FrameContext, opts: { color?: string; size?: number; ofTotal?: boolean } = {}): Part {
+  if (!c.page) return { node: null };
+  const text = opts.ofTotal && c.page.total ? `${String(c.page.index)} / ${String(c.page.total)}` : String(c.page.index);
+  return { node: <span data-pitch-page="" style={{ color: opts.color ?? c.theme.ink, fontSize: opts.size ?? 12, fontVariantNumeric: 'tabular-nums' }}>{text}</span> };
 }
 
 /** The brand's mark, as handed to the frame. Draws nothing without one. */

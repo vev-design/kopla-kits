@@ -28,13 +28,17 @@ most decks, says so with `bleed`.
 | `title(c, { color, size, weight, letterSpacing, fontFamily })` | the section's claim | the face and weight a title carries; a serif here is a brand decision |
 | `rule(c, { color, width, bleed })` | a horizontal line | whether the brand draws one, under the title or opening the footer; `bleed: true` runs it past the margin, edge to edge |
 | `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, set apart | the lead-in words per kind (`{ implication: 'So what' }`), `leadIn: null` for none, a marker glyph, its surface |
-| `footnote(c, text, { color, size })` | running text: confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
+| `footnote(c, text, { color, size })` | running text: the document title, confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
+| `pageNumber(c, { color, size, ofTotal })` | the page number, when the section has one | whether pages are numbered at all, and `10` or `10 / 21` |
 | `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big |
 | `row(left, right, { gap, align })` | parts side by side, right ones at the far edge | footer arrangement |
 | `stack(parts, { gap })` | parts one under another | header and footer arrangement |
 
 `c` (`FrameContext`) carries `kicker`, `title`, `takeaway`, `takeawayKind`,
-`running` (`note`, `client`, `date`), `logo`, `compact` and the theme.
+`running` (`title`, `note`, `client`, `date`), `page`, `logo`, `margin`,
+`compact` and the theme. A brand that signs every page shows its mark; a brand
+that does not shows the document's title and the page number instead. Both
+are compositions over the same facts.
 
 ## The theme
 
@@ -74,12 +78,13 @@ export function composeFrame(c: FrameContext): FrameComposition {
 }
 
 // No kicker colour; a light serif title with a rule under it; the takeaway
-// as a plain sentence with no lead-in; a hairline, the mark left, the date right.
+// as a plain sentence with no lead-in; no mark — a navy rule inside the
+// margin, the document's title left and the page number right.
 export function composeFrame(c: FrameContext): FrameComposition {
   return {
     header: stack([kicker(c, { weight: 400, transform: 'uppercase', letterSpacing: '0.08em' }), title(c, { fontFamily: 'Merriweather, serif', weight: 300, size: 30 }), rule(c, { color: '#25408f', width: 2 })], { gap: 12 }),
     takeaway: band(c, { leadIn: null }).node,
-    footer: stack([rule(c, { bleed: true }), { node: row([logo(c)], [footnote(c, c.running?.date)]) }], { gap: 16 }),
+    footer: stack([rule(c, { color: '#25408f' }), { node: row([footnote(c, c.running?.title, { size: 12 })], [pageNumber(c)]) }], { gap: 14 }),
   };
 }
 ```

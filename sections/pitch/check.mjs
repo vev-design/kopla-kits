@@ -47,6 +47,7 @@ for (const { label, main, props } of PitchShowcase) {
   } else {
     assert.ok(!html.includes('data-pitch-band=""'), `${label}: no band without a takeaway`);
   }
+  if (props.page && html.includes('data-pitch-page')) assert.ok(words.includes(String(props.page.index)), `${label}: page number drawn`);
   // Nothing the brief did not supply.
   assert.ok(!/<button|<a /.test(html), `${label}: no controls in a pitch section`);
   assert.ok(!/<ol\b|\b0[1-9]\b/.test(html), `${label}: no numbering`);
