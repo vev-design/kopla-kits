@@ -155,7 +155,7 @@ export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact'> & {
   return <section id={id ?? undefined} data-pitch-frame="" style={{ fontFamily: theme.typography.fontFamily, fontSize: theme.typography.bodySize, lineHeight: theme.typography.lineHeight, color: theme.ink, background: theme.page, containerType: 'inline-size' as CSSProperties['containerType'] }}>
     <header data-pitch-header="" style={{ padding: `32px ${String(margin)}px 16px` }}>{frame.header}</header>
     <div data-pitch-main="" style={{ background: frame.field ?? theme.field, padding: `32px ${String(margin)}px 40px` }}>{children}</div>
-    <footer data-pitch-footer="" style={{ padding: `0 ${String(margin)}px 24px` }}>{frame.footer}</footer>
+    <footer data-pitch-footer="" style={{ padding: `28px ${String(margin)}px 24px` }}>{frame.footer}</footer>
   </section>;
 }
 
