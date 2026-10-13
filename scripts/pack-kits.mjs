@@ -14,7 +14,8 @@
 //     formatVersion: 1,
 //     base: { "<relpath>": "<base64>", ... },
 //     kits: { "<slug>": { manifest, files: { "<relpath>": "<base64>" } } },
-//     components: { "<Name>": { manifest, files: { "<relpath>": "<base64>" } } }
+//     components: { "<Name>": { manifest, files: { "<relpath>": "<base64>" } } },
+//     sections: { "<slug>": { manifest, files: { "<relpath>": "<base64>" } } }
 //   }
 //
 // `base` is the kit-invariant substrate (kits/_base). Each kit's `files`
@@ -23,7 +24,10 @@
 // derived slug (the folder name). `components` is the advanced-components
 // catalog (top-level components/): kit-agnostic copy-in components, one
 // entry per folder, `manifest` = parsed component.json + derived name.
-// Additive — consumers that predate it ignore the key.
+// `sections` is the section catalog (top-level sections/): adopted section
+// packs — a frame, parts, a brand-composed file and the mains built from
+// them — one entry per folder, `manifest` = parsed component.json + derived
+// slug. Both additive — consumers that predate a key ignore it.
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { collectTokensFromCss } from './extractor/lib/tokens.mjs';
@@ -36,6 +40,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
 const BASE_SRC = resolve(KITS_SRC, '_base');
 const COMPONENTS_SRC = resolve(ROOT, 'components');
+const SECTIONS_SRC = resolve(ROOT, 'sections');
 const OUT_PATH = resolve(ROOT, 'dist/kits-bundle.json');
 
 const SKIP_DIRS = new Set([
@@ -273,10 +278,68 @@ async function packComponents() {
   return components;
 }
 
+/** A section pack's manifest: like a component's, but the folder is a slug,
+ *  the name is the pack's PascalCase name, `exports` names the mains (every
+ *  one a `<Main>.tsx` in the folder) and adoption lands under src/sections/. */
+function validateSectionManifest(slug, raw, files) {
+  const errs = [];
+  if (typeof raw !== 'object' || raw === null) errs.push('component.json must be a JSON object');
+  const m = /** @type {Record<string, unknown>} */ (raw ?? {});
+  if (typeof m.name !== 'string' || !/^[A-Z][A-Za-z0-9]*$/.test(m.name)) errs.push('`name` (PascalCase) required');
+  for (const field of ['description', 'whenToUse']) {
+    if (typeof m[field] !== 'string' || !m[field].trim()) errs.push(`\`${field}\` (non-empty string) required`);
+  }
+  if (!Array.isArray(m.tags) || !m.tags.every((t) => typeof t === 'string')) errs.push('`tags` (string[]) required');
+  if (typeof m.hydrate !== 'boolean') errs.push('`hydrate` (boolean) required');
+  if (!Array.isArray(m.exports) || m.exports.length === 0 || !m.exports.every((e) => typeof e === 'string' && /^[A-Z][A-Za-z0-9]*$/.test(e)))
+    errs.push('`exports` (the mains, PascalCase string[]) required');
+  else for (const main of m.exports) if (!(`${main}.tsx` in files)) errs.push(`export "${main}" has no ${main}.tsx in the folder`);
+  if (!m.adopt) errs.push('`adopt` required: a section pack is always adopted, never copied in');
+  errs.push(...validateAdoption(m.adopt, resolve(SECTIONS_SRC, slug), { root: 'src/sections/' }));
+  if (errs.length > 0) {
+    console.error(`pack: section pack "${slug}" component.json invalid:\n  - ${errs.join('\n  - ')}`);
+    process.exit(1);
+  }
+  return { slug, name: m.name, description: m.description, whenToUse: m.whenToUse, tags: m.tags, hydrate: m.hydrate, exports: m.exports, adopt: m.adopt };
+}
+
+/** The section catalog (top-level sections/, one folder per pack). Optional —
+ *  an empty catalog packs as {}. */
+async function packSections() {
+  let entries;
+  try {
+    entries = await readdir(SECTIONS_SRC, { withFileTypes: true });
+  } catch {
+    return {};
+  }
+  const slugs = entries.filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name)).map((e) => e.name).sort();
+  /** @type {Record<string, { manifest: object, files: Record<string,string> }>} */
+  const sections = {};
+  for (const slug of slugs) {
+    if (!SLUG_RE.test(slug)) {
+      console.error(`pack: section folder "${slug}" is not a valid slug (lowercase, digits, dashes)`);
+      process.exit(1);
+    }
+    const dir = resolve(SECTIONS_SRC, slug);
+    let manifestRaw;
+    try {
+      manifestRaw = JSON.parse(await readFile(resolve(dir, 'component.json'), 'utf8'));
+    } catch (err) {
+      console.error(`pack: section pack "${slug}" is missing or has an unparseable component.json: ${err.message}`);
+      process.exit(1);
+    }
+    const files = await packTree(dir, `sect:${slug}`);
+    sections[slug] = { manifest: validateSectionManifest(slug, manifestRaw, files), files };
+  }
+  if (slugs.length > 0) console.log(`pack: sections → ${slugs.length} (${slugs.join(', ')})`);
+  return sections;
+}
+
 const base = await packTree(BASE_SRC, 'base   ');
 const kits = await packKits();
 const components = await packComponents();
+const sections = await packSections();
 
 await mkdir(dirname(OUT_PATH), { recursive: true });
-await writeFile(OUT_PATH, JSON.stringify({ formatVersion: 1, base, kits, components }));
+await writeFile(OUT_PATH, JSON.stringify({ formatVersion: 1, base, kits, components, sections }));
 console.log(`pack: → ${relative(ROOT, OUT_PATH)}`);

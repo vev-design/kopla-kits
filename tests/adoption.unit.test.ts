@@ -15,6 +15,17 @@ describe('catalog adoption contract', () => {
       expect(m.adopt.checks).toEqual(['check.mjs']);
     }
   });
+  test('a section pack adopts under src/sections, into its own barrel', () => {
+    const dir = resolve(import.meta.dir, '../sections/pitch');
+    const m = JSON.parse(readFileSync(resolve(dir, 'component.json'), 'utf8'));
+    expect(validateAdoption(m.adopt, dir, { root: 'src/sections/' })).toEqual([]);
+    expect(m.adopt.barrel).toBe('src/sections/index.ts');
+    expect(m.adopt.theme).toBe('src/sections/pitch-composition.tsx');
+    for (const main of m.exports) expect(m.adopt.files.some((f: { to: string }) => f.to === `src/sections/${main}.tsx`)).toBe(true);
+    // The same manifest read as a component is rejected: a pack never lands beside components.
+    expect(validateAdoption(m.adopt, dir).length).toBeGreaterThan(0);
+    expect(validateAdoption({ ...m.adopt, barrel: 'src/components/index.ts' }, dir, { root: 'src/sections/' }).length).toBeGreaterThan(0);
+  });
   test('legacy skeleton components need no adoption manifest', () => {
     expect(validateAdoption(undefined, directory)).toEqual([]);
   });

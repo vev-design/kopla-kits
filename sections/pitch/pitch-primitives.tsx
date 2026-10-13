@@ -156,7 +156,7 @@ export function stack(parts: Part[], opts: { gap?: number } = {}): ReactNode {
  * returns for this context; the main is the section's own, built from the
  * parts below.
  */
-export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact'> & {
+export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact' | 'margin'> & {
   id?: string | null;
   theme: PitchTheme;
   compose: (c: FrameContext) => FrameComposition;
