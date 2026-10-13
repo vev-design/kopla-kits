@@ -85,9 +85,9 @@ export interface Part { node: ReactNode }
 // ── Frame parts ──────────────────────────────────────────────────────────────
 
 /** The small label above a title. */
-export function kicker(c: FrameContext, opts: { color?: string; size?: number; weight?: number; transform?: CSSProperties['textTransform']; letterSpacing?: string } = {}): Part {
+export function kicker(c: FrameContext, opts: { color?: string; size?: number; weight?: number; transform?: CSSProperties['textTransform']; letterSpacing?: string; fontFamily?: string } = {}): Part {
   if (!c.kicker) return { node: null };
-  return { node: <p data-pitch-kicker="" style={{ margin: 0, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? 12, fontWeight: opts.weight ?? 700, textTransform: opts.transform, letterSpacing: opts.letterSpacing, lineHeight: 1.3 }}>{c.kicker}</p> };
+  return { node: <p data-pitch-kicker="" style={{ margin: 0, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? 12, fontWeight: opts.weight ?? 700, textTransform: opts.transform, letterSpacing: opts.letterSpacing, fontFamily: opts.fontFamily, lineHeight: 1.3 }}>{c.kicker}</p> };
 }
 
 /** The section's claim. One line in the deck; wraps on a phone. */
@@ -108,7 +108,8 @@ export function band(c: FrameContext, opts: { leadIn?: Partial<Record<NonNullabl
   if (!c.takeaway) return { node: null };
   const kind = c.takeawayKind ?? 'takeaway';
   const word = opts.leadIn === null ? null : (opts.leadIn?.[kind] ?? { implication: 'Implication', recommendation: 'Recommendation', takeaway: 'Takeaway', next: 'Next step' }[kind]);
-  return { node: <p data-pitch-band="" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10, background: opts.background, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? c.theme.typography.bodySize + 2, lineHeight: 1.4 }}>
+  // A band on its own surface needs room inside it; on the page it sits flush.
+  return { node: <p data-pitch-band="" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10, background: opts.background, padding: opts.background ? '14px 16px' : 0, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? c.theme.typography.bodySize + 2, lineHeight: 1.4 }}>
     {opts.marker}
     <span>{word ? <strong style={{ color: opts.leadInColor ?? c.theme.ink, fontWeight: opts.leadInWeight ?? 700 }}>{word}: </strong> : null}{c.takeaway}</span>
   </p> };

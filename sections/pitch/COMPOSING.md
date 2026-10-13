@@ -24,10 +24,10 @@ most decks, says so with `bleed`.
 
 | Part | What it draws | The decisions it takes |
 | --- | --- | --- |
-| `kicker(c, { color, size, weight, transform, letterSpacing })` | the small label above the title | its colour and case; nothing when the section has none |
+| `kicker(c, { color, size, weight, transform, letterSpacing, fontFamily })` | the small label above the title | its colour, case and face; nothing when the section has none |
 | `title(c, { color, size, weight, letterSpacing, fontFamily })` | the section's claim | the face and weight a title carries; a serif here is a brand decision |
 | `rule(c, { color, width, bleed })` | a horizontal line | whether the brand draws one, under the title or opening the footer; `bleed: true` runs it past the margin, edge to edge |
-| `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, set apart | the lead-in words per kind (`{ implication: 'So what' }`), `leadIn: null` for none, a marker glyph, its surface |
+| `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, set apart | the lead-in words per kind (`{ implication: 'So what' }`), `leadIn: null` for none, a marker glyph, its surface (padded when set) |
 | `footnote(c, text, { color, size })` | running text: the document title, confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
 | `pageNumber(c, { color, size, ofTotal })` | the page number, when the section has one | whether pages are numbered at all, and `10` or `10 / 21` |
 | `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big |
