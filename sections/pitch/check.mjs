@@ -27,6 +27,8 @@ for (const { label, main, props } of PitchShowcase) {
   assert.ok(frame, `${label}: renders through PitchFrame`);
   const order = ['data-pitch-header', 'data-pitch-main', 'data-pitch-footer'].map((k) => html.indexOf(k));
   assert.ok(order[0] > 0 && order[0] < order[1] && order[1] < order[2], `${label}: header, main, footer in order`);
+  const takeawayAt = html.indexOf('data-pitch-takeaway');
+  if (takeawayAt >= 0) assert.ok(takeawayAt > order[1] && takeawayAt < order[2], `${label}: the takeaway region sits between main and footer`);
   // One lead, never more; a main with nothing ranked is a main with no point.
   const leads = (html.match(/data-rank="lead"/g) ?? []).length;
   assert.equal(leads, 1, `${label}: exactly one lead (found ${String(leads)})`);
@@ -41,6 +43,7 @@ for (const { label, main, props } of PitchShowcase) {
   if (props.kicker) assert.ok(words.includes(props.kicker), `${label}: kicker missing`);
   if (props.takeaway) {
     assert.ok(html.includes('data-pitch-band=""') && words.includes(props.takeaway), `${label}: takeaway drawn in the band`);
+    assert.ok(takeawayAt >= 0 && html.indexOf('data-pitch-band') > takeawayAt && html.indexOf('data-pitch-band') < order[2], `${label}: the band lives in the takeaway region, not the footer`);
   } else {
     assert.ok(!html.includes('data-pitch-band=""'), `${label}: no band without a takeaway`);
   }

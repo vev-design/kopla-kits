@@ -62,11 +62,16 @@ export interface FrameContext {
   /** The brand's mark, when the design system has one to pass. */
   logo?: ReactNode;
   compact: boolean;
+  /** The frame's horizontal margin, so a part can bleed past it on purpose. */
+  margin: number;
   theme: PitchTheme;
 }
 
 export interface FrameComposition {
   header: ReactNode;
+  /** The takeaway region between main and footer: the section's own last
+   *  word, apart from the document's running footer. Omit to draw none. */
+  takeaway?: ReactNode;
   footer: ReactNode;
   /** Override the field for this frame; defaults to theme.field. */
   field?: string;
@@ -89,8 +94,9 @@ export function title(c: FrameContext, opts: { color?: string; size?: number; we
 }
 
 /** A horizontal rule, for brands that draw one under the title or over the footer. */
-export function rule(c: FrameContext, opts: { color?: string; width?: number } = {}): Part {
-  return { node: <hr data-pitch-rule="" style={{ border: 0, borderTop: `${String(opts.width ?? 1)}px solid ${opts.color ?? c.theme.divider}`, margin: 0 }} /> };
+export function rule(c: FrameContext, opts: { color?: string; width?: number; bleed?: boolean } = {}): Part {
+  // A footer line in a deck runs edge to edge; `bleed` pushes past the frame's margin to do the same.
+  return { node: <hr data-pitch-rule="" style={{ border: 0, borderTop: `${String(opts.width ?? 1)}px solid ${opts.color ?? c.theme.divider}`, margin: 0, marginInline: opts.bleed ? -c.margin : 0 }} /> };
 }
 
 /** The takeaway band: the one sentence, set apart, with an optional lead-in
@@ -135,9 +141,10 @@ export function stack(parts: Part[], opts: { gap?: number } = {}): ReactNode {
 
 /**
  * Every pitch section renders through this: the brand's header above, the
- * brand's footer below, the main between them on the field. The header and
- * footer are whatever `compose` returns for this context; the main is the
- * section's own, built from the parts below.
+ * main on the field, the takeaway region when the brand draws one, the
+ * brand's footer last. Header, takeaway and footer are whatever `compose`
+ * returns for this context; the main is the section's own, built from the
+ * parts below.
  */
 export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact'> & {
   id?: string | null;
@@ -150,12 +157,13 @@ export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact'> & {
   const { id, theme, compose, margin = 48, children, ...ctx } = props;
   // Composed once for the wide layout; the main reflows by itself and the
   // header/footer are text, so one pass serves every width.
-  const c: FrameContext = { ...ctx, compact: false, theme };
+  const c: FrameContext = { ...ctx, compact: false, margin, theme };
   const frame = compose(c);
   return <section id={id ?? undefined} data-pitch-frame="" style={{ fontFamily: theme.typography.fontFamily, fontSize: theme.typography.bodySize, lineHeight: theme.typography.lineHeight, color: theme.ink, background: theme.page, containerType: 'inline-size' as CSSProperties['containerType'] }}>
     <header data-pitch-header="" style={{ padding: `32px ${String(margin)}px 16px` }}>{frame.header}</header>
     <div data-pitch-main="" style={{ background: frame.field ?? theme.field, padding: `32px ${String(margin)}px 40px` }}>{children}</div>
-    <footer data-pitch-footer="" style={{ padding: `28px ${String(margin)}px 24px` }}>{frame.footer}</footer>
+    {frame.takeaway ? <div data-pitch-takeaway="" style={{ padding: `28px ${String(margin)}px 24px` }}>{frame.takeaway}</div> : null}
+    <footer data-pitch-footer="" style={{ padding: `0 ${String(margin)}px 24px` }}>{frame.footer}</footer>
   </section>;
 }
 

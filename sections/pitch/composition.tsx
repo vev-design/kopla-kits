@@ -30,16 +30,16 @@ export const pitchTheme: PitchTheme = {
 
 /**
  * How this brand frames a section. The neutral default: kicker over the title
- * in the header; in the footer the takeaway on its own line with a lead-in
- * word, then a rule, then the running note on the left and the logo on the
- * right. Keep it static: no hooks, no browser APIs.
+ * in the header; the takeaway on its own line with a lead-in word; a footer
+ * that opens with an edge-to-edge rule, then the running note on the left and
+ * the logo on the right. Keep it static: no hooks, no browser APIs.
  */
 export function composeFrame(c: FrameContext): FrameComposition {
   return {
     header: stack([kicker(c), title(c)], { gap: 8 }),
+    takeaway: band(c, { leadInColor: pitchTheme.ranks.lead.background }).node,
     footer: stack([
-      band(c, { leadInColor: pitchTheme.ranks.lead.background }),
-      rule(c),
+      rule(c, { bleed: true }),
       { node: row([footnote(c, c.running?.note)], [logo(c)]) },
     ], { gap: 16 }),
   };
