@@ -29,16 +29,19 @@ assert.match(render({ frame: createElement('div', { 'data-brand-frame': true }),
 const hostile = render({ title: '<script>alert(1)</script>', categories: ['<img src=x onerror=alert(1)>'], series: [{ name: 'Escaped', values: [1] }] });
 assert.ok(!hostile.includes('<script>') && !hostile.includes('<img src=x'), 'Source content must be escaped');
 // A valid circle without readable category/share labels is still a failed chart.
-// Inspect SVG text, not the source table or the separate key below the plot.
+// Every name and share must be readable on the circle OR in the key under it
+// (COMPOSING.md: "the labels are the key", or plain sectors with a key) —
+// never only in the source table, which is folded away.
 for (const variant of ['pie', 'donut']) {
   const html = render({ variant, categories: ['Enterprise', 'Mid-market', 'Small business'], series: [{ name: 'Revenue', values: [960000, 465000, 275000] }] });
   const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
   assert.ok(plots.length > 0, `${variant}: missing plot`);
+  const keyText = (html.match(/<ul\b[^>]*data-chart-key[\s\S]*?<\/ul>/g) ?? []).map((ul) => ul.replace(/<[^>]+>/g, ' ')).join(' ').replace(/\s+/g, '');
   for (const svg of plots) {
     // Wrapped lines are tspans inside one text; read the words, not the markup.
-    const labels = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1].replace(/<[^>]+>/g, '')).join(' ').replace(/\s+/g, '');
+    const labels = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1].replace(/<[^>]+>/g, '')).join(' ').replace(/\s+/g, '') + keyText;
     for (const label of ['Enterprise', 'Mid-market', 'Small business', '56.5%', '27.4%', '16.2%'])
-      assert.ok(labels.includes(label.replace(/\s+/g, '')), `${variant}: visible slice label missing: ${label}`);
+      assert.ok(labels.includes(label.replace(/\s+/g, '')), `${variant}: visible slice label missing: ${label} (not on the circle, not in the key)`);
   }
   // The default composition draws no key under a small pie — the labels on the
   // circle already say name and share — so the exact value lives in the source
