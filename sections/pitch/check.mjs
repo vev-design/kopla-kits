@@ -44,8 +44,8 @@ for (const { label, main, props } of PitchShowcase) {
   if (props.takeaway) {
     assert.ok(html.includes('data-pitch-band=""') && words.includes(props.takeaway), `${label}: takeaway drawn in the band`);
     assert.ok(takeawayAt >= 0 && html.indexOf('data-pitch-band') > takeawayAt && html.indexOf('data-pitch-band') < order[2], `${label}: the band lives in the takeaway region, not the footer`);
-    // Visibly the conclusion: a lead-in word, a marker, or both — a background alone is body copy.
-    assert.ok(html.includes('data-pitch-band-lead-in=""') || html.includes('data-pitch-band-marker=""'), `${label}: the takeaway has no lead-in word and no marker — nothing says it is the conclusion`);
+    // Visibly the conclusion: the lead-in word is always there, styled by the brand.
+    assert.ok(html.includes('data-pitch-band-lead-in=""'), `${label}: the takeaway has no lead-in word — nothing says it is the conclusion`);
   } else {
     assert.ok(!html.includes('data-pitch-band=""'), `${label}: no band without a takeaway`);
   }
