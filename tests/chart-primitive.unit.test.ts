@@ -61,8 +61,9 @@ describe('finished Chart primitive', () => {
     const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
     expect(plots.length).toBeGreaterThan(0);
     for (const plot of plots) {
-      // Never narrower than the 48px-per-category floor plus the axis budget;
-      // at that width a label wraps ("Q1" over "2025") rather than the plot scrolling.
+      // Never narrower than the per-category floor (the longest word, 48px at
+      // least) plus the axis budget; at that width a label wraps at its space
+      // ("Q1" over "2025") rather than the plot scrolling, and never inside a word.
       expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThanOrEqual(8 * 48 + 112);
       const words = plot.replace(/<[^>]+>/g, ' ');
       for (const category of categories) for (const word of category.split(' ')) expect(words).toContain(word);

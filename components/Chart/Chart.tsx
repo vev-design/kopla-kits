@@ -155,8 +155,12 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
   // a chart beside prose in a third of a page is the common case, and a
   // scroll there hides the point of the chart. 48px is the floor past which
   // even wrapped labels stop reading; below it the plot scrolls as before.
-  const pitchAt = (width: number) => categorical ? Math.max(48, Math.min(120, widest, Math.floor((width - axisBudget) / Math.max(1, names.length)))) : 0;
-  const uncappedWidth = names.length * 48 + axisBudget;
+  // The floor is the longest single word plus its gutter: a label wraps at
+  // spaces, never inside a word or a number ("2025" stays whole).
+  const longestWord = categorical ? Math.ceil(names.reduce((max, name) => Math.max(max, ...name.split(/\s+/).map((word) => measureStaticText(word, font).width)), 0)) : 0;
+  const floor = Math.max(48, longestWord + 16);
+  const pitchAt = (width: number) => categorical ? Math.max(floor, Math.min(120, widest, Math.floor((width - axisBudget) / Math.max(1, names.length)))) : 0;
+  const uncappedWidth = names.length * floor + axisBudget;
   const minimumWidth = categorical ? Math.min(2400, Math.ceil(uncappedWidth)) : 0;
   const layout = (baseWidth: number) => {
     const width = Math.max(baseWidth, minimumWidth);
