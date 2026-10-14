@@ -149,7 +149,7 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
   // Include the numeric axis in the width budget, including stacked totals.
   // Extra ems cover tick rounding and gaps; they are spacing, not font metrics.
   const axisWidth = axisValues.reduce((max, value) => Number.isFinite(value) ? Math.max(max, measureStaticText(axisFormat.full(value), font).width) : max, 0);
-  const axisBudget = Math.max(112, Math.ceil(axisWidth + theme.typography.labelSize * 2 + 24));
+  const axisBudget = Math.max(72, Math.ceil(axisWidth + theme.typography.labelSize * 2 + 16));
   // Room per category at a given width: a label gets its measured width when
   // there is space, and wraps (up to three lines) when the plot is narrow —
   // a chart beside prose in a third of a page is the common case, and a
@@ -158,7 +158,7 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
   // The floor is the longest single word plus its gutter: a label wraps at
   // spaces, never inside a word or a number ("2025" stays whole).
   const longestWord = categorical ? Math.ceil(names.reduce((max, name) => Math.max(max, ...name.split(/\s+/).map((word) => measureStaticText(word, font).width)), 0)) : 0;
-  const floor = Math.max(48, longestWord + 16);
+  const floor = Math.max(44, longestWord + 10);
   const pitchAt = (width: number) => categorical ? Math.max(floor, Math.min(120, widest, Math.floor((width - axisBudget) / Math.max(1, names.length)))) : 0;
   const uncappedWidth = names.length * floor + axisBudget;
   const minimumWidth = categorical ? Math.min(2400, Math.ceil(uncappedWidth)) : 0;
@@ -175,10 +175,10 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
         formatter: (value: string) => wrapMeasuredLabel(String(value), labelWidth, font),
       } : {}),
     } } };
-    // A plot up to 15% wider than its container scales down to fit — text at
-    // 85% of its theme size still reads, and a chart beside prose in a third
-    // of a page lands in that band more often than not. Past that it scrolls.
-    const fit = Math.ceil(width * 0.85);
+    // A plot up to a quarter wider than its container scales down to fit —
+    // text at three quarters of its theme size still reads, and a chart beside
+    // prose in a third of a page lands in that band. Past that it scrolls.
+    const fit = Math.ceil(width * 0.75);
     return <>
       <style>{`@container kopla-cartesian (max-width:${fit - 0.01}px){.kopla-cartesian-scroll-${width}{display:block!important}}` +
         `@container kopla-cartesian (min-width:${fit}px) and (max-width:${width - 0.01}px){.kopla-cartesian-fit-${width}{width:100%!important;min-width:0!important}.kopla-cartesian-fit-${width} svg{width:100%!important;height:auto!important}}`}</style>
@@ -327,7 +327,7 @@ export function Chart({ title, variant = 'bar', series, categories, background =
     </ul>
   </>;
   const formatted = (value: number | null | undefined) => value == null || !Number.isFinite(value) ? '—' : value;
-  return <figure className={`min-w-0 p-5 sm:p-8 ${className ?? ''}`} style={{ background: theme.backgrounds[background], color: theme.textColor, fontFamily: theme.typography.fontFamily }}>
+  return <figure className={`min-w-0 p-5 ${className ?? ''}`} style={{ background: theme.backgrounds[background], color: theme.textColor, fontFamily: theme.typography.fontFamily }}>
     <figcaption className="mb-6" style={{ fontSize: theme.typography.titleSize, fontWeight: theme.typography.titleWeight }}>{title}</figcaption>
     {isValidElement(frame) ? cloneElement(frame, undefined, plot) : plot}
     {source && <p className="mt-6 leading-relaxed" style={{ fontSize: theme.typography.noteSize }}>{source}</p>}
