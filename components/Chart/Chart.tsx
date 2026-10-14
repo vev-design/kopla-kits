@@ -175,12 +175,17 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
         formatter: (value: string) => wrapMeasuredLabel(String(value), labelWidth, font),
       } : {}),
     } } };
+    // A plot up to 15% wider than its container scales down to fit — text at
+    // 85% of its theme size still reads, and a chart beside prose in a third
+    // of a page lands in that band more often than not. Past that it scrolls.
+    const fit = Math.ceil(width * 0.85);
     return <>
-      <style>{`@container kopla-cartesian (max-width:${width - 0.01}px){.kopla-cartesian-scroll-${width}{display:block!important}}`}</style>
+      <style>{`@container kopla-cartesian (max-width:${fit - 0.01}px){.kopla-cartesian-scroll-${width}{display:block!important}}` +
+        `@container kopla-cartesian (min-width:${fit}px) and (max-width:${width - 0.01}px){.kopla-cartesian-fit-${width}{width:100%!important;min-width:0!important}.kopla-cartesian-fit-${width} svg{width:100%!important;height:auto!important}}`}</style>
       <p className={`kopla-cartesian-scroll-${width} mb-2`} style={{ display: 'none', fontSize: theme.typography.noteSize }}>Scroll to see the full chart.</p>
       <div tabIndex={0} role="region" aria-label={`${title} chart; scroll horizontally if needed. Full labels and values are in View source data.`}
         className="max-w-full overflow-x-auto" style={{ minWidth: 0 }}>
-        <div style={{ width, minWidth: width, marginInline: 'auto' }}><Plot option={plotOption} width={width} height={320} /></div>
+        <div className={`kopla-cartesian-fit-${width}`} style={{ width, minWidth: width, marginInline: 'auto' }}><Plot option={plotOption} width={width} height={320} /></div>
       </div>
     </>;
   };
