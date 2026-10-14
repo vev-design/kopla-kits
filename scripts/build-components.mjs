@@ -39,6 +39,7 @@ import { validateAdoption } from './component-adoption.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KITS_SRC = resolve(ROOT, 'kits');
 const COMPONENTS_SRC = resolve(ROOT, 'components');
+const SECTIONS_SRC = resolve(ROOT, 'sections');
 
 // `blank` is the fallback every consumer has, so it is never optional. `finance`
 // is the second because it has the richest catalog of its own (Badge, Card,
@@ -253,6 +254,28 @@ for (const name of names) {
     }
   });
 }
+// Section packs (sections/): always adopted, under src/sections/. Their
+// manifest shape is checked by the packer; here they ride the same workspace
+// build so a pack that does not typecheck beside a kit, or whose mains do not
+// surface in design.json.sections, fails the way a component would.
+const packs = existsSync(SECTIONS_SRC)
+  ? (await readdir(SECTIONS_SRC, { withFileTypes: true })).filter((e) => e.isDirectory() && !e.name.startsWith('.')).map((e) => e.name).sort()
+  : [];
+const packManifests = new Map();
+for (const slug of packs) {
+  const manifestPath = resolve(SECTIONS_SRC, slug, 'component.json');
+  if (!existsSync(manifestPath)) { problems.push(`sections/${slug}: no component.json`); continue; }
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  packManifests.set(slug, manifest);
+  if (!manifest.adopt) problems.push(`sections/${slug}: a section pack must declare adopt`);
+  problems.push(...validateAdoption(manifest.adopt, resolve(SECTIONS_SRC, slug), { root: 'src/sections/' }).map((p) => `sections/${slug}: ${p}`));
+  if (manifest.hydrate === false) {
+    for (const main of manifest.exports ?? []) {
+      const file = resolve(SECTIONS_SRC, slug, `${main}.tsx`);
+      if (existsSync(file)) problems.push(...checkStatic(`sections/${slug}/${main}`, await readFile(file, 'utf8')));
+    }
+  }
+}
 if (problems.length > 0) {
   console.error(`build-components: ${problems.length} contract problem(s)\n`);
   for (const problem of problems) console.error(`  ✗ ${problem}`);
@@ -296,6 +319,17 @@ for (const slug of kits) {
     }
   }
 
+  // Section packs, adopted the same way, into the sections barrel.
+  for (const pack of packs) {
+    const dir = resolve(SECTIONS_SRC, pack);
+    const manifest = packManifests.get(pack);
+    for (const { from, to } of manifest.adopt.files) {
+      await mkdir(dirname(resolve(work, to)), { recursive: true });
+      await cp(resolve(dir, from), resolve(work, to));
+    }
+    await appendFile(resolve(work, manifest.adopt.barrel ?? 'src/sections/index.ts'), `${manifest.adopt.export}\n`);
+  }
+
   console.log(`\nbuild-components: ${slug} — bun install && bun run build`);
   execFileSync('bun', ['install'], { cwd: work, stdio: 'inherit' });
   execFileSync('bun', ['run', 'build'], { cwd: work, stdio: 'inherit' });
@@ -304,6 +338,11 @@ for (const slug of kits) {
     const manifest = JSON.parse(await readFile(resolve(dir, 'component.json'), 'utf8'));
     for (const check of manifest.adopt?.checks ?? []) {
       execFileSync('bun', [resolve(dir, check), work], { cwd: work, stdio: 'inherit' });
+    }
+  }
+  for (const pack of packs) {
+    for (const check of packManifests.get(pack).adopt.checks ?? []) {
+      execFileSync('bun', [resolve(SECTIONS_SRC, pack, check), work], { cwd: work, stdio: 'inherit' });
     }
   }
 
@@ -338,6 +377,14 @@ for (const slug of kits) {
     );
     process.exit(1);
   }
+  // A pack's mains must have reached design.json.sections — that is the catalog
+  // a consumer composes pages from, and a main missing from it is unreachable.
+  const surfacedSections = new Set((design.sections ?? []).map((s) => s.name));
+  const missingMains = packs.flatMap((pack) => (packManifests.get(pack).exports ?? []).filter((main) => !surfacedSections.has(main)).map((main) => `${pack} → ${main}`));
+  if (missingMains.length > 0) {
+    console.error(`build-components: ${slug} built, but missing from design.json.sections: ${missingMains.join(', ')}`);
+    process.exit(1);
+  }
 
   // `hydrate` in the manifest against `hydrate` as the extractor INFERRED it from
   // the AST. This is the authoritative version of the static-claim check: the
@@ -369,7 +416,7 @@ for (const slug of kits) {
     for (const lie of lies) console.error(`  ✗ ${lie}`);
     process.exit(1);
   }
-  console.log(`build-components: ${slug} — ${names.length} component(s) built + surfaced ✓ (${work})`);
+  console.log(`build-components: ${slug} — ${names.length} component(s) + ${packs.length} section pack(s) built + surfaced ✓ (${work})`);
 }
 
 console.log(`\nbuild-components: ${names.length} component(s) × ${kits.length} kit(s) ✓ — ${kits.join(', ')}`);

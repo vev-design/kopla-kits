@@ -326,6 +326,19 @@ The bundle preserves `adopt`, `implements`, `exports` and `demo` metadata, and
 packs every declared source and check file. The existing manual copy contract
 continues for folders with no adoption manifest.
 
+### Section packs
+
+`sections/<slug>/` is a second catalog with the same adoption contract and a
+different destination: a pack is always adopted (never copied in), its files
+land under `src/sections/`, `adopt.theme` is its brand-composed file, and its
+`export` is appended to `src/sections/index.ts` (or `adopt.barrel`, an
+`index.ts` under the same root). `exports` names the pack's mains, each a
+`<Main>.tsx` in the folder, and they must surface in `design.json.sections`.
+A pack holds a frame every one of its sections renders through, the parts a
+main is built from, and the mains; the brand composes the frame and the look
+of each part once, in the theme file, and a main names ranks, never styles.
+`sections/pitch` is the worked example.
+
 ## Toolchain contract
 
 For every kit, the assembled workspace must pass:
@@ -378,7 +391,9 @@ agent/chat to adjust.
 ```
 ./kits-bundle.json → { formatVersion: 1,
                        base: { "<relpath>": "<base64>" },
-                       kits: { "<slug>": { manifest, files } } }
+                       kits: { "<slug>": { manifest, files } },
+                       components: { "<Name>": { manifest, files } },
+                       sections: { "<slug>": { manifest, files } } }
 ```
 
 - `formatVersion` bumps with the shape, not the content.
