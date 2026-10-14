@@ -51,6 +51,7 @@ for (const { label, main, props } of PitchShowcase) {
     assert.ok(bandStyle && !/background/.test(bandStyle[1]), `${label}: the band paints its own background — set the region's surface (takeawaySurface) instead`);
   } else {
     assert.ok(!html.includes('data-pitch-band=""'), `${label}: no band without a takeaway`);
+    assert.ok(!html.includes('data-pitch-takeaway=""'), `${label}: no takeaway region without a takeaway — a rule above nothing is decoration`);
   }
   if (props.page && html.includes('data-pitch-page')) assert.ok(words.includes(String(props.page.index)), `${label}: page number drawn`);
   // Nothing the brief did not supply.
