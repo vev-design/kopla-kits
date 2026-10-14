@@ -46,6 +46,9 @@ for (const { label, main, props } of PitchShowcase) {
     assert.ok(takeawayAt >= 0 && html.indexOf('data-pitch-band') > takeawayAt && html.indexOf('data-pitch-band') < order[2], `${label}: the band lives in the takeaway region, not the footer`);
     // Visibly the conclusion: the lead-in word is always there, styled by the brand.
     assert.ok(html.includes('data-pitch-band-lead-in=""'), `${label}: the takeaway has no lead-in word — nothing says it is the conclusion`);
+    // Set apart by its region, never by a box of its own.
+    const bandStyle = html.match(/<p[^>]*data-pitch-band=""[^>]*style="([^"]*)"/);
+    assert.ok(bandStyle && !/background/.test(bandStyle[1]), `${label}: the band paints its own background — set the region's surface (takeawaySurface) instead`);
   } else {
     assert.ok(!html.includes('data-pitch-band=""'), `${label}: no band without a takeaway`);
   }

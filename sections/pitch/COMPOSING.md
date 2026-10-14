@@ -15,19 +15,22 @@ parts, rather than describing it.
 
 ## The frame
 
-`composeFrame(c)` returns `{ header, takeaway?, footer, field? }`: the header
-above the main, the takeaway region between main and footer (the section's
-own last word; omit it for none), and the document's running footer. Each is
-assembled from parts; `stack` and `row` lay them out. The frame pads every
-region to its margin; a part that should run edge to edge, a footer line in
-most decks, says so with `bleed`.
+`composeFrame(c)` returns `{ header, takeaway?, footer, field?, takeawaySurface? }`:
+the header above the main, the takeaway region between main and footer (the
+section's own last word; omit it for none), and the document's running
+footer. Each is assembled from parts; `stack` and `row` lay them out. The
+frame pads every region to its margin; a part that should run edge to edge, a
+footer line in most decks, says so with `bleed`. `takeawaySurface` is how a
+brand sets the takeaway apart by surface: a full-width band of that colour
+after the field, as a deck's white recommendation strip after a tinted body.
+Never a box around the sentence — the band part cannot draw one.
 
 | Part | What it draws | The decisions it takes |
 | --- | --- | --- |
 | `kicker(c, { color, size, weight, transform, letterSpacing, fontFamily })` | the small label above the title | its colour, case and face; nothing when the section has none |
 | `title(c, { color, size, weight, letterSpacing, fontFamily })` | the section's claim | the face and weight a title carries; a serif here is a brand decision |
 | `rule(c, { color, width, bleed })` | a horizontal line | whether the brand draws one, under the title or opening the footer; `bleed: true` runs it past the margin, edge to edge |
-| `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, visibly the conclusion | the lead-in words per kind (`{ implication: 'So what' }`) and their colour and weight (the lead colour, bold, by default — pick one that reads on the band's surface); an optional marker glyph before it; its surface (padded when set). The word is always drawn |
+| `band(c, { leadIn, leadInColor, leadInWeight, marker, color, size })` | the takeaway, visibly the conclusion | the lead-in words per kind (`{ implication: 'So what' }`) and their colour and weight (the lead colour, bold, by default — pick one that reads on the region's surface); an optional marker glyph before it. The word is always drawn; the band never paints a background — the region does |
 | `footnote(c, text, { color, size })` | running text: the document title, confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
 | `pageNumber(c, { color, size, ofTotal })` | the page number, when the section has one | whether pages are numbered at all, and `10` or `10 / 21` |
 | `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big |
@@ -69,6 +72,8 @@ Two frames, to show the range:
 export function composeFrame(c: FrameContext): FrameComposition {
   return {
     header: stack([kicker(c, { color: '#CC0000', size: 12 }), title(c, { size: 28 })], { gap: 6 }),
+    // The field is tinted; the takeaway sits on a white band after it.
+    takeawaySurface: '#ffffff',
     takeaway: band(c, { leadInColor: '#CC0000', size: 17 }).node,
     footer: stack([
       rule(c, { color: '#CC0000', bleed: true }),
@@ -78,13 +83,13 @@ export function composeFrame(c: FrameContext): FrameComposition {
 }
 
 // No kicker colour; a light serif title with a rule under it; the takeaway
-// on a solid block in white, its lead-in word in the same weight but a
-// lighter tint; no mark — a navy rule inside the margin, the document's
-// title left and the page number right.
+// under a short rule in the accent, its lead-in word in the accent; no mark —
+// a navy rule inside the margin, the document's title left and the page
+// number right.
 export function composeFrame(c: FrameContext): FrameComposition {
   return {
     header: stack([kicker(c, { weight: 400, transform: 'uppercase', letterSpacing: '0.08em' }), title(c, { fontFamily: 'Merriweather, serif', weight: 300, size: 30 }), rule(c, { color: '#25408f', width: 2 })], { gap: 12 }),
-    takeaway: band(c, { background: '#0c9ed9', color: '#ffffff', leadInColor: '#b7e4f4', leadInWeight: 600 }).node,
+    takeaway: stack([rule(c, { color: '#0c9ed9', width: 2 }), band(c, { leadInColor: '#0c9ed9', leadInWeight: 600 })], { gap: 14 }),
     footer: stack([rule(c, { color: '#25408f' }), { node: row([footnote(c, c.running?.title, { size: 12 })], [pageNumber(c)]) }], { gap: 14 }),
   };
 }
@@ -103,10 +108,11 @@ Rules that hold for every composition:
   wording per kind, its colour and weight, and may put a marker before it. A
   sentence that differs from body copy only by its background is not a
   takeaway, and the check says so.
-- **The takeaway is its own region, on the field.** It belongs to the
-  section's argument; the footer belongs to the document and sits on the
-  page. Put the band in `takeaway`, never in `footer`; the frame keeps the two
-  apart even on a dark page. `takeawaySurface` moves it, if the brand must.
+- **The takeaway is its own region.** It belongs to the section's argument;
+  the footer belongs to the document and sits on the page. Put the band in
+  `takeaway`, never in `footer`. Set it apart the way a deck does — by the
+  region's surface (`takeawaySurface`), a rule, the lead-in's colour — never
+  by a box around the sentence.
 - **The field is one colour per brand.** A main never paints its own.
 - **Report what the parts cannot express** rather than approximating it: a
   treatment the guide shows that these parts cannot draw is a gap to name in

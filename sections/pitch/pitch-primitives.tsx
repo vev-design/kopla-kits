@@ -79,8 +79,9 @@ export interface FrameComposition {
   /** Override the field for this frame; defaults to theme.field. */
   field?: string;
   /** The surface under the takeaway region. It closes the main, so it sits on
-   *  the field by default — never on the page, where it would fuse with the
-   *  footer. A brand that wants it elsewhere says so here. */
+   *  the field by default. A brand that sets the takeaway apart by surface —
+   *  a white band after a tinted field, as decks do — says so here; the
+   *  region is full width and padded, and the band inside it never paints. */
   takeawaySurface?: string;
 }
 
@@ -110,14 +111,16 @@ export function rule(c: FrameContext, opts: { color?: string; width?: number; bl
  *  Its lead-in word names what kind of sentence it is ("Recommendation:") and
  *  comes from the content's `takeawayKind`; the brand styles it — colour,
  *  weight, its own wording per kind — and may add a marker glyph before it.
- *  The word is never dropped: a sentence that differs from body copy only by
- *  its background is body copy. Draws nothing without a takeaway. */
-export function band(c: FrameContext, opts: { leadIn?: Partial<Record<NonNullable<FrameContext['takeawayKind']>, string>>; leadInColor?: string; leadInWeight?: number; marker?: ReactNode; background?: string; color?: string; size?: number } = {}): Part {
+ *  The word is never dropped, and the band never paints its own background:
+ *  a box inside the region is a callout card. What sets the takeaway apart is
+ *  its REGION — the frame gives it one, full width, whose surface the brand
+ *  chooses with `takeawaySurface` — plus the lead-in, a marker, a rule above.
+ *  Draws nothing without a takeaway. */
+export function band(c: FrameContext, opts: { leadIn?: Partial<Record<NonNullable<FrameContext['takeawayKind']>, string>>; leadInColor?: string; leadInWeight?: number; marker?: ReactNode; color?: string; size?: number } = {}): Part {
   if (!c.takeaway) return { node: null };
   const kind = c.takeawayKind ?? 'takeaway';
   const word = opts.leadIn?.[kind] ?? { implication: 'Implication', recommendation: 'Recommendation', takeaway: 'Takeaway', next: 'Next step' }[kind];
-  // A band on its own surface needs room inside it; on the page it sits flush.
-  return { node: <p data-pitch-band="" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10, background: opts.background, padding: opts.background ? '14px 16px' : 0, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? c.theme.typography.bodySize + 2, lineHeight: 1.4 }}>
+  return { node: <p data-pitch-band="" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? c.theme.typography.bodySize + 2, lineHeight: 1.4 }}>
     {opts.marker ? <span data-pitch-band-marker="" style={{ display: 'contents' }}>{opts.marker}</span> : null}
     <span><strong data-pitch-band-lead-in="" style={{ color: opts.leadInColor ?? c.theme.ranks.lead.background, fontWeight: opts.leadInWeight ?? 700 }}>{word}: </strong>{c.takeaway}</span>
   </p> };
@@ -182,7 +185,7 @@ export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact' | 'marg
   return <section id={id ?? undefined} data-pitch-frame="" style={{ fontFamily: theme.typography.fontFamily, fontSize: theme.typography.bodySize, lineHeight: theme.typography.lineHeight, color: theme.ink, background: theme.page, containerType: 'inline-size' as CSSProperties['containerType'] }}>
     <header data-pitch-header="" style={{ padding: `32px ${String(margin)}px 16px` }}>{frame.header}</header>
     <div data-pitch-main="" style={{ background: frame.field ?? theme.field, padding: `32px ${String(margin)}px 40px` }}>{children}</div>
-    {frame.takeaway ? <div data-pitch-takeaway="" style={{ background: frame.takeawaySurface ?? frame.field ?? theme.field, padding: `0 ${String(margin)}px 32px` }}>{frame.takeaway}</div> : null}
+    {frame.takeaway ? <div data-pitch-takeaway="" style={{ background: frame.takeawaySurface ?? frame.field ?? theme.field, padding: `${frame.takeawaySurface ? '24px' : '0'} ${String(margin)}px ${frame.takeawaySurface ? '24px' : '32px'}` }}>{frame.takeaway}</div> : null}
     <footer data-pitch-footer="" style={{ padding: `20px ${String(margin)}px 24px` }}>{frame.footer}</footer>
   </section>;
 }
