@@ -1,7 +1,7 @@
 {
   "name": "Pitch",
   "description": "Pitch sections: a brand-composed frame (header, main, footer) every section wears, mechanical parts a main is built from (ranked panels, key-value tables, bullets, stats, columns), and the mains themselves. The brand decides the shell, what each rank looks like, the bullet marker and the takeaway band from documented parts; the agent decides content, rank and arrangement.",
-  "whenToUse": "A proposal, pitch or recommendation deck rendered as pages: one message per section, evidence ranked, one takeaway. Adopt Pitch; the brand's frame and rank styles live in pitch-composition.tsx (see COMPOSING.md) and the parts are never edited. Mains: Fees. NOT for marketing pages, documentation or anything without an argument to land.",
+  "whenToUse": "A proposal, pitch or recommendation deck rendered as pages: one message per section, evidence ranked, one takeaway. Adopt Pitch; the brand's frame and rank styles live in pitch-composition.tsx (see COMPOSING.md) and the parts are never edited. Mains: Fees (a priced table with terms), Analysis (narrative beside one to three charts \u2014 needs the Chart component adopted in the same workspace). NOT for marketing pages, documentation or anything without an argument to land.",
   "tags": [
     "pitch",
     "proposal",
@@ -11,7 +11,8 @@
   ],
   "hydrate": false,
   "exports": [
-    "Fees"
+    "Fees",
+    "Analysis"
   ],
   "adopt": {
     "files": [
@@ -30,9 +31,17 @@
       {
         "from": "Fees.tsx",
         "to": "src/sections/Fees.tsx"
+      },
+      {
+        "from": "Analysis.tsx",
+        "to": "src/sections/Analysis.tsx"
+      },
+      {
+        "from": "mains.ts",
+        "to": "src/sections/pitch-mains.ts"
       }
     ],
-    "export": "export * from './Fees';",
+    "export": "export * from './pitch-mains';",
     "barrel": "src/sections/index.ts",
     "theme": "src/sections/pitch-composition.tsx",
     "checks": [

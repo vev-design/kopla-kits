@@ -47,6 +47,9 @@ export interface PitchTheme {
    *  guide's "alternating Light Grey" table), and the header's own surface
    *  when it differs from the lead rank's bar. */
   table?: { stripe?: string | null; headerBackground?: string | null; headerColor?: string | null };
+  /** Narrative inside a main: the small heading over a paragraph. Ink and
+   *  bold by default; a brand that colours its paragraph headings says so. */
+  prose?: { headingColor?: string | null; headingWeight?: number | null; headingSize?: number | null };
   /** Structural restrictions from the brand, kept here for authors. */
   neverDo: string[];
 }
@@ -251,5 +254,17 @@ export function Stat({ value, unit, label, note, theme }: { value: string; unit?
     </p>
     {label ? <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{label}</p> : null}
     {note ? <p style={{ margin: '4px 0 0' }}>{note}</p> : null}
+  </div>;
+}
+
+/** Narrative blocks: a small heading over a paragraph, repeated. The
+ *  section's argument in words, beside its evidence. */
+export function Prose({ blocks, theme, gap = 24 }: { blocks: { heading?: string | null; body: string }[]; theme: PitchTheme; gap?: number }) {
+  const prose = theme.prose ?? {};
+  return <div data-pitch-prose="" style={{ display: 'flex', flexDirection: 'column', gap }}>
+    {blocks.map((b, i) => <div key={i}>
+      {b.heading ? <h4 style={{ margin: '0 0 8px', color: prose.headingColor ?? theme.ink, fontWeight: prose.headingWeight ?? 700, fontSize: prose.headingSize ?? theme.typography.bodySize + 1, lineHeight: 1.3 }}>{b.heading}</h4> : null}
+      <p style={{ margin: 0, textWrap: 'pretty' as CSSProperties['textWrap'] }}>{b.body}</p>
+    </div>)}
   </div>;
 }

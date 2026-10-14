@@ -55,12 +55,13 @@ are compositions over the same facts.
 | `stat` | `Stat` | the focal figure's colour, size, weight and, if the brand sets one, its own face |
 | `bullet` | `Bullets` | `triangle`, `dot`, `dash` or `none`, and its colour |
 | `values` | `KeyValues` | the value column's weight and alignment |
+| `prose` | `Prose` | optional: the colour, weight and size of a paragraph heading inside a main (ink, bold, body+1 by default) |
 | `table` | `KeyValues` | optional: `stripe`, a second shade for every other row (a guide's alternating-row table; dividers are dropped when set) |
 | `neverDo` | authors | structural restrictions, kept here for whoever edits a main |
 
 ## What the mains do with it
 
-A main (`Fees`, …) never styles. It names a rank for each of its parts, lays
+A main (`Fees`, `Analysis`, …) never styles. `Analysis` places the Chart component beside narrative; the chart's own look is the brand's chart composition, not this file. It names a rank for each of its parts, lays
 them out with `Columns`, and wraps everything in `PitchFrame`. Changing this
 file changes every main at once; that is the point.
 

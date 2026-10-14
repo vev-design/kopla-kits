@@ -9,13 +9,20 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 const root = process.argv[2] ? resolve(process.argv[2]) : null;
-const require = createRequire(root ? resolve(root, 'package.json') : import.meta.url);
+// The mains draw catalog components (Analysis places Chart) through the
+// workspace's components barrel, so this check only runs inside an adopted
+// workspace — which is where hosts and the catalog build run it.
+if (!root) {
+  console.error('Pitch: pass the adopted workspace root — bun check.mjs <workspace>');
+  process.exit(2);
+}
+const require = createRequire(resolve(root, 'package.json'));
 const { createElement } = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
-const url = (file) => (root ? pathToFileURL(resolve(root, 'src/sections', file)).href : new URL(`./${file}`, import.meta.url).href);
-const mains = { Fees: (await import(url('Fees.tsx'))).Fees };
-const { PitchShowcase } = await import(url(root ? 'pitch-showcase.ts' : 'showcase.ts'));
-const { pitchTheme } = await import(url(root ? 'pitch-composition.tsx' : 'composition.tsx'));
+const url = (file) => pathToFileURL(resolve(root, 'src/sections', file)).href;
+const mains = { Fees: (await import(url('Fees.tsx'))).Fees, Analysis: (await import(url('Analysis.tsx'))).Analysis };
+const { PitchShowcase } = await import(url('pitch-showcase.ts'));
+const { pitchTheme } = await import(url('pitch-composition.tsx'));
 
 const text = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ');
 let count = 0;
@@ -34,11 +41,20 @@ for (const { label, main, props } of PitchShowcase) {
   assert.equal(leads, 1, `${label}: exactly one lead (found ${String(leads)})`);
   // Every word of the content is on the page.
   const words = text(html);
-  for (const row of props.rows) {
+  for (const row of props.rows ?? []) {
     assert.ok(words.includes(row.label), `${label}: row label missing: ${row.label}`);
     assert.ok(words.includes(row.value), `${label}: row value missing: ${row.value}`);
   }
   for (const note of props.notes ?? []) assert.ok(words.includes(note), `${label}: note missing: ${note.slice(0, 40)}`);
+  for (const block of props.paragraphs ?? []) {
+    if (block.heading) assert.ok(words.includes(block.heading), `${label}: paragraph heading missing: ${block.heading}`);
+    assert.ok(words.includes(block.body.slice(0, 60)), `${label}: paragraph missing: ${block.body.slice(0, 40)}`);
+  }
+  for (const chart of props.charts ?? []) {
+    assert.ok(words.includes(chart.title), `${label}: chart title missing: ${chart.title}`);
+    assert.ok(html.includes('<svg'), `${label}: chart drew no SVG`);
+    if (chart.source) assert.ok(words.includes(chart.source), `${label}: chart source missing`);
+  }
   assert.ok(words.includes(props.title), `${label}: title missing`);
   if (props.kicker) assert.ok(words.includes(props.kicker), `${label}: kicker missing`);
   if (props.takeaway) {
