@@ -61,7 +61,7 @@ are compositions over the same facts.
 
 ## What the mains do with it
 
-A main (`Fees`, `Analysis`, …) never styles. `Analysis` places the Chart component beside narrative; the chart's own look is the brand's chart composition, not this file. It names a rank for each of its parts, lays
+A main (`Fees`, …) never styles. It names a rank for each of its parts, lays
 them out with `Columns`, and wraps everything in `PitchFrame`. Changing this
 file changes every main at once; that is the point.
 
