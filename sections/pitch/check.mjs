@@ -72,7 +72,8 @@ for (const { label, main, props } of PitchShowcase) {
   if (props.page && html.includes('data-pitch-page')) assert.ok(words.includes(String(props.page.index)), `${label}: page number drawn`);
   // Nothing the brief did not supply.
   assert.ok(!/<button|<a /.test(html), `${label}: no controls in a pitch section`);
-  assert.ok(!/<ol\b|\b0[1-9]\b/.test(html), `${label}: no numbering`);
+  // Numbering is a tell ("01 02 03"); test the words, not the markup — a chart's SVG is full of digits.
+  assert.ok(!/<ol\b/.test(html) && !/(^|\s)0[1-9](\s|$)/.test(words), `${label}: no numbering`);
   assert.ok(!/\b(Learn more|Explore|Get started)\b/i.test(words), `${label}: no invented call to action`);
   // A mark in the header sits in a row's right group, never above or before the kicker.
   const header = html.slice(html.indexOf('data-pitch-header'), html.indexOf('data-pitch-main'));
