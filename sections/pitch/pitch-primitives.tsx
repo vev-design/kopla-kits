@@ -78,6 +78,10 @@ export interface FrameComposition {
   footer: ReactNode;
   /** Override the field for this frame; defaults to theme.field. */
   field?: string;
+  /** The surface under the takeaway region. It closes the main, so it sits on
+   *  the field by default — never on the page, where it would fuse with the
+   *  footer. A brand that wants it elsewhere says so here. */
+  takeawaySurface?: string;
 }
 
 export interface Part { node: ReactNode }
@@ -152,8 +156,9 @@ export function stack(parts: Part[], opts: { gap?: number } = {}): ReactNode {
 
 /**
  * Every pitch section renders through this: the brand's header above, the
- * main on the field, the takeaway region when the brand draws one, the
- * brand's footer last. Header, takeaway and footer are whatever `compose`
+ * main on the field, the takeaway region when the brand draws one (on the
+ * field too: it is the main's last word), the brand's footer last, on the
+ * page, as its own element. Header, takeaway and footer are whatever `compose`
  * returns for this context; the main is the section's own, built from the
  * parts below.
  */
@@ -173,8 +178,8 @@ export function PitchFrame(props: Omit<FrameContext, 'theme' | 'compact' | 'marg
   return <section id={id ?? undefined} data-pitch-frame="" style={{ fontFamily: theme.typography.fontFamily, fontSize: theme.typography.bodySize, lineHeight: theme.typography.lineHeight, color: theme.ink, background: theme.page, containerType: 'inline-size' as CSSProperties['containerType'] }}>
     <header data-pitch-header="" style={{ padding: `32px ${String(margin)}px 16px` }}>{frame.header}</header>
     <div data-pitch-main="" style={{ background: frame.field ?? theme.field, padding: `32px ${String(margin)}px 40px` }}>{children}</div>
-    {frame.takeaway ? <div data-pitch-takeaway="" style={{ padding: `28px ${String(margin)}px 24px` }}>{frame.takeaway}</div> : null}
-    <footer data-pitch-footer="" style={{ padding: `0 ${String(margin)}px 24px` }}>{frame.footer}</footer>
+    {frame.takeaway ? <div data-pitch-takeaway="" style={{ background: frame.takeawaySurface ?? frame.field ?? theme.field, padding: `0 ${String(margin)}px 32px` }}>{frame.takeaway}</div> : null}
+    <footer data-pitch-footer="" style={{ padding: `20px ${String(margin)}px 24px` }}>{frame.footer}</footer>
   </section>;
 }
 

@@ -52,6 +52,9 @@ for (const { label, main, props } of PitchShowcase) {
   assert.ok(!/<button|<a /.test(html), `${label}: no controls in a pitch section`);
   assert.ok(!/<ol\b|\b0[1-9]\b/.test(html), `${label}: no numbering`);
   assert.ok(!/\b(Learn more|Explore|Get started)\b/i.test(words), `${label}: no invented call to action`);
+  // The takeaway closes the main: it sits on the field, not on the page with the footer.
+  const takeawayStyle = html.match(/<div[^>]*data-pitch-takeaway=""[^>]*style="([^"]*)"/);
+  if (takeawayStyle) assert.ok(!takeawayStyle[1].includes(`background:${pitchTheme.page}`) || pitchTheme.page === pitchTheme.field, `${label}: the takeaway region sits on the page like the footer`);
   // The field is the theme's: a main never paints its own background.
   const field = html.match(/<div[^>]*data-pitch-main=""[^>]*style="([^"]*)"/);
   assert.ok(field && field[1].includes(`background:${pitchTheme.field}`), `${label}: main sits on the theme's field`);

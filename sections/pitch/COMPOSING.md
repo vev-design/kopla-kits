@@ -97,9 +97,10 @@ Rules that hold for every composition:
   else; an unset rank is an unstyled heading on every page.
 - **Nothing invented.** The band draws the author's takeaway or nothing; the
   frame never adds a call to action, a page number it was not given, or copy.
-- **The takeaway is its own region.** It belongs to the section's argument;
-  the footer belongs to the document. Put the band in `takeaway`, never in
-  `footer`, so a brand can set them on different surfaces.
+- **The takeaway is its own region, on the field.** It belongs to the
+  section's argument; the footer belongs to the document and sits on the
+  page. Put the band in `takeaway`, never in `footer`; the frame keeps the two
+  apart even on a dark page. `takeawaySurface` moves it, if the brand must.
 - **The field is one colour per brand.** A main never paints its own.
 - **Report what the parts cannot express** rather than approximating it: a
   treatment the guide shows that these parts cannot draw is a gap to name in
