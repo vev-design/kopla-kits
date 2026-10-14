@@ -55,6 +55,7 @@ are compositions over the same facts.
 | `stat` | `Stat` | the focal figure's colour, size, weight and, if the brand sets one, its own face |
 | `bullet` | `Bullets` | `triangle`, `dot`, `dash` or `none`, and its colour |
 | `values` | `KeyValues` | the value column's weight and alignment |
+| `table` | `KeyValues` | optional: `stripe`, a second shade for every other row (a guide's alternating-row table; dividers are dropped when set) |
 | `neverDo` | authors | structural restrictions, kept here for whoever edits a main |
 
 ## What the mains do with it

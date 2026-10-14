@@ -43,6 +43,10 @@ export interface PitchTheme {
   bullet: { marker: 'triangle' | 'dot' | 'dash' | 'none'; color: string };
   /** A key-value row's value column. */
   values: { weight: number; align: 'left' | 'right' };
+  /** Rows on a surface: an optional second shade for every other row (a
+   *  guide's "alternating Light Grey" table), and the header's own surface
+   *  when it differs from the lead rank's bar. */
+  table?: { stripe?: string | null; headerBackground?: string | null; headerColor?: string | null };
   /** Structural restrictions from the brand, kept here for authors. */
   neverDo: string[];
 }
@@ -211,10 +215,12 @@ export function Panel({ rank, heading, theme, children }: { rank: Rank; heading?
   </div>;
 }
 
-/** Label / value rows on a surface: a fee table, a timeline, a spec list. */
+/** Label / value rows on a surface: a fee table, a timeline, a spec list.
+ *  Every other row takes `theme.table.stripe` when the brand sets one. */
 export function KeyValues({ rows, theme }: { rows: { label: string; value: string }[]; theme: PitchTheme }) {
+  const stripe = theme.table?.stripe ?? null;
   return <dl data-pitch-keyvalues="" style={{ margin: 0, background: theme.surface }}>
-    {rows.map((r, i) => <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, padding: '12px 16px', borderTop: i === 0 ? undefined : `1px solid ${theme.divider}` }}>
+    {rows.map((r, i) => <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, padding: '12px 16px', background: stripe && i % 2 === 1 ? stripe : undefined, borderTop: i === 0 || stripe ? undefined : `1px solid ${theme.divider}` }}>
       <dt style={{ margin: 0 }}>{r.label}</dt>
       <dd style={{ margin: 0, fontWeight: theme.values.weight, textAlign: theme.values.align, fontVariantNumeric: 'tabular-nums' }}>{r.value}</dd>
     </div>)}
