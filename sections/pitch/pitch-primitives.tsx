@@ -106,16 +106,19 @@ export function rule(c: FrameContext, opts: { color?: string; width?: number; bl
   return { node: <hr data-pitch-rule="" style={{ border: 0, borderTop: `${String(opts.width ?? 1)}px solid ${opts.color ?? c.theme.divider}`, margin: 0, marginInline: opts.bleed ? -c.margin : 0 }} /> };
 }
 
-/** The takeaway band: the one sentence, set apart, with an optional lead-in
- *  word the brand styles its own way. Draws nothing without a takeaway. */
+/** The takeaway band: the one sentence, set apart, and VISIBLY the conclusion.
+ *  A lead-in word from the takeaway's kind ("Recommendation:") in the brand's
+ *  lead colour, a marker glyph, or both — never a sentence that differs from
+ *  body copy only by its background. `leadIn: null` drops the word and then
+ *  needs a marker. Draws nothing without a takeaway. */
 export function band(c: FrameContext, opts: { leadIn?: Partial<Record<NonNullable<FrameContext['takeawayKind']>, string>> | null; leadInColor?: string; leadInWeight?: number; marker?: ReactNode; background?: string; color?: string; size?: number } = {}): Part {
   if (!c.takeaway) return { node: null };
   const kind = c.takeawayKind ?? 'takeaway';
   const word = opts.leadIn === null ? null : (opts.leadIn?.[kind] ?? { implication: 'Implication', recommendation: 'Recommendation', takeaway: 'Takeaway', next: 'Next step' }[kind]);
   // A band on its own surface needs room inside it; on the page it sits flush.
   return { node: <p data-pitch-band="" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10, background: opts.background, padding: opts.background ? '14px 16px' : 0, color: opts.color ?? c.theme.ink, fontSize: opts.size ?? c.theme.typography.bodySize + 2, lineHeight: 1.4 }}>
-    {opts.marker}
-    <span>{word ? <strong style={{ color: opts.leadInColor ?? c.theme.ink, fontWeight: opts.leadInWeight ?? 700 }}>{word}: </strong> : null}{c.takeaway}</span>
+    {opts.marker ? <span data-pitch-band-marker="" style={{ display: 'contents' }}>{opts.marker}</span> : null}
+    <span>{word ? <strong data-pitch-band-lead-in="" style={{ color: opts.leadInColor ?? c.theme.ranks.lead.background, fontWeight: opts.leadInWeight ?? 700 }}>{word}: </strong> : null}{c.takeaway}</span>
   </p> };
 }
 

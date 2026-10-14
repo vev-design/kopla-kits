@@ -27,7 +27,7 @@ most decks, says so with `bleed`.
 | `kicker(c, { color, size, weight, transform, letterSpacing, fontFamily })` | the small label above the title | its colour, case and face; nothing when the section has none |
 | `title(c, { color, size, weight, letterSpacing, fontFamily })` | the section's claim | the face and weight a title carries; a serif here is a brand decision |
 | `rule(c, { color, width, bleed })` | a horizontal line | whether the brand draws one, under the title or opening the footer; `bleed: true` runs it past the margin, edge to edge |
-| `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, set apart | the lead-in words per kind (`{ implication: 'So what' }`), `leadIn: null` for none, a marker glyph, its surface (padded when set) |
+| `band(c, { leadIn, leadInColor, leadInWeight, marker, background, color, size })` | the takeaway, visibly the conclusion | the lead-in words per kind (`{ implication: 'So what' }`) and their colour and weight (the lead colour, bold, by default); a marker glyph; its surface (padded when set). `leadIn: null` drops the word and then a `marker` is required — a band with neither fails the check |
 | `footnote(c, text, { color, size })` | running text: the document title, confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
 | `pageNumber(c, { color, size, ofTotal })` | the page number, when the section has one | whether pages are numbered at all, and `10` or `10 / 21` |
 | `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big |
@@ -78,12 +78,13 @@ export function composeFrame(c: FrameContext): FrameComposition {
 }
 
 // No kicker colour; a light serif title with a rule under it; the takeaway
-// as a plain sentence with no lead-in; no mark — a navy rule inside the
-// margin, the document's title left and the page number right.
+// on a solid block in white, its lead-in word in the same weight but a
+// lighter tint; no mark — a navy rule inside the margin, the document's
+// title left and the page number right.
 export function composeFrame(c: FrameContext): FrameComposition {
   return {
     header: stack([kicker(c, { weight: 400, transform: 'uppercase', letterSpacing: '0.08em' }), title(c, { fontFamily: 'Merriweather, serif', weight: 300, size: 30 }), rule(c, { color: '#25408f', width: 2 })], { gap: 12 }),
-    takeaway: band(c, { leadIn: null }).node,
+    takeaway: band(c, { background: '#0c9ed9', color: '#ffffff', leadInColor: '#b7e4f4', leadInWeight: 600 }).node,
     footer: stack([rule(c, { color: '#25408f' }), { node: row([footnote(c, c.running?.title, { size: 12 })], [pageNumber(c)]) }], { gap: 14 }),
   };
 }
@@ -97,6 +98,10 @@ Rules that hold for every composition:
   else; an unset rank is an unstyled heading on every page.
 - **Nothing invented.** The band draws the author's takeaway or nothing; the
   frame never adds a call to action, a page number it was not given, or copy.
+- **The takeaway is visibly the conclusion.** The lead-in word comes from the
+  content's own `takeawayKind`; the brand chooses its colour and weight, or
+  replaces it with a marker. A sentence that differs from body copy only by
+  its background is not a takeaway, and the check says so.
 - **The takeaway is its own region, on the field.** It belongs to the
   section's argument; the footer belongs to the document and sits on the
   page. Put the band in `takeaway`, never in `footer`; the frame keeps the two
