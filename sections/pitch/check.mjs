@@ -81,9 +81,14 @@ for (const { label, main, props } of PitchShowcase) {
     const right = header.indexOf('data-pitch-row-right'), mark = header.indexOf('data-pitch-logo');
     assert.ok(right >= 0 && mark > right, `${label}: the mark sits at the start of the header — it crowds the kicker and title; put it in a row's right group or in the footer`);
   }
-  // The takeaway closes the main: it sits on the field, not on the page with the footer.
+  // The takeaway closes the main and must not fuse with the footer: either its
+  // surface differs from the page, or the footer opens with a rule between them.
   const takeawayStyle = html.match(/<div[^>]*data-pitch-takeaway=""[^>]*style="([^"]*)"/);
-  if (takeawayStyle) assert.ok(!takeawayStyle[1].includes(`background:${pitchTheme.page}`) || pitchTheme.page === pitchTheme.field, `${label}: the takeaway region sits on the page like the footer`);
+  if (takeawayStyle && takeawayStyle[1].includes(`background:${pitchTheme.page}`) && pitchTheme.page !== pitchTheme.field) {
+    const footer = html.slice(html.indexOf('data-pitch-footer'));
+    const firstPart = footer.search(/data-pitch-(rule|band|footnote|logo|page|kicker|title)=/);
+    assert.ok(firstPart >= 0 && footer.slice(firstPart).startsWith('data-pitch-rule'), `${label}: the takeaway region sits on the page like the footer with nothing between them — give it its own surface, or open the footer with a rule`);
+  }
   // The field is the theme's: a main never paints its own background.
   const field = html.match(/<div[^>]*data-pitch-main=""[^>]*style="([^"]*)"/);
   assert.ok(field && field[1].includes(`background:${pitchTheme.field}`), `${label}: main sits on the theme's field`);
