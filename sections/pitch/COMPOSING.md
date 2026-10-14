@@ -33,7 +33,7 @@ Never a box around the sentence — the band part cannot draw one.
 | `band(c, { leadIn, leadInColor, leadInWeight, marker, color, size })` | the takeaway, visibly the conclusion | the lead-in words per kind (`{ implication: 'So what' }`) and their colour and weight (the lead colour, bold, by default — pick one that reads on the region's surface); an optional marker glyph before it. The word is always drawn; the band never paints a background — the region does |
 | `footnote(c, text, { color, size })` | running text: the document title, confidentiality, client, date | which of `c.running` the brand shows, and how quietly |
 | `pageNumber(c, { color, size, ofTotal })` | the page number, when the section has one | whether pages are numbered at all, and `10` or `10 / 21` |
-| `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big |
+| `logo(c, { height })` | the brand's mark, when handed one | where it sits and how big — in the header only in a `row`'s right group (top-left crowds the kicker and title; the check refuses it); in the footer on either side |
 | `row(left, right, { gap, align })` | parts side by side, right ones at the far edge | footer arrangement |
 | `stack(parts, { gap })` | parts one under another | header and footer arrangement |
 

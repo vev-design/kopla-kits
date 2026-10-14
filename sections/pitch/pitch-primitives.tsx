@@ -139,7 +139,10 @@ export function pageNumber(c: FrameContext, opts: { color?: string; size?: numbe
   return { node: <span data-pitch-page="" style={{ color: opts.color ?? c.theme.ink, fontSize: opts.size ?? 12, fontVariantNumeric: 'tabular-nums' }}>{text}</span> };
 }
 
-/** The brand's mark, as handed to the frame. Draws nothing without one. */
+/** The brand's mark, as handed to the frame. Draws nothing without one. In
+ *  the header it may only sit in a row's RIGHT group: the top-left is where
+ *  the kicker and title start, and a mark there crowds them. The footer takes
+ *  it on either side. */
 export function logo(c: FrameContext, opts: { height?: number } = {}): Part {
   if (!c.logo) return { node: null };
   return { node: <span data-pitch-logo="" style={{ display: 'inline-flex', height: opts.height ?? 18, alignItems: 'center' }}>{c.logo}</span> };
@@ -148,9 +151,9 @@ export function logo(c: FrameContext, opts: { height?: number } = {}): Part {
 /** Lay frame parts out in a row: left parts, then right parts at the far edge. */
 export function row(left: Part[], right: Part[] = [], opts: { gap?: number; align?: CSSProperties['alignItems'] } = {}): ReactNode {
   const nodes = (parts: Part[]) => parts.map((p, i) => <span key={i} style={{ display: 'contents' }}>{p.node}</span>);
-  return <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: opts.align ?? 'center', gap: opts.gap ?? 16 }}>
-    <span style={{ display: 'flex', alignItems: 'center', gap: opts.gap ?? 16, minWidth: 0 }}>{nodes(left)}</span>
-    {right.length ? <span style={{ display: 'flex', alignItems: 'center', gap: opts.gap ?? 16 }}>{nodes(right)}</span> : null}
+  return <div data-pitch-row="" style={{ display: 'flex', justifyContent: 'space-between', alignItems: opts.align ?? 'center', gap: opts.gap ?? 16 }}>
+    <span data-pitch-row-left="" style={{ display: 'flex', alignItems: 'center', gap: opts.gap ?? 16, minWidth: 0 }}>{nodes(left)}</span>
+    {right.length ? <span data-pitch-row-right="" style={{ display: 'flex', alignItems: 'center', gap: opts.gap ?? 16 }}>{nodes(right)}</span> : null}
   </div>;
 }
 

@@ -58,6 +58,12 @@ for (const { label, main, props } of PitchShowcase) {
   assert.ok(!/<button|<a /.test(html), `${label}: no controls in a pitch section`);
   assert.ok(!/<ol\b|\b0[1-9]\b/.test(html), `${label}: no numbering`);
   assert.ok(!/\b(Learn more|Explore|Get started)\b/i.test(words), `${label}: no invented call to action`);
+  // A mark in the header sits in a row's right group, never above or before the kicker.
+  const header = html.slice(html.indexOf('data-pitch-header'), html.indexOf('data-pitch-main'));
+  if (header.includes('data-pitch-logo')) {
+    const right = header.indexOf('data-pitch-row-right'), mark = header.indexOf('data-pitch-logo');
+    assert.ok(right >= 0 && mark > right, `${label}: the mark sits at the start of the header — it crowds the kicker and title; put it in a row's right group or in the footer`);
+  }
   // The takeaway closes the main: it sits on the field, not on the page with the footer.
   const takeawayStyle = html.match(/<div[^>]*data-pitch-takeaway=""[^>]*style="([^"]*)"/);
   if (takeawayStyle) assert.ok(!takeawayStyle[1].includes(`background:${pitchTheme.page}`) || pitchTheme.page === pitchTheme.field, `${label}: the takeaway region sits on the page like the footer`);
