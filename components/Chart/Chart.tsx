@@ -144,23 +144,30 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
   const font = `${theme.typography.labelSize}px ${theme.typography.fontFamily}`;
   // A short year/category needs less room than a name. Reserve up to 120px per
   // category, then wrap long names to three lines; source data retains full text.
-  const pitch = categorical ? Math.max(48, Math.min(120, Math.ceil(names.reduce((max, name) => Math.max(max, measureStaticText(name, font).width), 0) + 16))) : 0;
+  const widest = categorical ? Math.ceil(names.reduce((max, name) => Math.max(max, measureStaticText(name, font).width), 0) + 16) : 0;
   const axisFormat = numberFormat('en-US');
   // Include the numeric axis in the width budget, including stacked totals.
   // Extra ems cover tick rounding and gaps; they are spacing, not font metrics.
   const axisWidth = axisValues.reduce((max, value) => Number.isFinite(value) ? Math.max(max, measureStaticText(axisFormat.full(value), font).width) : max, 0);
   const axisBudget = Math.max(112, Math.ceil(axisWidth + theme.typography.labelSize * 2 + 24));
-  const uncappedWidth = names.length * pitch + axisBudget;
+  // Room per category at a given width: a label gets its measured width when
+  // there is space, and wraps (up to three lines) when the plot is narrow —
+  // a chart beside prose in a third of a page is the common case, and a
+  // scroll there hides the point of the chart. 48px is the floor past which
+  // even wrapped labels stop reading; below it the plot scrolls as before.
+  const pitchAt = (width: number) => categorical ? Math.max(48, Math.min(120, widest, Math.floor((width - axisBudget) / Math.max(1, names.length)))) : 0;
+  const uncappedWidth = names.length * 48 + axisBudget;
   const minimumWidth = categorical ? Math.min(2400, Math.ceil(uncappedWidth)) : 0;
   const layout = (baseWidth: number) => {
     const width = Math.max(baseWidth, minimumWidth);
+    const pitch = pitchAt(width);
     const xAxis = option.xAxis as Option;
     const label = xAxis.axisLabel as Option;
     const labelWidth = pitch - 16;
     const plotOption = { ...option, xAxis: { ...xAxis, axisLabel: { ...label,
       ...(categorical ? {
         width: labelWidth, overflow: 'break', lineHeight: Math.ceil(theme.typography.labelSize * 1.4),
-        interval: uncappedWidth <= 2400 ? 0 : 'auto', hideOverlap: uncappedWidth > 2400,
+        interval: names.length * pitch + axisBudget <= 2400 ? 0 : 'auto', hideOverlap: names.length * pitch + axisBudget > 2400,
         formatter: (value: string) => wrapMeasuredLabel(String(value), labelWidth, font),
       } : {}),
     } } };
