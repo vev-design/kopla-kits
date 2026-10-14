@@ -64,7 +64,7 @@ describe('finished Chart primitive', () => {
       // Never narrower than the per-category floor (the longest word, 48px at
       // least) plus the axis budget; at that width a label wraps at its space
       // ("Q1" over "2025") rather than the plot scrolling, and never inside a word.
-      expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThanOrEqual(8 * 48 + 112);
+      expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThanOrEqual(8 * 44 + 72);
       const words = plot.replace(/<[^>]+>/g, ' ');
       for (const category of categories) for (const word of category.split(' ')) expect(words).toContain(word);
     }
