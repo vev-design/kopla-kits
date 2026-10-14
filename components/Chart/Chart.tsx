@@ -167,7 +167,7 @@ function CartesianPlot({ option, names, categorical, axisValues, theme, title }:
     const pitch = pitchAt(width);
     const xAxis = option.xAxis as Option;
     const label = xAxis.axisLabel as Option;
-    const labelWidth = pitch - 16;
+    const labelWidth = pitch - 10;
     const plotOption = { ...option, xAxis: { ...xAxis, axisLabel: { ...label,
       ...(categorical ? {
         width: labelWidth, overflow: 'break', lineHeight: Math.ceil(theme.typography.labelSize * 1.4),
