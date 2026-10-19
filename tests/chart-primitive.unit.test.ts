@@ -55,12 +55,18 @@ describe('finished Chart primitive', () => {
     expect(html).toContain('width:320px;min-width:320px;margin-inline:auto');
     expect(html).toContain('max-width:800px');
   });
-  test('dense categories scroll with a visible hint and retain every tick until the width cap', () => {
+  test('dense categories wrap their labels to the width, then scroll with a visible hint, retaining every tick', () => {
     const categories = Array.from({ length: 8 }, (_, i) => `Q${i + 1} 2025`);
     const html = render({ categories, series: [{ name: 'Sales', values: categories.map((_, i) => 1000000 + i * 100000) }] });
-    for (const plot of html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? []) {
-      expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThan(640);
-      for (const category of categories) expect(plot).toContain(`>${category}</text>`);
+    const plots = html.match(/<svg\b[\s\S]*?<\/svg>/g) ?? [];
+    expect(plots.length).toBeGreaterThan(0);
+    for (const plot of plots) {
+      // Never narrower than the per-category floor (the longest word, 48px at
+      // least) plus the axis budget; at that width a label wraps at its space
+      // ("Q1" over "2025") rather than the plot scrolling, and never inside a word.
+      expect(Number(plot.match(/width="(\d+)"/)?.[1])).toBeGreaterThanOrEqual(8 * 44 + 72);
+      const words = plot.replace(/<[^>]+>/g, ' ');
+      for (const category of categories) for (const word of category.split(' ')) expect(words).toContain(word);
     }
     expect(html).toContain('Scroll to see the full chart.');
     expect(html).toContain('tabindex="0" role="region" aria-label="Comparison chart;');
