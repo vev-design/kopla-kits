@@ -1,0 +1,14 @@
+{
+  "name": "Flare & Wedge",
+  "description": "A type-specimen system where the letterform is the subject: an inscriptional flare serif on Roman square-capital proportions, a spurred variable sans beside it, a warm oatmeal ground, and one hot red spent only on rules and marks.",
+  "whenToUse": "Pick when the typeface itself is the product or the argument: type foundry releases and specimen pages, brand identity presentations, and heritage or craft brands — breweries, distilleries, makers, cultural institutions — deliberately choosing a display serif in a category that has gone almost entirely sans. The chain is a specimen narrative, not a sales funnel: a nameplate with real clear space, the face at full viewport with scroll-scrubbed tracking, the argument for the drawing, a weight ramp, an anatomy callout on one enlarged glyph, stylistic-set alternates locked as a brand decision, oldstyle-versus-tabular numerals, the face applied to a photograph, a closing license ask, and a colophon. The look is warm oatmeal ground, warm near-black ink, and a single hot red confined to rules and small marks — headlines are never colored, because stacking a color contrast on top of a terminal contrast is exactly what this system avoids. Type is a three-slot system: Cinzel for inscriptional display, Bricolage Grotesque for the spurred expressive voice, Inter held at body sizes. Emphasis is weight plus small caps, never italic. NOT for dashboards, dense product UI, dark technical marketing, e-commerce catalogs, or conversion-led SaaS pages. Distinct from the Editorial kit, which is about READING — Source Serif body text, paper-white, deep crimson, and a longform essay chain (masthead, article hero, pull quote, gallery). Flare & Wedge is about LOOKING AT LETTERFORMS: all-caps inscriptional display rather than a reading serif, a warmer oatmeal ground, a hotter orange-red mark, and a foundry/identity chain with no article body anywhere in it. Pick Editorial to publish an essay; pick Flare & Wedge to present a typeface, an identity, or a brand built on one.",
+  "tags": [
+    "Typography",
+    "Specimen",
+    "Identity",
+    "Serif"
+  ],
+  "featured": false,
+  "order": 35,
+  "accent": "#FA2837"
+}
