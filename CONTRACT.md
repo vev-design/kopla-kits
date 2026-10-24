@@ -142,7 +142,7 @@ page agents) can only pick what the kit author enumerated.
 - **Block slots** — a prop typed as a discriminated union of block
   props from `_base`'s `@/components/blocks` (discriminant: the literal
   `kind` field). Blocks are _base-owned, token-themed content units
-  (`image`, `video`, `chart` today; form, … later). A section narrows the
+  (`image`, `video`, `chart`, `lottie` today; form, … later). A section narrows the
   union to exactly the kinds it can host —
   `media: ImageBlockProps | ChartBlockProps` — and renders the slot with
   `<MediaBlock media={…} />` (or the individual block components).
@@ -173,6 +173,15 @@ page agents) can only pick what the kit author enumerated.
   and a flag whose off state is `true` could not be expressed. A section renders
   the block and never writes its own `<video>` or provider `<iframe>` — see
   `_base/AGENTS.md` for why.
+- **The Lottie block renders markup, and the host plays it.** `LottieBlockProps`
+  (`kind: 'lottie'`, `src` a `.json` URL) renders an empty, sized element whose
+  `data-kopla-lottie` attribute carries the file and whose
+  `data-kopla-lottie-play` / `-loop` / `-speed` attributes carry the settings
+  (`play`, `playOnce`, `speed` — all optional). It imports no player and stays
+  static: a host that renders animations reads those attributes and supplies the
+  player itself, typically only on pages that contain one. Without a player the
+  element is an empty frame of the right size. Renaming any of those attributes
+  is a breaking change.
 - Blocks must stay static (no client JS) unless documented otherwise; a
   section hosting a block that animates or hydrates must carry the
   `@hydrate` tag itself.
